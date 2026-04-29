@@ -7,18 +7,29 @@
 </head>
 <body>
 
-    <div class="container">
+    <div class="form-card">
         <h1>로그인</h1>
+        <p class="subtitle">동아리 활동을 더 쉽게 관리하고 참여해보세요</p>
 
-        <input type="text" placeholder="아이디(@dankook.ac.kr)">
-        <input type="password" placeholder="비밀번호">
+        <label>이메일</label>
+        <input type="email" placeholder="학교 이메일을 입력하세요">
+
+        <label>비밀번호</label>
+        <input type="password" placeholder="비밀번호를 입력하세요">
+
+        <div class="option-row">
+            <label class="checkbox-label">
+                <input type="checkbox">
+                로그인 상태 유지
+            </label>
+        </div>
 
         <button>로그인</button>
 
-        <p>
-            계정이 없으신가요?
+        <div class="link-row">
+            <a href="#">비밀번호 찾기</a>
             <a href="signup.html">회원가입</a>
-        </p>
+        </div>
     </div>
 
 </body>

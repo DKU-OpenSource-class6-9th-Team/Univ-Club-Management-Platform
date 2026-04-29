@@ -7,22 +7,77 @@
 </head>
 <body>
 
-    <div class="container">
+    <div class="form-card">
         <h1>회원가입</h1>
-        
-        <input type="email" placeholder="아이디(@dankook.ac.kr)">
-        <p class="info-text"> ※단국대 이메일(@dankook.ac.kr)만 사용 가능합니다.</p>
-        <input type="text" placeholder="이름">
-        <input type="password" placeholder="비밀번호">
-        <input type="password" placeholder="비밀번호 확인">
+        <p class="subtitle">학교 이메일로 가입하고 동아리 활동을 시작해보세요</p>
 
-        <button>회원가입</button>
+        <div class="tab-box">
+            <button type="button" class="tab active" id="userTab">일반 사용자</button>
+            <button type="button" class="tab" id="adminTab">동아리 운영진</button>
+        </div>
+
+        <input type="hidden" id="userType" name="userType" value="user">
+
+        <label>이름</label>
+        <input type="text" placeholder="이름을 입력하세요">
+
+        <label>학교 이메일</label>
+        <input type="email" placeholder="학교 이메일을 입력하세요">
+
+        <p class="info-text">※ 단국대 이메일(@dankook.ac.kr)만 사용 가능합니다.</p>
+
+        <label>비밀번호</label>
+        <input type="password" placeholder="비밀번호를 입력하세요">
+
+        <label>비밀번호 확인</label>
+        <input type="password" placeholder="비밀번호를 다시 입력하세요">
+
+        <div id="adminFields" class="hidden">
+            <label>동아리명</label>
+            <input type="text" placeholder="운영 중인 동아리명을 입력하세요">
+
+            <label>직책</label>
+            <input type="text" placeholder="회장, 부회장 등 직책을 입력하세요">
+        </div>
+
+        <button type="button" id="signupButton">일반 사용자로 가입하기</button>
 
         <p class="bottom-text">
-        이미 계정이 있으신가요?
-        <a href="login.html">로그인</a>
+            이미 계정이 있으신가요?
+            <a href="login.html">로그인</a>
         </p>
     </div>
+
+    <script>
+        const userTab = document.getElementById("userTab");
+        const adminTab = document.getElementById("adminTab");
+        const adminFields = document.getElementById("adminFields");
+        const userType = document.getElementById("userType");
+        const signupButton = document.getElementById("signupButton");
+        const subtitle = document.querySelector(".subtitle");
+
+        userTab.addEventListener("click", function () {
+            userTab.classList.add("active");
+            adminTab.classList.remove("active");
+
+            adminFields.classList.add("hidden");
+
+            userType.value = "user";
+            signupButton.textContent = "일반 사용자로 가입하기";
+            subtitle.textContent = "학교 이메일로 가입하고 동아리 활동을 시작해보세요";
+        });
+
+        adminTab.addEventListener("click", function () {
+            adminTab.classList.add("active");
+            userTab.classList.remove("active");
+
+            adminFields.classList.remove("hidden");
+
+            userType.value = "admin";
+            signupButton.textContent = "동아리 운영진으로 가입하기";
+            subtitle.textContent = "동아리 운영진 계정으로 가입하고 동아리를 관리해보세요";
+        });
+    </script>
 
 </body>
 </html>
