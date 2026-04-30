@@ -11,36 +11,38 @@
         <h1>회원가입</h1>
         <p class="subtitle">학교 이메일로 가입하고 동아리 활동을 시작해보세요</p>
 
-        <div class="tab-box">
-            <button type="button" class="tab active" id="userTab">일반 사용자</button>
-            <button type="button" class="tab" id="adminTab">동아리 운영진</button>
-        </div>
+        <form id="signupForm" method="post">
+            <div class="tab-box">
+                <button type="button" class="tab active" id="userTab">일반 사용자</button>
+                <button type="button" class="tab" id="adminTab">동아리 운영진</button>
+            </div>
 
-        <input type="hidden" id="userType" name="userType" value="user">
+            <input id="userType" name="userType" type="hidden" value="user">
 
-        <label>이름</label>
-        <input type="text" placeholder="이름을 입력하세요">
+            <label for="name">이름</label>
+            <input id="name" name="name" type="text" placeholder="이름을 입력하세요">
 
-        <label>학교 이메일</label>
-        <input type="email" placeholder="학교 이메일을 입력하세요">
+            <label for="email">학교 이메일</label>
+            <input id="email" name="email" type="email" placeholder="학교 이메일을 입력하세요">
 
-        <p class="info-text">※ 단국대 이메일(@dankook.ac.kr)만 사용 가능합니다.</p>
+            <p class="info-text">※ 단국대 이메일(@dankook.ac.kr)만 사용 가능합니다.</p>
 
-        <label>비밀번호</label>
-        <input type="password" placeholder="비밀번호를 입력하세요">
+            <label for="password">비밀번호</label>
+            <input id="password" name="password" type="password" placeholder="비밀번호를 입력하세요">
 
-        <label>비밀번호 확인</label>
-        <input type="password" placeholder="비밀번호를 다시 입력하세요">
+            <label for="passwordConfirm">비밀번호 확인</label>
+            <input id="passwordConfirm" name="passwordConfirm" type="password" placeholder="비밀번호를 다시 입력하세요">
 
-        <div id="adminFields" class="hidden">
-            <label>동아리명</label>
-            <input type="text" placeholder="운영 중인 동아리명을 입력하세요">
+            <div id="adminFields" class="hidden">
+                <label for="clubName">동아리명</label>
+                <input id="clubName" name="clubName" type="text" placeholder="운영 중인 동아리명을 입력하세요">
 
-            <label>직책</label>
-            <input type="text" placeholder="회장, 부회장 등 직책을 입력하세요">
-        </div>
+                <label for="position">직책</label>
+                <input id="position" name="position" type="text" placeholder="회장, 부회장 등 직책을 입력하세요">
+            </div>
 
-        <button type="button" id="signupButton">일반 사용자로 가입하기</button>
+            <button type="submit" id="signupButton">일반 사용자로 가입하기</button>
+        </form>
 
         <p class="bottom-text">
             이미 계정이 있으신가요?
