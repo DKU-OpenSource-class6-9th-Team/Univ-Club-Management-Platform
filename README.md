@@ -36,9 +36,9 @@ pip freeze > requirements.txt
 6. EXIT; 입력하면 종료됩니다.
 
 <연결 확인>
-1. python manage.py migratge 명령어를 통해 정상적으로 OK sign이 나오는지 확인합니다.
+1. python manage.py migrate 명령어를 통해 정상적으로 OK sign이 나오는지 확인합니다.
 2. python manage.py runserver 를 통해 서버를 실행합니다. 이후 터미널에 나오는 메세지의 주소를 통해 접속하면 페이지가 정상적으로 나오게 됩니다.
-3. 서버 종료 커맨드 -> "crtl + c"
+3. 서버 종료 커맨드 -> "ctrl + c"
 
 <mysql 테이블 생성 여부 확인>
 1. mysql -u root -p
