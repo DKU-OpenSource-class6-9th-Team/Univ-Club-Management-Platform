@@ -1,0 +1,302 @@
+/*AuthLayout.jsx, LoginPage.jsx, SignupPage.jsx 에서 사용하는 css파일*/
+* {
+  box-sizing: border-box;
+}
+
+/*자주 사용할 색상 변수로 관리*/
+:root {
+  --basic: #1269ee;
+  --basic-dark: #075eea;
+  --text-main: #0f1f3d;
+  --text-sub: #5d697b;
+  --line: #dbe3ee;
+  --bg-soft: #eef6ff;
+  --white: #ffffff;
+}
+
+/*전체 페이지의 기본설정*/
+body {
+  margin: 0;
+  min-width: 320px;
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "Pretendard",
+    "Noto Sans KR",
+    sans-serif;
+  color: var(--text-main);
+  background: var(--bg-soft);
+}
+
+button,
+input,
+select {
+  font-family: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* 전체적인 로그인/회원가입 페이지 */
+.auth-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #ffffff 0%, #eef6ff 100%);
+}
+
+/* 상단 헤더 
+    - 왼쪽은 플랫폼 이름
+    - 오른쪽은 로그인 버튼*/
+.auth-header {
+  height: 82px;  /*헤더 높이*/
+  padding: 0 48px; /*좌우 여백*/
+  display: flex; /*배치는 가로*/
+  align-items: center;
+  justify-content: space-between; /*양 끝으로 배치*/
+  background: var(--white);
+  border-bottom: 1px solid #e2eaf5; /*헤더 구분선*/
+  box-shadow: 0 4px 18px rgba(22, 45, 85, 0.06);
+}
+
+/*로고 영역*/
+.auth-logo {
+  display: flex;
+  align-items: center;
+  font-size: 24px; /*글자 크기*/
+  font-weight: 750; /*글자 두께*/
+  letter-spacing: -0.8px;
+}
+
+/*헤더에 있는 오른쪽 영역
+    - 로그인 버튼
+    - 이후 홈 버튼, 동아리 현황 버튼 등을 추가할 수 있음*/
+.auth-navigate {
+  display: flex;
+  align-items: center;
+}
+
+/*헤더에 존재하는 login버튼*/
+.auth-navigate-login {
+  padding: 12px 26px;
+  color: white;
+  background: var(--basic-dark);
+  border-radius: 11px;
+  font-size: 16px;
+  font-weight: 700;
+  box-shadow: 0 6px 16px rgba(7, 94, 234, 0.26);
+}
+
+/*중앙 영역
+    -로그인 및 회원가입 블록? 레이아웃을 배치*/
+.auth-main {
+  min-height: calc(100vh - 82px); /*헤더의 범위만큼은 제외*/
+  padding: 48px 20px;
+  display: flex;
+  align-items: center; /*세로축 중앙 정렬*/
+  justify-content: center; /*가로축 중앙 정렬*/
+}
+
+/* 로그인/회원가입 블록 영역 
+    -입력할 때의 큰 흰색 블록*/
+.auth-block {
+  width: 100%;
+  max-width: 460px;
+  padding: 34px 42px 34px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 24px 72px rgba(28, 55, 95, 0.14);
+}
+
+/*흰 블록에서의 제목
+    -로그인 페이지 -> "로그인"
+    -회원가입 페이지 -> "회원가입"*/
+.auth-block h2 {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 36px;
+  line-height: 1.12;
+  letter-spacing: -1.3px;
+}
+
+/*블록 제목 아래 추가적인 설명문구
+    -ex)"아래 내용을 입력하세요" 등*/
+.auth-block-subtitle {
+  margin: 10px 0 26px;
+  color: var(--text-sub);
+  font-size: 16px;
+  word-break: keep-all; /*줄바꿈 방지*/
+}
+
+/* 폼 공통 적용
+    -입력 칸 세로로 배치*/
+.auth-commonform {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/*회원가입 폼 전용*/
+.signup-form {
+  gap: 12px;
+}
+
+/*입력 항목의 라벨 영역
+    -"이메일" "비밀번호" "이메일" 등등*/
+.form-label {
+  display: flex;
+  flex-direction: column;
+  color: #243149;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+/*입력 박스 공통 영역
+    -아이디, 비밀번호, 이메일 등에 사용
+    -아이콘에도 사용*/
+.input-box {
+  height: 54px;
+  margin-top: 8px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #96a2b2; /*입력해야할 칸의 색상*/
+  border: 1px solid var(--line); /*테두리*/
+  border-radius: 10px;
+  background: white;
+}
+
+.input-box input,
+.input-box select {
+  width: 100%;
+  height: 100%;
+  border: none;
+  outline: none;
+  color: #25314a;
+  background: transparent;
+  font-size: 15px;
+}
+
+/*입력 박스 안에 문구 색상 설정*/
+.input-box input::placeholder,
+.email-input input::placeholder {
+  color: #aeb7c5;
+}
+
+/*대학교 선택을 위한 박스 설정
+    -마우스를 통한 선택할 부분 표시*/
+.input-box select {
+  cursor: pointer;
+}
+
+/*비밀번호 보이기/숨기기 버튼 설정
+    -아이콘 활용*/
+.icon-button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  color: #8e99aa;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer; /*마우스를 통한 상호작용*/
+}
+
+/*주요한 버튼 영역
+    -로그인 페이지 : 로그인 버튼 파트
+    -회원가입 페이지 : 회원가입 버튼 파트*/
+.primary-button {
+  height: 68px;
+  border: none;
+  border-radius: 11px;
+  color: white;
+  background: linear-gradient(135deg, var(--basic), var(--basic-dark));
+  font-size: 20px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 14px 27px rgba(7, 94, 234, 0.24);
+}
+
+/*폼 하단 구분선
+    -로그인/ 회원가입 버튼 아래에 구분선 추가*/
+.form-line-divider {
+  height: 1px;
+  margin: 9px 0;
+  background: #dfe6ef;
+}
+
+/*로그인 페이지 구분선 아래 영역
+    -왼쪽 -> 비밀번호 찾기
+    -오른쪽 -> 회원가입*/
+.form-bottom-links {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--basic);
+  font-size: 15px;
+  font-weight: 750;
+}
+
+/*회원가입 페이지 구분선 아래 영역
+    -이미 계정 있다면 -> "로그인"의 문구 영역*/
+.auth-guide-text {
+  margin: 0;
+  color: #7b8798;
+  text-align: center;
+  font-size: 16px;
+}
+
+/*회원가입 페이지 구분선 아래 "로그인" 색상 설정*/
+.auth-guide-text a {
+  color: var(--basic);
+  font-weight: 800;
+}
+
+/* 학교 이메일 입력 영역
+    -왼쪽 영역 : 이메일 입력
+    -오른쪽 영역 : 학교 도메인 표시*/
+.email-input {
+  height: 54px;
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: 1fr auto; /*입력 칸은 남는 공간, 도메인 내용칸은 해당 내용 크기만큼 설정*/
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: white;
+}
+
+/*이메일 수기 입력칸 영역
+    -직접 입력해야하는 부분*/
+.email-input input {
+  min-width: 0;
+  padding: 0 16px;
+  border: none;
+  outline: none;
+  color: #25314a;
+  font-size: 15px;
+}
+
+/*이메일 도메인 표시 영역
+    -@dankook.ac.kr등*/
+.email-input strong {
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  color: #6c7686;
+  background: #f5f7fb;
+  border-left: 1px solid var(--line);
+  font-size: 15px;
+}
+
+/*이메일 입력 아래 작은 보조 설명 문구 영역*/
+.form-desc small {
+  margin-top: 8px;
+  color: #7b8798;
+  font-size: 13px;
+  font-weight: 500;
+}
