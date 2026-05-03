@@ -1,0 +1,136 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f4f7fb;
+}
+
+.form-card {
+    width: 420px;
+    margin: 70px auto;
+    padding: 38px;
+    background-color: white;
+    border-radius: 18px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+h1 {
+    margin: 0 0 8px;
+    font-size: 38px;
+    color: #14213d;
+}
+
+.subtitle {
+    margin-bottom: 28px;
+    color: #666;
+    font-size: 15px;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+}
+
+input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 14px;
+    margin-bottom: 18px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+input:focus {
+    outline: none;
+    border-color: #2f6fed;
+}
+
+button {
+    width: 100%;
+    padding: 15px;
+    background-color: #2f6fed;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 17px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #245bd1;
+}
+
+.option-row {
+    margin-bottom: 20px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: normal;
+    color: #555;
+}
+
+.checkbox-label input {
+    width: auto;
+    margin: 0;
+}
+
+.link-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 18px;
+}
+
+a {
+    color: #2f6fed;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.tab-box {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 22px;
+}
+
+.tab {
+    background-color: white;
+    color: #555;
+    border: 1px solid #ddd;
+    font-size: 14px;
+    padding: 12px;
+}
+
+.tab.active {
+    border-color: #2f6fed;
+    color: #2f6fed;
+    background-color: #f0f5ff;
+}
+
+.info-text {
+    margin-top: -10px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    color: #777;
+}
+
+.agree {
+    margin-bottom: 20px;
+}
+
+.bottom-text {
+    margin-top: 22px;
+    text-align: center;
+    font-size: 14px;
+    color: #666;
+}
+
+.hidden {
+    display: none;
+}

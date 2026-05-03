@@ -1,0 +1,64 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f3f5f7;
+}
+
+.container {
+    width: 350px;
+    margin: 120px auto;
+    padding: 30px;
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+h1 {
+    margin-bottom: 25px;
+}
+
+input {
+    width: 90%;
+    padding: 12px;
+    margin-bottom: 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+}
+
+.info-text {
+    font-size: 12px;
+    color: gray;
+    margin-top: -8px;
+    margin-bottom: 8px;
+
+    padding-left: 5%;
+    width: 90%;
+}
+
+.bottom-text {
+    font-size: 14px;
+    margin-top: 15px;
+    text-align: center;
+}
+
+button {
+    width: 97%;
+    padding: 12px;
+    background-color: #007bff;  /* 파란색 */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 400;
+}
+
+button:hover {
+    background-color: #0056b3;  /* 진한 파랑 */
+}
+
+a {
+    color: #007bff;
+    text-decoration: none;
+}
