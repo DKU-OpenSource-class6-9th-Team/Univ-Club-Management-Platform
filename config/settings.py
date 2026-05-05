@@ -140,4 +140,24 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    "http://127.0.0.1:5173",
 ]
+
+CORS_ALLOW_CREDENTIALS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+
+#CORS_ALLOWED_ORIGINS
+#→ React 개발 서버에서 Django API 요청 허용
+
+#CORS_ALLOW_CREDENTIALS
+#→ 세션 쿠키 포함 요청 허용
+
+#CSRF_TRUSTED_ORIGINS
+#→ React 주소를 신뢰할 수 있는 요청 출처로 등록

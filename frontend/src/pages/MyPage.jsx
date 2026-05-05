@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthLayout from '../components/AuthLayout.jsx';
-import { getProfile, logout } from '../api/accounts.js';
+import { getCurrentUser, logout } from '../api/accounts.js';
 
 function MyPage() {
   const navigate = useNavigate();
@@ -10,31 +10,29 @@ function MyPage() {
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    const loginUser = JSON.parse(localStorage.getItem('loginUser'));
-
-    if (!loginUser) {
-      alert('로그인이 필요합니다.');
-      navigate('/login');
-      return;
-    }
-
-    async function fetchProfile() {
+    async function fetchCurrentUser() {
       try {
-        const data = await getProfile(loginUser.id);
-        setProfile(data);
+        const data = await getCurrentUser();
+        setProfile(data.profile);
       } catch (error) {
         console.error(error);
-        setErrorMessage('사용자 정보를 불러오지 못했습니다.');
+        alert('로그인이 필요합니다.');
+        navigate('/login');
       }
     }
 
-    fetchProfile();
+    fetchCurrentUser();
   }, [navigate]);
 
-  const handleLogout = () => {
-    logout();
-    alert('로그아웃되었습니다.');
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      alert('로그아웃되었습니다.');
+      navigate('/login');
+    } catch (error) {
+      console.error(error);
+      setErrorMessage('로그아웃 처리 중 문제가 발생했습니다.');
+    }
   };
 
   if (errorMessage) {
