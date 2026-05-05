@@ -82,3 +82,33 @@ class LoginSerializer(serializers.Serializer):
         attrs["user"] = user
         return attrs
 # username/password 받음 → Django authenticate로 계정 확인 → 맞으면 user 반환 → 틀리면 에러 반환
+
+class ProfileSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    email = serializers.EmailField(source='user.email', read_only=True)
+
+    class Meta:
+        model = Profile
+        fields = [
+            'id',
+            'user',
+            'username',
+            'email',
+            'school_name',
+            'department',
+            'student_id',
+            'nickname',
+            'phone_number',
+            'role',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = [
+            'id',
+            'user',
+            'username',
+            'email',
+            'role',
+            'created_at',
+            'updated_at',
+        ]

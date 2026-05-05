@@ -300,3 +300,142 @@ a {
   font-size: 13px;
   font-weight: 500;
 }
+
+/* 마이페이지 정보 카드 영역 */
+.profile-card {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* 마이페이지 상단 사용자 요약 영역 */
+.profile-summary {
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #f8fbff;
+}
+
+/* 사용자 닉네임 첫 글자 아바타 */
+.profile-avatar {
+  width: 58px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  background: linear-gradient(135deg, var(--basic), var(--basic-dark));
+  border-radius: 18px;
+  font-size: 26px;
+  font-weight: 800;
+  box-shadow: 0 12px 24px rgba(7, 94, 234, 0.2);
+}
+
+/* 사용자 요약 텍스트 */
+.profile-summary h3 {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 22px;
+  letter-spacing: -0.6px;
+}
+
+.profile-summary p {
+  margin: 5px 0 0;
+  color: var(--text-sub);
+  font-size: 14px;
+}
+
+/* 마이페이지 상세 정보 목록 */
+.profile-info-list {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: white;
+}
+
+/* 마이페이지 상세 정보 한 줄 */
+.profile-info-row {
+  min-height: 52px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid #edf2f8;
+}
+
+.profile-info-row:last-child {
+  border-bottom: none;
+}
+
+.profile-info-row span {
+  color: #7b8798;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.profile-info-row strong {
+  color: #25314a;
+  font-size: 15px;
+  font-weight: 800;
+  text-align: right;
+  word-break: break-all;
+}
+
+/* 마이페이지 버튼 묶음 */
+.profile-button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Link 태그를 버튼처럼 사용 */
+.primary-link-button {
+  height: 58px;
+  border-radius: 11px;
+  color: white;
+  background: linear-gradient(135deg, var(--basic), var(--basic-dark));
+  font-size: 18px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 14px 27px rgba(7, 94, 234, 0.24);
+}
+
+/* 보조 버튼 */
+.secondary-button {
+  height: 56px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  color: #5d697b;
+  background: white;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* 에러 메시지 */
+.form-error-text {
+  margin: 0;
+  padding: 12px 14px;
+  color: #d93025;
+  background: #fff3f1;
+  border: 1px solid #ffd4ce;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* 로딩 문구 */
+.profile-loading-text {
+  margin: 0;
+  color: var(--text-sub);
+  font-size: 15px;
+  font-weight: 600;
+}
