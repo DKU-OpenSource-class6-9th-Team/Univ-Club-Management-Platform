@@ -18,17 +18,9 @@ function ProfileEditPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const loginUser = JSON.parse(localStorage.getItem('loginUser'));
-
-    if (!loginUser) {
-      alert('로그인이 필요합니다.');
-      navigate('/login');
-      return;
-    }
-
     async function fetchProfile() {
       try {
-        const data = await getProfile(loginUser.id);
+        const data = await getProfile();
 
         setFormData({
           school_name: data.school_name,
@@ -39,7 +31,8 @@ function ProfileEditPage() {
         });
       } catch (error) {
         console.error(error);
-        setErrorMessage('프로필 정보를 불러오지 못했습니다.');
+        alert('로그인이 필요합니다.');
+        navigate('/login');
       }
     }
 
@@ -58,19 +51,11 @@ function ProfileEditPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const loginUser = JSON.parse(localStorage.getItem('loginUser'));
-
-    if (!loginUser) {
-      alert('로그인이 필요합니다.');
-      navigate('/login');
-      return;
-    }
-
     setErrorMessage('');
     setIsSubmitting(true);
 
     try {
-      await updateProfile(loginUser.id, formData);
+      await updateProfile(formData);
       alert('프로필이 수정되었습니다.');
       navigate('/mypage');
     } catch (error) {

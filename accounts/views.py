@@ -3,6 +3,9 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from django.contrib.auth import login as auth_login, logout as auth_logout
+from django.middleware.csrf import get_token
+from django.views.decorators.csrf import ensure_csrf_cookie
 
 from .models import Profile
 from .serializers import SignUpSerializer, LoginSerializer, ProfileSerializer
@@ -48,6 +51,8 @@ def login_view(request):
     if serializer.is_valid():
         user = serializer.validated_data["user"]
 
+        auth_login(request, user)
+
         return Response(
             {
                 "message": "로그인에 성공했습니다.",
@@ -65,8 +70,16 @@ def login_view(request):
 
 @api_view(['GET', 'PATCH'])
 @permission_classes([AllowAny])
-def profile_detail(request, user_id):
-    profile = get_object_or_404(Profile, user_id=user_id)
+def profile_detail(request):
+    if not request.user.is_authenticated:
+        return Response(
+            {
+                "message": "로그인이 필요합니다."
+            },
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+
+    profile = get_object_or_404(Profile, user=request.user)
 
     if request.method == 'GET':
         serializer = ProfileSerializer(profile)
@@ -92,3 +105,52 @@ def profile_detail(request, user_id):
 
 #PATCH /api/accounts/profile/사용자ID/
 #→ 해당 사용자의 Profile 정보 수정
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def logout_view(request):
+    auth_logout(request)
+
+    return Response(
+        {
+            "message": "로그아웃되었습니다."
+        },
+        status=status.HTTP_200_OK
+    )
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def current_user(request):
+    if not request.user.is_authenticated:
+        return Response(
+            {
+                "message": "로그인이 필요합니다."
+            },
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+
+    profile = request.user.profile
+    serializer = ProfileSerializer(profile)
+
+    return Response(
+        {
+            "user": {
+                "id": request.user.id,
+                "username": request.user.username,
+                "email": request.user.email,
+            },
+            "profile": serializer.data,
+        },
+        status=status.HTTP_200_OK
+    )
+
+#GET /api/accounts/me/ → 현재 세션 기준으로 로그인한 사용자 정보 반환
+
+
+@ensure_csrf_cookie
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def csrf_token(request):
+    return Response({
+        "csrfToken": get_token(request)
+    })
