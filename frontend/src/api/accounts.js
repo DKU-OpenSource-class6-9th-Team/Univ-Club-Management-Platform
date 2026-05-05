@@ -40,3 +40,7 @@ export async function login(loginData) {
 
   return data;
 }
+
+export function logout() {
+  localStorage.removeItem("loginUser");
+}
