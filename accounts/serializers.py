@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.contrib.auth import authenticate
 from rest_framework import serializers
 
 from .models import Profile
@@ -64,3 +65,20 @@ class SignUpSerializer(serializers.Serializer):
         return user
     
 #User 생성 → Profile 생성 → 둘을 1:1로 연결
+
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        username = attrs.get("username")
+        password = attrs.get("password")
+
+        user = authenticate(username=username, password=password)
+
+        if not user:
+            raise serializers.ValidationError("아이디 또는 비밀번호가 올바르지 않습니다.")
+
+        attrs["user"] = user
+        return attrs
+# username/password 받음 → Django authenticate로 계정 확인 → 맞으면 user 반환 → 틀리면 에러 반환
