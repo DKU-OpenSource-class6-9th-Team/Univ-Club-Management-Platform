@@ -1,10 +1,11 @@
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from .serializers import SignUpSerializer, LoginSerializer
+from .models import Profile
+from .serializers import SignUpSerializer, LoginSerializer, ProfileSerializer
 
 
 @api_view(['GET'])
@@ -61,3 +62,33 @@ def login_view(request):
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 # login api view 구현
+
+@api_view(['GET', 'PATCH'])
+@permission_classes([AllowAny])
+def profile_detail(request, user_id):
+    profile = get_object_or_404(Profile, user_id=user_id)
+
+    if request.method == 'GET':
+        serializer = ProfileSerializer(profile)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    if request.method == 'PATCH':
+        serializer = ProfileSerializer(profile, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {
+                    "message": "프로필이 수정되었습니다.",
+                    "profile": serializer.data,
+                },
+                status=status.HTTP_200_OK
+            )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+#GET /api/accounts/profile/사용자ID/
+#→ 해당 사용자의 Profile 정보 조회
+
+#PATCH /api/accounts/profile/사용자ID/
+#→ 해당 사용자의 Profile 정보 수정
