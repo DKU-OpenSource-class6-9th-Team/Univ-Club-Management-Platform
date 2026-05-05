@@ -142,3 +142,27 @@ export async function updateProfile(profileData) {
 
   return data;
 }
+
+export async function delete_account(deleteAccountData) {
+  const csrfHeaders = await getCsrfHeaders();
+
+  const response = await fetch(`${API_BASE_URL}/delete-account/`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      ...csrfHeaders,
+    },
+    credentials: "include",
+    body: JSON.stringify(deleteAccountData),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw data;
+  }
+
+  localStorage.removeItem("loginUser");
+
+  return data;
+}

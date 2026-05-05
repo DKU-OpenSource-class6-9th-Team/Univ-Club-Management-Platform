@@ -439,3 +439,135 @@ a {
   font-size: 15px;
   font-weight: 600;
 }
+
+/*회원탈퇴 버튼*/
+.delete-account-button {
+  width: 100%;
+  height: 56px;
+  border: none;
+  border-radius: 14px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* 회원탈퇴 확인창 배경 */
+.delete-account-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+}
+
+/*회원탈퇴 확인창*/
+.delete-account-confirm-box {
+  position: relative;
+  width: 100%;
+  max-width: 430px;
+  padding: 34px 28px 24px;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
+  text-align: center;
+}
+
+.delete-account-confirm-box h3 {
+  margin: 0 0 16px;
+  color: #dc2626;
+  font-size: 24px;
+}
+
+/*회원탈퇴 안내 메세지*/
+.delete-account-notice {
+  margin: 0 0 22px;
+  color: #ef4444;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.delete-account-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: left;
+}
+
+/*닫기 버튼*/
+.delete-account-close-button {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.delete-account-action-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+/*공통*/
+.delete-account-cancel-button,
+.delete-account-confirm-button {
+  height: 48px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.delete-account-cancel-button {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #374151;
+}
+
+.delete-account-confirm-button {
+  border: none;
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.delete-account-complete-card {
+  padding: 30px 22px;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  background: #ffffff;
+  text-align: center;
+}
+
+.delete-account-complete-icon {
+  width: 65px;
+  height: 65px;
+  margin: 0 auto 22px;
+  border-radius: 50%;
+  background: #dcfce7;
+  color: #16a34a;
+  font-size: 40px;
+  font-weight: 700;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.delete-account-complete-card h3 {
+  margin: 0 0 12px;
+  color: #111827;
+  font-size: 20px;
+}
+
+.delete-account-complete-card p {
+  margin: 0 0 24px;
+  color: #4b5563;
+  font-size: 15px;
+}
