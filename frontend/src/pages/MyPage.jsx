@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthLayout from '../components/AuthLayout.jsx';
-import { getCurrentUser, logout } from '../api/accounts.js';
+import DeleteAccount from '../components/DeleteAccountConfirm.jsx';
+import { delete_account, getProfile, logout } from '../api/accounts.js';
 
 function MyPage() {
   const navigate = useNavigate();
@@ -9,31 +10,70 @@ function MyPage() {
   const [profile, setProfile] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
 
+  //회원탈퇴용 state 추가
+  const [showDeleteNotice, setShowDeleteNotice] = useState(false);
+  const [deleteAccountError, setDeleteAccountError] = useState('');
+
   useEffect(() => {
-    async function fetchCurrentUser() {
+    const loginUser = JSON.parse(localStorage.getItem('loginUser'));
+
+    if (!loginUser) {
+      alert('로그인이 필요합니다.');
+      navigate('/login');
+      return;
+    }
+
+    async function fetchProfile() {
       try {
-        const data = await getCurrentUser();
-        setProfile(data.profile);
+        const data = await getProfile(loginUser.id);
+        setProfile(data);
       } catch (error) {
         console.error(error);
-        alert('로그인이 필요합니다.');
-        navigate('/login');
+        setErrorMessage('사용자 정보를 불러오지 못했습니다.');
       }
     }
 
-    fetchCurrentUser();
+    fetchProfile();
   }, [navigate]);
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      alert('로그아웃되었습니다.');
-      navigate('/login');
-    } catch (error) {
-      console.error(error);
-      setErrorMessage('로그아웃 처리 중 문제가 발생했습니다.');
-    }
+  const handleLogout = () => {
+    logout();
+    alert('로그아웃되었습니다.');
+    navigate('/login');
   };
+
+  const deleteAccount_confirm = () => {
+    setDeleteAccountError('');
+    setShowDeleteNotice(true);
+  };
+
+  const cancelDeleteAccount = () => {
+    setShowDeleteNotice(false);
+    setDeleteAccountError('');
+  };
+
+  const confirmDeleteAccount = async ({ password }) => {
+  setDeleteAccountError('');
+
+  try {
+    await delete_account({
+      password: password,
+    });
+
+    alert('회원탈퇴 되었습니다.');
+    navigate('/delete-account-complete');
+  } catch (error) {
+    console.error(error);
+
+    if (error.password) {
+      setDeleteAccountError('비밀번호가 올바르지 않습니다.');
+    } else if (error.message) {
+      setDeleteAccountError(error.message);
+    } else {
+      setDeleteAccountError('오류가 발생하여 회원탈퇴에 실패했습니다. 다시 입력해주세요.');
+    }
+  } 
+};
 
   if (errorMessage) {
     return (
@@ -114,8 +154,24 @@ function MyPage() {
           >
             로그아웃
           </button>
+
+          <button
+            type='button'
+            className='delete-account-button'
+            onClick={deleteAccount_confirm}
+          >
+            회원탈퇴
+          </button>
         </div>
       </div>
+
+      <DeleteAccount
+        isOpen={showDeleteNotice}
+        errorMessage={deleteAccountError}
+        cancel={cancelDeleteAccount}
+        confirm={confirmDeleteAccount}
+        />
+
     </AuthLayout>
   );
 }

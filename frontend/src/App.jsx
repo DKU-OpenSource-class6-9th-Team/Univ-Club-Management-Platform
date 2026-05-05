@@ -5,6 +5,7 @@ import MyPage from './pages/MyPage.jsx'
 import ProfileEditPage from './pages/ProfileEditPage.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import PublicOnlyRoute from './components/PublicOnlyRoute.jsx'
+import DeleteAccountComplete from './pages/AccountDeleteComplete.jsx'
 
 function App() {
   return (
@@ -46,6 +47,13 @@ function App() {
           </ProtectedRoute>
         }
       />
+
+      <Route 
+        path="/delete-account-complete" 
+        element={<DeleteAccountComplete />
+        } 
+      />
+
     </Routes>
   )
 }

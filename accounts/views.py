@@ -8,7 +8,7 @@ from django.middleware.csrf import get_token
 from django.views.decorators.csrf import ensure_csrf_cookie
 
 from .models import Profile
-from .serializers import SignUpSerializer, LoginSerializer, ProfileSerializer
+from .serializers import SignUpSerializer, LoginSerializer, ProfileSerializer, DeleteAccountSerializer
 
 
 @api_view(['GET'])
@@ -145,6 +145,45 @@ def current_user(request):
     )
 
 #GET /api/accounts/me/ → 현재 세션 기준으로 로그인한 사용자 정보 반환
+
+#회원탈퇴
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+def delete_account(request):
+    if not request.user.is_authenticated:
+        return Response(
+            {
+                "message": "로그인이 필요합니다."
+            },
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+
+    serializer = DeleteAccountSerializer(data=request.data)
+
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    password = serializer.validated_data["password"]
+
+    if not request.user.check_password(password):
+        return Response(
+            {
+                "password": "비밀번호가 올바르지 않습니다."
+            },
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    user = request.user
+
+    auth_logout(request)
+    user.delete()
+
+    return Response(
+        {
+            "message": "회원탈퇴가 완료되었습니다."
+        },
+        status=status.HTTP_200_OK
+    )
 
 
 @ensure_csrf_cookie
