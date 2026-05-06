@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthLayout from '../components/AuthLayout.jsx';
 import DeleteAccount from '../components/DeleteAccountConfirm.jsx';
-import { delete_account, getProfile, logout } from '../api/accounts.js';
+import { delete_account, getCurrentUser, logout } from '../api/accounts.js';
 
 function MyPage() {
   const navigate = useNavigate();
@@ -15,32 +15,30 @@ function MyPage() {
   const [deleteAccountError, setDeleteAccountError] = useState('');
 
   useEffect(() => {
-    const loginUser = JSON.parse(localStorage.getItem('loginUser'));
-
-    if (!loginUser) {
+  async function fetchCurrentUser() {
+    try {
+      const data = await getCurrentUser();
+      setProfile(data.profile);
+    } catch (error) {
+      console.error(error);
       alert('로그인이 필요합니다.');
       navigate('/login');
-      return;
     }
+  }
 
-    async function fetchProfile() {
-      try {
-        const data = await getProfile(loginUser.id);
-        setProfile(data);
-      } catch (error) {
-        console.error(error);
-        setErrorMessage('사용자 정보를 불러오지 못했습니다.');
-      }
-    }
+  fetchCurrentUser();
+}, [navigate]);
 
-    fetchProfile();
-  }, [navigate]);
-
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+  try {
+    await logout();
     alert('로그아웃되었습니다.');
     navigate('/login');
-  };
+  } catch (error) {
+    console.error(error);
+    setErrorMessage('로그아웃 처리 중 문제가 발생했습니다.');
+  }
+};
 
   const deleteAccount_confirm = () => {
     setDeleteAccountError('');
