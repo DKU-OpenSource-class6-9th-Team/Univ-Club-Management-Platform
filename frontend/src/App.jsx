@@ -6,6 +6,8 @@ import ProfileEditPage from './pages/ProfileEditPage.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import PublicOnlyRoute from './components/PublicOnlyRoute.jsx'
 import DeleteAccountComplete from './pages/AccountDeleteComplete.jsx'
+import ClubCreatePage from './pages/club/ClubCreatePage.jsx'
+import ClubDashboardPage from './pages/club/ClubDashboardPage.jsx'
 
 function App() {
   return (
@@ -53,7 +55,11 @@ function App() {
         element={<DeleteAccountComplete />
         } 
       />
-
+      
+      <Route path="/clubs/create" element={<ClubCreatePage />} />
+  
+      <Route path="/club/dashboard" element={<ClubDashboardPage />} />
+    
     </Routes>
   )
 }
