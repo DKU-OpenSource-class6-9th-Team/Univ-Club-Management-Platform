@@ -9,6 +9,7 @@ import DeleteAccountComplete from './pages/AccountDeleteComplete.jsx'
 import ClubCreatePage from './pages/club/ClubCreatePage.jsx'
 import ClubDashboardPage from './pages/club/ClubDashboardPage.jsx'
 import ClubFeePage from './pages/club/ClubFeePage.jsx'
+import ClubManagerRoute from './components/ClubManagerRoute.jsx'
 
 function App() {
   return (
@@ -67,6 +68,15 @@ function App() {
           <ProtectedRoute>
             <ClubFeePage />
           </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path = "clubs/:clubId/fee"
+        element = {
+          <ClubManagerRoute>
+            <ClubFeePage />
+          </ClubManagerRoute>
         }
       />
     
