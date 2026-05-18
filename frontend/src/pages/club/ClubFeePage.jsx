@@ -32,6 +32,13 @@ import { formatWon } from './fee/utils/feeFormat.js' // 입력받은 숫자 100�
 import '../../styles/club/clubDashboard.css'
 import '../../styles/club/clubFee.css'
 
+//fees.js에 만들어져있는 api 함수를 가져오는 코드
+import {
+  createFeeTransaction,
+  getFeeSummary,
+  getFeeTransactions,
+} from '../../api/fees.js'
+
 
 //컴포넌트 시작
 //회비 관리 페이지 담당하는 React 컴포넌트
@@ -39,12 +46,17 @@ function ClubFeePage() {
   const navigate = useNavigate() //로그아웃 후 로그인페이지 이동에 사용
   const { clubId } = useParams() //동아리의 ID를 가져오기위해 사용
 
+  const effectiveClubId = clubId
+
   const loginUser = JSON.parse(localStorage.getItem('loginUser')) || {}
 
   const [members, setMembers] = useState([]) //회원별 납부현황 데이터 저장
   const [transactions, setTransactions] = useState([]) //최근 수입/지출 내역 저장
   const [summary, setSummary] = useState(null) //상단 카드영역 내용 저장
   const [sideStats, setSideStats] = useState(null) //우하단 요약 카드 내용 저장
+
+  const [isLoading, setIsLoading] = useState(false) //회비 데이터를 불러오는 중인지 상태
+  const [isSubmitting, setIsSubmitting] = useState(false) //등록 요청 진행중인지 상태
 
 
   const [memberFilter, setMemberFilter] = useState('전체') //납부 현황 필터
@@ -104,18 +116,60 @@ function ClubFeePage() {
     alert(`${featureName} 기능은 현재 구현 중입니다. API 연동 후 제공될 예정입니다.`)
   }
 
-//미구현 기능(실제 데이터를 불러오는 단계)
+  //백엔드에서 회비 데이터 불러오는 함수 (상단 요약 카드 API, 최근 수입/지출 내역 API)
+  const loadFeeData = async () => {
+    if(!effectiveClubId) return
+
+    try{
+      setIsLoading(true)
+
+      //요약카드, 수입/지출내역 동시에 요청하는 코드
+      const [summaryData, transactionData] = await Promise.all([
+        getFeeSummary(effectiveClubId),
+        getFeeTransactions(effectiveClubId),
+      ])
+
+      setSummary(summaryData) //불러온 값 summary 상태에 저장
+      setTransactions(transactionData.results || []) //내역 배열을 transaction 상태에 저장
+    } catch (error){
+      console.error('회비 데이터 조회 실패:', error)
+      alert('회비 데이터를 불러오지 못했습니다.')
+    } finally{
+      setIsLoading(false)
+    }
+  }
+
+
+//페이지가 처음 렌더링 될 때 회비 데이터를 불러오는 역할 수행
 useEffect(() => {
-  // TODO: 백엔드 fees API 구현 후 이 위치에서 실제 회비 데이터를 불러오기
-  // 예시:
-  // const summaryData = await getFeeSummary(clubId)
-  // const paymentData = await getFeePayments(clubId)
-  // const transactionData = await getFeeTransactions(clubId)
-  //
-  // setSummary(summaryData)
-  // setMembers(paymentData.results)
-  // setTransactions(transactionData.results)
-}, [clubId])
+  loadFeeData()
+}, [effectiveClubId])
+
+
+//수입/지출 내역 등록하는 함수(FeeRegisterForm에서 호출됨)
+const handleCreateTransaction = async (formData) => {
+  if(!effectiveClubId){
+    alert('동아리 ID가 없어 수입/지출 내역을 등록할 수 없습니다.')
+    return false
+  }
+
+  try{
+    setIsSubmitting(true)
+
+    await createFeeTransaction(effectiveClubId, formData) //실제 백엔드 등록 API를 호출하는 코드
+    alert('수입/지출 내역 등록 완료되었습니다.')
+    await loadFeeData() //등록 후 데이터를 다시 불러옴(갱신)
+
+    return true
+  } catch (error){
+    console.error('수입/지출 내역 등록 실패:',error)
+    alert(error?.message || '수입/지출 내역 등록을 실패했습니다.')
+
+    return false
+  } finally {
+    setIsSubmitting(false) //상태 종료
+  }
+}
 
 
   //전체 화면 구조//
@@ -215,13 +269,9 @@ useEffect(() => {
         </header>
 
 
-        <div className="fee-api-ready-notice">
-          회비 데이터 API 연동 작업 전입니다.
-        </div>
-
-
         {/*영수증 일괄 다운로드, 엑셀 다운로드 버튼 영역*/}
         <FeeActionButtons onFeatureInProgress={showFeatureInProgress} />
+
 
 
         {/*상단 요약 카드 영역*/}
@@ -242,9 +292,11 @@ useEffect(() => {
 
             {/*수입/지출 등록 폼 영역*/}
             <FeeRegisterForm
-              transactionType = {transactionType}
-              setTransactionType = {setTransactionType}
-              onFeatureInProgress = {showFeatureInProgress}
+              transactionType = {transactionType} //현재 수입/지출 선택값 form에 넘김
+              setTransactionType = {setTransactionType} //form 안 수입/지출 버튼을 통해 선택값 변경 가능
+              currentBalance={summary?.balance || 0} //현재 잔액값 form에 넘김
+              onSubmitTransaction={handleCreateTransaction} //form에서 등록 버튼 눌렀을 때 실행할 함수 넘김
+              isSubmitting={isSubmitting}
             />
 
 

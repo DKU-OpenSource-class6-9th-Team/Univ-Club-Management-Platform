@@ -1,6 +1,33 @@
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api' //백엔드 API 기본 경로
 
+
+  // 브라우저 쿠키에서 특정 이름의 쿠키 값을 꺼내는 함수
+// Django CSRF 토큰은 기본적으로 csrftoken이라는 이름의 쿠키에 저장됨
+function getCookie(name) {
+  const cookies = document.cookie ? document.cookie.split('; ') : []
+
+  for (const cookie of cookies) {
+    const [cookieName, ...cookieValueParts] = cookie.split('=')
+
+    if (cookieName === name) {
+      return decodeURIComponent(cookieValueParts.join('='))
+    }
+  }
+
+  return null
+}
+
+// Django에서 CSRF 쿠키를 발급받기 위한 요청
+// POST 요청 전에 이 함수를 호출해서 csrftoken 쿠키가 브라우저에 생기게 함
+async function ensureCsrfCookie() {
+  await fetch(`${API_BASE_URL}/accounts/csrf/`, {
+    method: 'GET',
+    credentials: 'include',
+  })
+}
+
+
   //API 요청에 공통부분을 줄이기 위한 함수
 async function request(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, { //브라우저에서 API요청
@@ -57,21 +84,34 @@ export async function getFeeTransactions(clubId) {
   return request(`/clubs/${clubId}/fees/transactions/`)
 }
 
-//수입/지출 내역 등록하는 함수
+// 수입/지출 내역 등록하는 함수
 export async function createFeeTransaction(clubId, formData) {
-  const response = await fetch( //파일 업로드까지 염두하고 있으므로, 브라우저가 자동으로 header를 만들어야함.
+  // POST 요청 전에 CSRF 쿠키를 먼저 발급받음
+  await ensureCsrfCookie()
+
+  // 브라우저 쿠키에서 csrftoken 값을 꺼냄
+  const csrfToken = getCookie('csrftoken')
+
+  const response = await fetch(
     `${API_BASE_URL}/clubs/${clubId}/fees/transactions/`,
     {
       method: 'POST',
       credentials: 'include',
-      body: formData, //파일 업로드까지 포함할 수 있는 데이터 형식
+      headers: {
+        'X-CSRFToken': csrfToken,
+      },
+      body: formData,
     },
   )
 
   const data = await response.json().catch(() => null)
 
   if (!response.ok) {
-    throw data || new Error('수입/지출 내역 등록에 실패했습니다.')
+    throw new Error(
+      data?.message ||
+        data?.detail ||
+        '수입/지출 내역 등록에 실패했습니다.',
+    )
   }
 
   return data
