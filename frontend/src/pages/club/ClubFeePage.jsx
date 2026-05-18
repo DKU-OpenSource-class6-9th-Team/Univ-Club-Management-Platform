@@ -1,3 +1,10 @@
+/*회비 관리페이지 전체 틀 담당
+- 필요한 라이브러리 및 컴포넌트 import
+- 페이지 상태값 관리
+- 필터, 검색, 페이지네이션
+- 미구현 기능 안내 처리
+(여러 컴포넌트를 불러와 조립)*/
+
 import { useEffect, useMemo, useState } from 'react' //바뀌는 값, 계산결과 저장, 값 변경 시 자동 실행
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { //icon 삽입
@@ -13,13 +20,13 @@ import { //icon 삽입
 } from 'lucide-react'
 
 //각 fee디렉터리의 컴포넌트 추가
-import FeeActionButtons from './fee/components/FeeActionButtons.jsx'
-import FeeSummaryCards from './fee/components/FeeSummary.jsx'
-import FeeRegisterForm from './fee/components/FeeRegisterForm.jsx'
-import RecentTransactionTable from './fee/components/RecentTransactionTable.jsx'
-import MemberPaymentTable from './fee/components/MemberPaymentTable.jsx'
-import FeeSideCards from './fee/components/FeeSideCards.jsx'
-import { formatWon } from './fee/utils/feeFormat.js'
+import FeeActionButtons from './fee/components/FeeActionButtons.jsx' // 영수증 일관 다운로드. 엑셀 다운로드 버튼(이후 추가적인 기능 구현 가능 시)
+import FeeSummaryCards from './fee/components/FeeSummary.jsx'// 상단에 회비 잔액, 이번달 수입/지출, 미납회원, 납부율을 나타내는 카드
+import FeeRegisterForm from './fee/components/FeeRegisterForm.jsx'// 수입/ 지출 내역 등록 폼 영역
+import RecentTransactionTable from './fee/components/RecentTransactionTable.jsx' // 최근 수입/지출 내역 알려주는 테이블 영역
+import MemberPaymentTable from './fee/components/MemberPaymentTable.jsx'// 회원별 납부 현황 테이블 영역
+import FeeSideCards from './fee/components/FeeSideCards.jsx' // 오른쪽 하단 이의제기(나중에 좀 바꿀 듯), 만족도율, 회비사용증빙 카드 영역
+import { formatWon } from './fee/utils/feeFormat.js' // 입력받은 숫자 100단위 ","삽입 및 "원" 형태 추가하는 함수
 
 //왼쪽 사이드바, 로고, 사용자 프로필, 로그아웃 버튼 같은 기본 관리자 레이아웃을 재사용
 import '../../styles/club/clubDashboard.css'
@@ -35,9 +42,9 @@ function ClubFeePage() {
   const loginUser = JSON.parse(localStorage.getItem('loginUser')) || {}
 
   const [members, setMembers] = useState([]) //회원별 납부현황 데이터 저장
-  const [transactions, setTransactions] = useState([])
-  const [summary, setSummary] = useState(null)
-  const [sideStats, setSideStats] = useState(null)
+  const [transactions, setTransactions] = useState([]) //최근 수입/지출 내역 저장
+  const [summary, setSummary] = useState(null) //상단 카드영역 내용 저장
+  const [sideStats, setSideStats] = useState(null) //우하단 요약 카드 내용 저장
 
 
   const [memberFilter, setMemberFilter] = useState('전체') //납부 현황 필터
@@ -48,7 +55,7 @@ function ClubFeePage() {
 
   const feePath = clubId ? `/clubs/${clubId}/fee` : '/club/fee'
 
-  const filteredMembers = useMemo(() => { //프론트 회원 배열의 검색어, 필터 적용(데이터 연동 시 삭제 예정)
+  const filteredMembers = useMemo(() => { //프론트 회원 배열의 검색어, 필터 적용 결과
     const normalizedSearch = memberSearch.trim().toLowerCase()
 
     return members.filter((member) => {
@@ -63,14 +70,14 @@ function ClubFeePage() {
     })
   }, [members, memberFilter, memberSearch])
 
-  //프론트에서 회원 목록 10명씩 나눠 보여주는 로직(데이터 연동 시 삭제 예정) <백엔드 페이지네이션 시>
+  //프론트에서 회원 목록 10명씩 나눠 보여주는 로직 <백엔드 페이지네이션 시>
   const totalPageCount = Math.max(1, Math.ceil(filteredMembers.length / pageSize))
-  const safeCurrentPage = Math.min(currentPage, totalPageCount)
+  const safeCurrentPage = Math.min(currentPage, totalPageCount) 
   const pageStartIndex = (safeCurrentPage - 1) * pageSize
   const pageEndIndex = Math.min(pageStartIndex + pageSize, filteredMembers.length)
   const pagedMembers = filteredMembers.slice(pageStartIndex, pageEndIndex)
 
-  //프론트 members배열을 통해 회원 수 납부 완료 여부, 납부율 계산(백엔드 페이지 네이션 사용시 수정)
+  //상단 요약 카드의 값 저장 및 계산
   const totalMemberCount = members.length
   const paidMemberCount = members.filter((member) => member.status === '완료').length
   const unpaidMemberCount = members.filter((member) => member.status === '미납').length
@@ -88,15 +95,16 @@ function ClubFeePage() {
     }
   }, [currentPage, totalPageCount])
 
-  const handleLogout = () => { //로그아웃 버튼 누르면 로그아웃, 로그인 페이지 이동(데이터 연동 시 수정)
+  const handleLogout = () => { //로그아웃 버튼 누르면 로그아웃, 로그인 페이지 이동
     localStorage.removeItem('loginUser')
     navigate('/login')
   }
 
-  const showFeatureInProgress = (featureName) => {
+  const showFeatureInProgress = (featureName) => { //미구현 기능일 시 안냐 메세지 출력
     alert(`${featureName} 기능은 현재 구현 중입니다. API 연동 후 제공될 예정입니다.`)
   }
 
+//미구현 기능(실제 데이터를 불러오는 단계)
 useEffect(() => {
   // TODO: 백엔드 fees API 구현 후 이 위치에서 실제 회비 데이터를 불러오기
   // 예시:
@@ -110,7 +118,7 @@ useEffect(() => {
 }, [clubId])
 
 
-  //왼쪽 사이드바 및 오른쪽 메인 회비 페이지 구성 레이아웃//
+  //전체 화면 구조//
   return (
     <div className="club-dashboard-page">
       <aside className="dashboard-sidebar">
@@ -172,7 +180,7 @@ useEffect(() => {
         </button>
       </aside>
 
-        {/*페이지 제목, 설명, 알림버튼, 사용자 프로필 영역 (데이터 연동 시 동아리 이름 수정)*/}
+        {/*페이지 제목, 설명, 알림버튼, 사용자 프로필 영역*/}
       <main className="club-fee-main">
         <header className="club-fee-header"> 
           <div>
@@ -212,9 +220,11 @@ useEffect(() => {
         </div>
 
 
+        {/*영수증 일괄 다운로드, 엑셀 다운로드 버튼 영역*/}
         <FeeActionButtons onFeatureInProgress={showFeatureInProgress} />
 
 
+        {/*상단 요약 카드 영역*/}
         <FeeSummaryCards
           summary={summary}
           unpaidMemberCount={unpaidMemberCount}
@@ -225,11 +235,12 @@ useEffect(() => {
         />
 
 
-        {/*수입 및 지출 내역 등록 UI영역 (데이터 연동 시 수정)*/}
+        {/*수입 및 지출 내역 등록 UI영역*/}
         <section className="club-fee-content-grid">
           <div className="club-fee-left-column">
 
 
+            {/*수입/지출 등록 폼 영역*/}
             <FeeRegisterForm
               transactionType = {transactionType}
               setTransactionType = {setTransactionType}
@@ -237,6 +248,7 @@ useEffect(() => {
             />
 
 
+            {/*최근 수입/지출 내역 영역*/}
             <RecentTransactionTable
               transactions={transactions}
               formatWon={formatWon}
@@ -247,6 +259,7 @@ useEffect(() => {
 
           <div className="club-fee-right-column">
 
+            {/*회원별 납부 현황에 필요한 값*/}
             <MemberPaymentTable
               members={pagedMembers}
               memberFilter={memberFilter}
@@ -266,6 +279,7 @@ useEffect(() => {
             />
 
 
+            {/*우 하단 카드 영역(sideStats가 null이라면 기능 구현중 메세지 출력*/}
             <FeeSideCards sideStats={sideStats} />
           </div>
         </section>
