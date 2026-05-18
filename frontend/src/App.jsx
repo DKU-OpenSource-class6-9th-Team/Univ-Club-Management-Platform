@@ -10,6 +10,7 @@ import MainPage from './pages/MainPage.jsx';
 import ClubCreatePage from './pages/club/ClubCreatePage.jsx'
 import ClubDashboardPage from './pages/club/ClubDashboardPage.jsx'
 import ClubInfoPage from './pages/club/ClubInfoPage.jsx';
+import ClubEditPage from './pages/club/ClubEditPage.jsx';
 
 function App() {
   return (
@@ -79,6 +80,7 @@ function App() {
       <Route path="/main" element={<MainPage />} />
 
       <Route path="/club/create" element={<ClubCreatePage />} />
+      <Route path="/club/:clubId/edit" element={<ClubEditPage />} />
   
       <Route path="/club/:clubId/dashboard" element={<ClubDashboardPage />} />
       <Route path="/club/:clubId/info" element={<ClubInfoPage />} />

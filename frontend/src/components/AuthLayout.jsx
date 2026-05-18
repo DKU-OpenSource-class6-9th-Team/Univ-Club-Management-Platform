@@ -2,7 +2,14 @@ import { Link } from 'react-router-dom';
 //로그인과 회원가입 페이지에서 공통적으로 사용하는 기본 레이아웃
 
 // children: LoginPage.jsx 또는 SignupPage.jsx에서 전달하는 실제 form 내용
-function AuthLayout({ title, subtitle, children,  showAuthLink = true }) {
+function AuthLayout({
+  title, 
+  subtitle,
+  children,
+  headerButtonText = '로그인',
+  headerButtonTo = '/login',
+  showAuthLink = true 
+}) {
   return (
     <div className="auth-page">
         {/*헤더 영역*/}
@@ -18,13 +25,13 @@ function AuthLayout({ title, subtitle, children,  showAuthLink = true }) {
 
         {/*헤더에서의 오른쪽 영역,
             로그인 버튼을 구현, 이후 현황과 같은 버튼 추가 구현 가능*/}
-        <nav className="auth-navigate">
-          {showAuthLink && (
-            <Link to="/login" className="auth-navigate-login">
-            로그인
+        {showAuthLink && (
+          <nav className="auth-navigate">
+            <Link to={headerButtonTo} className="auth-navigate-login">
+              {headerButtonText}
             </Link>
-          )}
-        </nav>
+          </nav>
+        )}
       </header>
 
         {/*본문 영역

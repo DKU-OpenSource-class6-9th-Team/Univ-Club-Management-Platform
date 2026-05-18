@@ -31,6 +31,7 @@ function ClubDashboardPage() {
 
   // 1. 동아리 정보 상태
   const [club, setClub] = useState(null);
+  // 1-1. 동아리 정보를 불러오는 중인지 확인하는 상태
   const [isClubLoading, setIsClubLoading] = useState(true);
 
   // 2. 공지사항 상태
@@ -206,8 +207,8 @@ function ClubDashboardPage() {
 
                 <div>
                   <span>총 동아리원</span>
-                  <strong>-</strong>
-                  <p>데이터 연동 전입니다.</p>
+                  <strong>{club?.member_count ?? 0}명</strong>
+                  <p>현재 활동 중인 동아리원 수입니다.</p>
                 </div>
               </article>
 

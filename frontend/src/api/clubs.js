@@ -69,7 +69,8 @@ export async function createClub(clubData) {
   formData.append("is_recruiting", clubData.is_recruiting);
   formData.append("recruit_start_date", clubData.recruit_start_date);
   formData.append("recruit_end_date", clubData.recruit_end_date);
-  formData.append("max_members", clubData.max_members);
+  formData.append("capacity", clubData.capacity);
+  formData.append("recruit_members", clubData.recruit_members);
   formData.append("leader_name", clubData.leader_name);
   formData.append("contact_phone", clubData.contact_phone);
   formData.append("contact_email", clubData.contact_email);
@@ -110,7 +111,8 @@ export async function updateClub(clubId, clubData) {
   formData.append("is_recruiting", clubData.is_recruiting);
   formData.append("recruit_start_date", clubData.recruit_start_date);
   formData.append("recruit_end_date", clubData.recruit_end_date);
-  formData.append("max_members", clubData.max_members);
+  formData.append("capacity", clubData.capacity);
+  formData.append("recruit_members", clubData.recruit_members);
   formData.append("leader_name", clubData.leader_name);
   formData.append("contact_phone", clubData.contact_phone);
   formData.append("contact_email", clubData.contact_email);
