@@ -1,0 +1,292 @@
+/* ==============================
+   동아리원 관리 페이지
+   - 사이드바 / 브레드크럼 / 상단 헤더 / 요약 카드는 clubDashboard.css 재사용
+================================= */
+
+.club-member-main {
+  padding: 14px;
+}
+
+.club-member-frame {
+  grid-template-rows: 22px 60px 82px minmax(0, 1fr);
+}
+
+/* ==============================
+   요약 카드 아이콘 추가 색상
+================================= */
+
+.summary-icon.new-member {
+  background: #eef2ff;
+  color: #4f63e7;
+}
+
+.summary-icon.regular-member {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.summary-icon.inactive-member {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* ==============================
+   본문 영역
+================================= */
+
+.club-member-content {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.club-member-panel {
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 16px;
+
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+  box-sizing: border-box;
+
+  display: grid;
+  grid-template-rows: 48px minmax(0, 1fr);
+  gap: 12px;
+}
+
+/* 패널 상단 */
+.club-member-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.club-member-panel-header h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.club-member-panel-header p {
+  margin: 5px 0 0;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.club-member-panel-header svg {
+  color: #4f63e7;
+  flex-shrink: 0;
+}
+
+/* ==============================
+   빈 상태 / 로딩 / 에러
+================================= */
+
+.club-member-empty-box {
+  min-height: 0;
+  height: 100%;
+
+  border: 1px dashed #cbd5e1;
+  border-radius: 15px;
+  background: #f8fafc;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.club-member-empty-box p {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.club-member-empty-box.error {
+  background: #fff7f7;
+  border-color: #fecaca;
+}
+
+.club-member-empty-box.error p {
+  color: #dc2626;
+}
+
+/* ==============================
+   테이블
+================================= */
+
+.club-member-table-wrap {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.club-member-table {
+  min-width: 1120px;
+}
+
+/* 테이블 헤더 / 행 공통 */
+.club-member-table-head,
+.club-member-table-row {
+  display: grid;
+  grid-template-columns:
+    1fr
+    1fr
+    1.5fr
+    0.9fr
+    1.1fr
+    0.9fr
+    0.9fr
+    0.8fr
+    0.9fr;
+  align-items: center;
+}
+
+/* 헤더 */
+.club-member-table-head {
+  height: 44px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+
+  color: #334155;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+/* 행 */
+.club-member-table-row {
+  min-height: 54px;
+  border-bottom: 1px solid #edf2f7;
+
+  color: #374151;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.club-member-table-row:last-child {
+  border-bottom: none;
+}
+
+.club-member-table-head span,
+.club-member-table-row span {
+  min-width: 0;
+  padding: 0 12px;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  box-sizing: border-box;
+}
+
+.member-name {
+  color: #111827;
+  font-weight: 900;
+}
+
+/* ==============================
+   역할 / 상태 배지
+================================= */
+
+.member-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  max-width: 100%;
+  height: 27px;
+  padding: 0 10px;
+
+  border-radius: 999px;
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.member-badge.role {
+  background: #eef2ff;
+  color: #4f63e7;
+}
+
+/* 상태 기본 */
+.member-badge.status {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+/* 신입 */
+.member-badge.status.new {
+  background: #eef2ff;
+  color: #4f63e7;
+}
+
+/* 정회원 */
+.member-badge.status.regular {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+/* 휴면 */
+.member-badge.status.inactive {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* 탈퇴 */
+.member-badge.status.withdrawn {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+/* 회비 미납 */
+.member-badge.status.fee_unpaid {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+/* 이용 제한 */
+.member-badge.status.restricted {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+/* ==============================
+   반응형
+================================= */
+
+@media (max-width: 1300px) {
+  .club-member-table {
+    min-width: 1040px;
+  }
+
+  .club-member-table-head,
+  .club-member-table-row {
+    grid-template-columns:
+      0.9fr
+      0.9fr
+      1.4fr
+      0.8fr
+      1fr
+      0.8fr
+      0.8fr
+      0.8fr
+      0.9fr;
+  }
+}
