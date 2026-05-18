@@ -125,7 +125,7 @@ function ClubDashboardPage() {
           )}
         </div>
 
-          <Link to="/club/members" className="sidebar-link">
+          <Link to={`/club/${clubId}/members`} className="sidebar-link">
             <Users size={19} />
             동아리원 관리
           </Link>

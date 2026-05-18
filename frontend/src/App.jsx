@@ -11,6 +11,7 @@ import ClubCreatePage from './pages/club/ClubCreatePage.jsx'
 import ClubDashboardPage from './pages/club/ClubDashboardPage.jsx'
 import ClubInfoPage from './pages/club/ClubInfoPage.jsx';
 import ClubEditPage from './pages/club/ClubEditPage.jsx';
+import ClubMemberListPage from './pages/club/ClubMemberListPage.jsx';
 
 function App() {
   return (
@@ -76,14 +77,20 @@ function App() {
         element={<DeleteAccountComplete />
         } 
       />
-      
-      <Route path="/main" element={<MainPage />} />
 
       <Route path="/club/create" element={<ClubCreatePage />} />
       <Route path="/club/:clubId/edit" element={<ClubEditPage />} />
-  
       <Route path="/club/:clubId/dashboard" element={<ClubDashboardPage />} />
       <Route path="/club/:clubId/info" element={<ClubInfoPage />} />
+
+      <Route
+        path="/club/:clubId/members"
+        element={
+          <ProtectedRoute>
+            <ClubMemberListPage />
+          \</ProtectedRoute>
+        }
+/>
 
     </Routes>
   )
