@@ -5,61 +5,68 @@
 .club-dashboard-page {
   width: 100vw;
   height: 100vh;
-  display: flex;
-  overflow: hidden;
+  overflow: auto;
   background: #f5f7fb;
   color: #1f2937;
+}
+
+.dashboard-fixed-canvas {
+  width: 100%;
+  min-width: 1280px;
+  height: 100%;
+  min-height: 720px;
+  display: flex;
+  background: #f5f7fb;
 }
 
 /* ==============================
    왼쪽 사이드바
 ================================= */
 .dashboard-sidebar {
-  width: 250px;
-  min-width: 250px;
-  height: 100vh;
+  width: 240px;
+  min-width: 240px;
+  height: 100%;
   background: #ffffff;
   border-right: 1px solid #e5e7eb;
-  padding: 22px 16px;
+  padding: 18px 14px;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
 /* 사이드바 상단 로고 */
 .sidebar-logo {
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 4px 8px 22px;
+  padding: 8px 10px 24px;
   border-bottom: 1px solid #eef0f4;
   margin-bottom: 16px;
 }
 
-/* 로고 아이콘 */
-.logo-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 13px;
-  background: #4f63e7;
-  color: #ffffff;
+/* ClubFlow 로고 전체 */
+.sidebar-clubflow-logo {
   display: flex;
   align-items: center;
-  justify-content: center;
-}
+  gap: 12px;
 
-/* 로고 제목 */
-.sidebar-logo strong {
-  display: block;
-  font-size: 16px;
+  text-decoration: none;
   color: #111827;
 }
 
-/* 로고 보조 문구 */
-.sidebar-logo span {
-  display: block;
-  margin-top: 2px;
-  font-size: 12px;
-  color: #6b7280;
+/* CF 글자 */
+.sidebar-logo-cf {
+  color: #4f63e7;
+  font-size: 25px;
+  font-weight: 900;
+  letter-spacing: -1px;
+}
+
+/* ClubFlow 글자 */
+.sidebar-logo-text {
+  color: #111827;
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -0.8px;
 }
 
 /* 사이드바 메뉴 전체 */
@@ -157,27 +164,68 @@
 
 /* ==============================
    오른쪽 메인 영역
-   - 화면 안에 대시보드가 들어오도록 고정
 ================================= */
 .dashboard-main {
   flex: 1;
-  height: 100vh;
-  min-width: 0;
-  padding: 18px;
+  min-width: 1040px;
+  height: 100%;
+  padding: 14px;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* 실제 대시보드 프레임
-   - 헤더 / 요약 카드 / 본문을 세로로 배치 */
+   - 브레드크럼 / 헤더 / 요약 카드 / 본문을 세로로 배치 */
 .dashboard-frame {
   width: 100%;
   height: 100%;
 
   display: grid;
-  grid-template-rows: 74px 96px minmax(0, 1fr);
-  gap: 12px;
+  grid-template-rows: 22px 60px 82px minmax(0, 1fr);
+  gap: 9px;
 
   overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* ==============================
+   브레드크럼
+================================= */
+.dashboard-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  min-height: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.dashboard-breadcrumb a {
+  color: #4b5563;
+  text-decoration: none;
+}
+
+.dashboard-breadcrumb a:hover {
+  color: #4f63e7;
+}
+
+.dashboard-breadcrumb span {
+  white-space: nowrap;
+}
+
+.dashboard-breadcrumb > span {
+  color: #9ca3af;
+}
+
+.dashboard-breadcrumb .breadcrumb-club-name {
+  color: #4b5563;
+}
+
+.dashboard-breadcrumb .breadcrumb-current {
+  color: #4f63e7;
+  font-weight: 800;
 }
 
 /* ==============================
@@ -280,27 +328,32 @@
    상단 요약 카드 4개
 ================================= */
 .summary-grid {
+  min-width: 0;
   min-height: 0;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
+
+  box-sizing: border-box;
 }
 
 /* 요약 카드 */
 .summary-card {
   min-width: 0;
-  height: 96px;
+  height: 82px;
 
   background: #ffffff;
   border: 1px solid #e5e7eb;
-  border-radius: 18px;
-  padding: 14px 16px;
+  border-radius: 16px;
+  padding: 11px 13px;
 
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* 요약 카드 아이콘 공통 */
@@ -333,10 +386,10 @@
   color: #16a34a;
 }
 
-/* 공지사항 아이콘 */
-.summary-icon.notice {
-  background: #fef3c7;
-  color: #d97706;
+/* 미납 인원 아이콘 */
+.summary-icon.unpaid {
+  background: #fee2e2;
+  color: #dc2626;
 }
 
 /* 카드 제목 */
@@ -372,14 +425,17 @@
    - 오른쪽 아래: 회비 관리 + 달력
 ================================= */
 .dashboard-content-grid {
+  min-width: 0;
   min-height: 0;
+  width: 100%;
 
   display: grid;
-  grid-template-columns: 1.25fr 0.75fr 0.75fr;
+  grid-template-columns: 1.1fr 0.8fr 0.8fr;
   grid-template-rows: 1fr 1fr;
-  gap: 12px;
+  gap: 10px;
 
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* 공통 패널 */
@@ -592,4 +648,176 @@
 .calendar-cell span {
   display: block;
   line-height: 1;
+}
+/* ==============================
+   공지사항 입력 영역
+   - 공지 목록 + 하단 입력창을 배치하는 영역
+================================= */
+.notice-body {
+  height: calc(100% - 52px);
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) 54px;
+  gap: 12px;
+}
+
+/* 공지사항 목록 영역 */
+.notice-list {
+  min-height: 0;
+  overflow-y: auto;
+
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 15px;
+  padding: 14px;
+}
+
+/* 공지사항이 없을 때 보여주는 빈 상태 박스 */
+.notice-empty-box {
+  height: 100%;
+  text-align: center;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 빈 상태 제목 */
+.notice-empty-box h3 {
+  margin: 0;
+  font-size: 15px;
+  color: #111827;
+}
+
+/* 빈 상태 설명 */
+.notice-empty-box p {
+  max-width: 330px;
+  margin: 8px auto 0;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* 등록된 공지사항 한 개 */
+.notice-item {
+  display: flex;
+  gap: 10px;
+
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 12px;
+
+  margin-bottom: 10px;
+}
+
+/* 마지막 공지사항은 아래 여백 제거 */
+.notice-item:last-child {
+  margin-bottom: 0;
+}
+
+/* 공지사항 왼쪽 아이콘 박스 */
+.notice-item-icon {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+
+  border-radius: 11px;
+  background: #eef2ff;
+  color: #4f63e7;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 공지 내용 */
+.notice-item p {
+  margin: 0;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+/* 공지 등록 시간 */
+.notice-item span {
+  display: block;
+  margin-top: 5px;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+/* 하단 입력창 + 공지 등록 버튼을 가로로 배치 */
+.notice-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 130px;
+  gap: 10px;
+}
+
+/* 공지 입력창 전체 박스 */
+.notice-input-box {
+  min-width: 0;
+
+  background: #ffffff;
+  border: 1px solid #dbe1ea;
+  border-radius: 13px;
+  padding: 0 12px;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 실제 input 태그 */
+.notice-input-box input {
+  flex: 1;
+  min-width: 0;
+
+  border: none;
+  outline: none;
+  background: transparent;
+
+  font-size: 14px;
+  color: #111827;
+}
+
+/* input placeholder 색상 */
+.notice-input-box input::placeholder {
+  color: #9ca3af;
+}
+
+/* 첨부파일, 이모지 아이콘 버튼 */
+.notice-icon-button {
+  border: none;
+  background: transparent;
+  color: #4f63e7;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+}
+
+/* 공지 등록 버튼 */
+.notice-submit-button {
+  border: none;
+  border-radius: 13px;
+  background: #1d4ed8;
+  color: #ffffff;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* 공지 등록 버튼에 마우스를 올렸을 때 */
+.notice-submit-button:hover {
+  background: #1e40af;
 }

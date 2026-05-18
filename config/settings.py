@@ -46,6 +46,9 @@ INSTALLED_APPS = [
     'corsheaders',
 
     'accounts.apps.AccountsConfig',
+    'applications.apps.ApplicationsConfig',
+    'clubs.apps.ClubsConfig',
+    'recruitments.apps.RecruitmentsConfig',
 ]
 
 MIDDLEWARE = [
