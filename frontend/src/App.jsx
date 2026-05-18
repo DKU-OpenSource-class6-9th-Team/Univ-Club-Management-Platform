@@ -6,6 +6,10 @@ import ProfileEditPage from './pages/ProfileEditPage.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import PublicOnlyRoute from './components/PublicOnlyRoute.jsx'
 import DeleteAccountComplete from './pages/AccountDeleteComplete.jsx'
+import MainPage from './pages/MainPage.jsx';
+import ClubCreatePage from './pages/club/ClubCreatePage.jsx'
+import ClubDashboardPage from './pages/club/ClubDashboardPage.jsx'
+import ClubInfoPage from './pages/club/ClubInfoPage.jsx';
 
 function App() {
   return (
@@ -27,6 +31,24 @@ function App() {
           <PublicOnlyRoute>
             <SignupPage />
           </PublicOnlyRoute>
+        }
+      />
+
+      <Route
+        path="/main"
+        element={
+          <ProtectedRoute>
+            <MainPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/club/create"
+        element={
+          <ProtectedRoute>
+            <ClubCreatePage />
+          </ProtectedRoute>
         }
       />
 
@@ -53,6 +75,13 @@ function App() {
         element={<DeleteAccountComplete />
         } 
       />
+      
+      <Route path="/main" element={<MainPage />} />
+
+      <Route path="/club/create" element={<ClubCreatePage />} />
+  
+      <Route path="/club/:clubId/dashboard" element={<ClubDashboardPage />} />
+      <Route path="/club/:clubId/info" element={<ClubInfoPage />} />
 
     </Routes>
   )

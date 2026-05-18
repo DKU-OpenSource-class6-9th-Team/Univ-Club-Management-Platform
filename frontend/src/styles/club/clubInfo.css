@@ -1,0 +1,294 @@
+/* ==============================
+   동아리 정보 페이지 전용 CSS
+   - 사이드바 / 브레드크럼 / 상단 사용자 정보는 clubDashboard.css를 그대로 사용
+   - 이 파일은 동아리 정보 본문 영역만 담당
+================================= */
+
+/* 대시보드 공통 프레임에서 동아리 정보 페이지용 행 구조로 변경 */
+.club-info-frame {
+  grid-template-rows: 22px 60px minmax(0, 1fr);
+}
+
+/* 동아리 정보 본문 전체 영역 */
+.club-info-content {
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* 대시보드 공통 main을 쓰되, 동아리 정보 페이지에서도 동일한 여백 유지 */
+.dashboard-main.club-info-main {
+  padding: 14px;
+}
+
+/* ==============================
+   대표 정보 카드
+================================= */
+
+/* 동아리 대표 카드 */
+.club-info-hero-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 18px;
+
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: 20px;
+
+  margin-bottom: 10px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+  box-sizing: border-box;
+}
+
+/* 동아리 이미지 영역 */
+.club-info-image-box {
+  height: 150px;
+  border-radius: 16px;
+  background: #eef2ff;
+  color: #4f63e7;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+}
+
+/* 실제 이미지가 있을 때 */
+.club-info-image-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 대표 카드 오른쪽 내용 */
+.club-info-hero-content {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* 동아리명 / 모집 상태 배치 */
+.club-info-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+/* 동아리명 */
+.club-info-title-row h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+/* 동아리 구분 */
+.club-info-title-row p {
+  margin: 7px 0 0;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* 모집 상태 배지 */
+.recruit-badge {
+  flex-shrink: 0;
+  padding: 7px 12px;
+  border-radius: 999px;
+
+  background: #f3f4f6;
+  color: #6b7280;
+
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* 모집중 상태 */
+.recruit-badge.active {
+  background: #ecfdf3;
+  color: #16803c;
+}
+
+/* 동아리 소개 */
+.club-info-description {
+  margin: 18px 0 0;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+/* ==============================
+   요약 카드 영역
+================================= */
+
+/* 요약 카드 4개 배치 */
+.club-info-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+/* 요약 카드 하나 */
+.club-info-summary-card {
+  min-width: 0;
+  height: 82px;
+
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 11px 13px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* 요약 카드 아이콘 */
+.club-info-summary-card svg {
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+
+  padding: 10px;
+  border-radius: 14px;
+  background: #eff6ff;
+  color: #4f63e7;
+
+  box-sizing: border-box;
+}
+
+/* 요약 카드 제목 */
+.club-info-summary-card span {
+  display: block;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* 요약 카드 값 */
+.club-info-summary-card strong {
+  display: block;
+  margin-top: 5px;
+  color: #111827;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* ==============================
+   상세 정보 패널 영역
+================================= */
+
+/* 상세 정보 패널 2열 배치 */
+.club-info-content-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+/* 상세 정보 패널 하나 */
+.club-info-panel {
+  min-width: 0;
+
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 16px;
+
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+  box-sizing: border-box;
+}
+
+/* 패널 제목 영역 */
+.club-info-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 14px;
+}
+
+/* 패널 제목 아이콘 */
+.club-info-panel-title svg {
+  color: #4f63e7;
+}
+
+/* 패널 제목 */
+.club-info-panel-title h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+/* 상세 정보 목록 */
+.club-info-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+/* 상세 정보 한 줄 */
+.club-info-detail-row {
+  display: grid;
+  grid-template-columns: 105px minmax(0, 1fr);
+  gap: 12px;
+
+  padding: 11px 12px;
+  border-radius: 13px;
+  background: #f9fafb;
+
+  box-sizing: border-box;
+}
+
+/* 상세 정보 항목명 */
+.club-info-detail-row span {
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* 상세 정보 값 */
+.club-info-detail-row strong {
+  min-width: 0;
+  color: #111827;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.5;
+
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* ==============================
+   반응형
+================================= */
+
+@media (max-width: 1100px) {
+  .club-info-hero-card {
+    grid-template-columns: 1fr;
+  }
+
+  .club-info-summary-grid,
+  .club-info-content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .club-info-summary-card {
+    height: auto;
+    min-height: 82px;
+  }
+}
