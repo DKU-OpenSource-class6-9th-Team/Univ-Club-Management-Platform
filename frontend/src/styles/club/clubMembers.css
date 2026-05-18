@@ -54,7 +54,7 @@
   box-sizing: border-box;
 
   display: grid;
-  grid-template-rows: 48px minmax(0, 1fr);
+  grid-template-rows: 48px auto minmax(0, 1fr);
   gap: 12px;
 }
 
@@ -289,4 +289,119 @@
       0.8fr
       0.9fr;
   }
+
+  .club-member-filter-bar {
+    grid-template-columns: minmax(240px, 1fr) 130px 130px 150px 82px 86px;
+  }
+}
+
+/* ==============================
+   검색 / 필터 영역
+================================= */
+
+.club-member-filter-bar {
+  min-width: 0;
+
+  display: grid;
+  grid-template-columns: minmax(260px, 1.4fr) 150px 150px 170px 92px 96px;
+  gap: 9px;
+
+  margin-bottom: 12px;
+  box-sizing: border-box;
+}
+
+.member-search-box {
+  min-width: 0;
+  height: 38px;
+
+  border: 1px solid #dbe1ea;
+  border-radius: 12px;
+  background: #ffffff;
+
+  padding: 0 12px;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  box-sizing: border-box;
+}
+
+.member-search-box svg {
+  color: #4f63e7;
+  flex-shrink: 0;
+}
+
+.member-search-box input {
+  flex: 1;
+  min-width: 0;
+
+  border: none;
+  outline: none;
+  background: transparent;
+
+  color: #111827;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.member-search-box input::placeholder {
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.club-member-filter-bar select {
+  min-width: 0;
+  height: 38px;
+
+  border: 1px solid #dbe1ea;
+  border-radius: 12px;
+  background: #ffffff;
+
+  padding: 0 10px;
+
+  color: #374151;
+  font-size: 13px;
+  font-weight: 700;
+
+  outline: none;
+  cursor: pointer;
+}
+
+.member-filter-submit-button,
+.member-filter-reset-button {
+  height: 38px;
+
+  border-radius: 12px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  font-size: 13px;
+  font-weight: 900;
+
+  cursor: pointer;
+}
+
+.member-filter-submit-button {
+  border: none;
+  background: #4f63e7;
+  color: #ffffff;
+}
+
+.member-filter-submit-button:hover {
+  background: #3f51d8;
+}
+
+.member-filter-reset-button {
+  border: 1px solid #dbe1ea;
+  background: #ffffff;
+  color: #6b7280;
+}
+
+.member-filter-reset-button:hover {
+  background: #f3f6ff;
+  color: #4f63e7;
 }
