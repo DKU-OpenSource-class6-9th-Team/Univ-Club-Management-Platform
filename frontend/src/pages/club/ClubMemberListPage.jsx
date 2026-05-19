@@ -295,15 +295,21 @@ function ClubMemberListPage() {
 
   const summary = useMemo(() => {
     const totalCount = members.length;
-    const newCount = members.filter((member) => member.status === 'new').length;
-    const regularCount = members.filter((member) => member.status === 'regular').length;
-    const inactiveCount = members.filter((member) => member.status === 'inactive').length;
+    const excellentCount = members.filter(
+      (member) => member.activity_grade === 'excellent'
+    ).length;
+    const warningCount = members.filter(
+      (member) => member.activity_grade === 'warning'
+    ).length;
+    const dangerCount = members.filter(
+      (member) => member.activity_grade === 'danger'
+    ).length;
 
     return {
       totalCount,
-      newCount,
-      regularCount,
-      inactiveCount,
+      excellentCount,
+      warningCount,
+      dangerCount,
     };
   }, [members]);
 
@@ -452,9 +458,9 @@ function ClubMemberListPage() {
                 </div>
 
                 <div>
-                  <span>신입 회원</span>
-                  <strong>{summary.newCount}</strong>
-                  <p>초기 적응 확인 대상입니다.</p>
+                  <span>우수 등급</span>
+                  <strong>{summary.excellentCount}</strong>
+                  <p>활동 점수 90점 이상 회원입니다.</p>
                 </div>
               </article>
 
@@ -464,9 +470,9 @@ function ClubMemberListPage() {
                 </div>
 
                 <div>
-                  <span>정회원</span>
-                  <strong>{summary.regularCount}</strong>
-                  <p>정상 활동 중인 회원입니다.</p>
+                  <span>주의 등급</span>
+                  <strong>{summary.warningCount}</strong>
+                  <p>활동 점수 30점 이상 50점 미만 회원입니다.</p>
                 </div>
               </article>
 
@@ -476,9 +482,9 @@ function ClubMemberListPage() {
                 </div>
 
                 <div>
-                  <span>휴면 회원</span>
-                  <strong>{summary.inactiveCount}</strong>
-                  <p>활동 확인이 필요합니다.</p>
+                  <span>위험 등급</span>
+                  <strong>{summary.dangerCount}</strong>
+                  <p>활동 점수 30점 미만 회원입니다.</p>
                 </div>
               </article>
             </section>
@@ -679,6 +685,7 @@ function ClubMemberListPage() {
                         <span>역할</span>
                         <span>상태</span>
                         <span>활동 점수</span>
+                        <span>활동 등급</span>
                         <span>가입일</span>
                         <span>관리</span>
                       </div>
@@ -703,6 +710,11 @@ function ClubMemberListPage() {
                             </em>
                           </span>
                           <span>{member.activity_score ?? 0}점</span>
+                          <span>
+                            <em className={`member-badge grade ${member.activity_grade}`}>
+                              {getDisplayValue(member.activity_grade_display)}
+                            </em>
+                          </span>
                           <span>{formatDate(member.joined_at)}</span>
                           <span className="member-action-cell">
                             <button
