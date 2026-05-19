@@ -88,7 +88,7 @@ function App() {
         element={
           <ProtectedRoute>
             <ClubMemberListPage />
-          \</ProtectedRoute>
+          </ProtectedRoute>
         }
 />
 
