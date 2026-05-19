@@ -94,8 +94,8 @@ function ClubDashboardPage() {
           {/* 사이드바 상단 로고 영역 */}
           <div className="sidebar-logo">
             <Link to="/main" className="sidebar-clubflow-logo">
-              <span className="sidebar-logo-cf">CF</span>
-              <span className="sidebar-logo-text">ClubFlow</span>
+              <span className="sidebar-logo-cf">CM</span>
+              <span className="sidebar-logo-text">Club Management</span>
             </Link>
           </div>
 

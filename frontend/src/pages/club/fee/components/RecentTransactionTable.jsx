@@ -56,7 +56,7 @@ function RecentTransactionTable({
               <th>내용</th>
               <th>카테고리</th>
               <th>금액</th>
-              <th>영수증</th>
+              <th>증빙자료</th>
             </tr>
           </thead>
 
@@ -127,7 +127,7 @@ function RecentTransactionTable({
                     <th>금액</th>
                     <th>관련 대상</th>
                     <th>메모</th>
-                    <th>영수증</th>
+                    <th>증빙자료</th>
                   </tr>
                 </thead>
 

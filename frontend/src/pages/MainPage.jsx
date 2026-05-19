@@ -160,8 +160,8 @@ function MainPage() {
       <header className="main-topbar">
         {/* 왼쪽 로고 영역 */}
         <Link to="/main" className="main-logo">
-          <div className="main-logo-mark">CF</div>
-          <span>ClubFlow</span>
+          <div className="main-logo-mark">CM</div>
+          <span>Club Management</span>
         </Link>
 
         {/* 가운데 동아리 검색창 */}

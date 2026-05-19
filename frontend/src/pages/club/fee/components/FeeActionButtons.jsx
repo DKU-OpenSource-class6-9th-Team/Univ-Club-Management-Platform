@@ -8,7 +8,7 @@ function FeeActionButtons({ onFeatureInProgress }) {
         onClick={() => onFeatureInProgress('영수증 일괄 다운로드')}
       >
         <Download size={16} />
-        영수증 일괄 다운로드
+        증빙자료 일괄 다운로드
       </button>
 
       <button
