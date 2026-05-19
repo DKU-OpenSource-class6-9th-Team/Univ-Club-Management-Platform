@@ -137,6 +137,10 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# 업로드된 이미지 파일을 브라우저에서 볼 수 있게 하는 설정
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
