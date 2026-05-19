@@ -53,9 +53,7 @@ function ClubFeePage() {
   const [pageSize, setPageSize] = useState(10) //한 페이지에 보여주는 인원 수
   const [transactionType, setTransactionType] = useState('수입') //수입/지출 등록 중 선택한 값
 
-  const feePath = clubId ? `/clubs/${clubId}/fee` : '/club/fee'
-
-  const filteredMembers = useMemo(() => { //프론트 회원 배열의 검색어, 필터 적용 결과
+  const filteredMembers = useMemo(() => { //프론트 회원 배열의 검색어, 필터 적용(데이터 연동 시 삭제 예정)
     const normalizedSearch = memberSearch.trim().toLowerCase()
 
     return members.filter((member) => {
@@ -121,7 +119,8 @@ useEffect(() => {
   //전체 화면 구조//
   return (
     <div className="club-dashboard-page">
-      <aside className="dashboard-sidebar">
+      <div className="dashboard-fixed-canvas">
+        <aside className="dashboard-sidebar">
         <div className="sidebar-logo">
           <div className="logo-icon">
             <LayoutDashboard size={22} />
@@ -134,31 +133,27 @@ useEffect(() => {
         </div>
 
         <nav className="sidebar-menu">
-          <Link to="/club/dashboard" className="sidebar-link">
+          <Link to={`/club/${clubId}/dashboard`} className="sidebar-link">
             <LayoutDashboard size={19} />
             대시보드
           </Link>
 
-          <div className="sidebar-menu-group">
-            <div className="sidebar-link sidebar-parent-link">
-              <FileText size={19} />
-              동아리 정보
-            </div>
+          <Link to={`/club/${clubId}/info`} className="sidebar-link sidebar-parent-link">
+            <FileText size={19} />
+            동아리 정보
+          </Link>
 
-            <div className="sidebar-submenu">
-              <Link to="/club/edit" className="sidebar-sub-link">
-                <Edit3 size={16} />
-                동아리 정보 수정
-              </Link>
-            </div>
-          </div>
+          <Link to={`/club/${clubId}/edit`} className="sidebar-sub-link">
+            <Edit3 size={16} />
+            동아리 정보 수정
+          </Link>
 
-          <Link to="/club/members" className="sidebar-link">
+          <Link to={`/club/${clubId}/members`} className="sidebar-link">
             <Users size={19} />
             동아리원 관리
           </Link>
 
-          <Link to={feePath} className="sidebar-link active">
+          <Link to={`/club/${clubId}/fee`} className="sidebar-link active">
             <CreditCard size={19} />
             회비 관리
           </Link>
@@ -178,10 +173,11 @@ useEffect(() => {
           <LogOut size={18} />
           로그아웃
         </button>
-      </aside>
+        </aside>
+
 
         {/*페이지 제목, 설명, 알림버튼, 사용자 프로필 영역*/}
-      <main className="club-fee-main">
+        <main className="club-fee-main">
         <header className="club-fee-header"> 
           <div>
             <p className="club-fee-breadcrumb">
@@ -283,7 +279,8 @@ useEffect(() => {
             <FeeSideCards sideStats={sideStats} />
           </div>
         </section>
-      </main>
+        </main>
+      </div>
     </div>
   )
 }

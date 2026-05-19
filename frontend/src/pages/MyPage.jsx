@@ -75,7 +75,12 @@ function MyPage() {
 
   if (errorMessage) {
     return (
-      <AuthLayout title="마이페이지" subtitle="계정 정보를 확인할 수 없습니다.">
+      <AuthLayout
+        title="마이페이지"
+        subtitle="계정 정보를 확인할 수 없습니다."
+        headerButtonText="메인화면으로"
+        headerButtonTo="/main"
+      >
         <p className="form-error-text">{errorMessage}</p>
       </AuthLayout>
     );
@@ -83,14 +88,24 @@ function MyPage() {
 
   if (!profile) {
     return (
-      <AuthLayout title="마이페이지" subtitle="사용자 정보를 불러오는 중입니다.">
+      <AuthLayout
+        title="마이페이지"
+        subtitle="사용자 정보를 불러오는 중입니다."
+        headerButtonText="메인화면으로"
+        headerButtonTo="/main"
+      >
         <p className="profile-loading-text">잠시만 기다려주세요.</p>
       </AuthLayout>
     );
   }
 
   return (
-    <AuthLayout title="마이페이지" subtitle="내 계정 정보를 확인하세요.">
+    <AuthLayout
+      title="마이페이지"
+      subtitle="내 계정 정보를 확인하세요."
+      headerButtonText="메인화면으로"
+      headerButtonTo="/main"
+    >
       <div className="profile-card">
         <div className="profile-summary">
           <div className="profile-avatar">
