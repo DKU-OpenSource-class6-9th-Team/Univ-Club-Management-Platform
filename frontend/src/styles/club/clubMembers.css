@@ -150,16 +150,7 @@
 .club-member-table-head,
 .club-member-table-row {
   display: grid;
-  grid-template-columns:
-    1fr
-    1fr
-    1.5fr
-    0.9fr
-    1.1fr
-    0.9fr
-    0.9fr
-    0.8fr
-    0.9fr;
+  grid-template-columns: 1fr 1fr 1.4fr 1fr 1.2fr 0.9fr 0.9fr 0.8fr 0.9fr 0.8fr;
   align-items: center;
 }
 
@@ -637,5 +628,152 @@
 .join-request-approve-button:disabled,
 .join-request-reject-button:disabled {
   opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.member-action-cell {
+  display: flex;
+  justify-content: center;
+}
+
+.member-edit-button {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  background-color: #2563eb;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.member-edit-button:hover {
+  background-color: #1d4ed8;
+}
+
+.member-update-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.member-update-modal {
+  width: 440px;
+  max-width: calc(100% - 32px);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.25);
+  padding: 24px;
+}
+
+.member-update-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.member-update-modal-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.member-update-modal-header p {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.member-update-modal-close {
+  border: none;
+  background: transparent;
+  font-size: 28px;
+  line-height: 1;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.member-update-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.member-update-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #374151;
+}
+
+.member-update-form select,
+.member-update-form input {
+  height: 42px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 0 12px;
+  font-size: 14px;
+  outline: none;
+}
+
+.member-update-form select:focus,
+.member-update-form input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.member-update-error-message {
+  margin: 0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.member-update-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.member-update-cancel-button,
+.member-update-save-button {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.member-update-cancel-button {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.member-update-save-button {
+  background: #2563eb;
+  color: white;
+}
+
+.member-update-save-button:hover {
+  background: #1d4ed8;
+}
+
+.member-update-cancel-button:disabled,
+.member-update-save-button:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
 }

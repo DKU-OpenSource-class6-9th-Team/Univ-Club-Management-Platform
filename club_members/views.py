@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404
 
 from rest_framework import status
 from rest_framework.generics import ListAPIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -14,6 +14,7 @@ from .models import ClubMembership as ManagedClubMembership
 from .serializers import (
     ClubJoinRequestListSerializer,
     ClubMembershipListSerializer,
+    ClubMembershipUpdateSerializer,
 )
 
 
@@ -152,5 +153,44 @@ class ClubJoinRequestRejectView(APIView):
 
         return Response(
             {"message": "가입 신청을 거절했습니다."},
+            status=status.HTTP_200_OK,
+        )
+    
+
+class ClubMembershipDetailUpdateView(APIView):
+    permission_classes = [AllowAny]
+
+    def get_object(self, club_id, membership_id):
+        return get_object_or_404(
+            ManagedClubMembership.objects.select_related("user", "club"),
+            id=membership_id,
+            club_id=club_id,
+        )
+
+    def get(self, request, club_id, membership_id):
+        member = self.get_object(club_id, membership_id)
+        serializer = ClubMembershipListSerializer(member)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request, club_id, membership_id):
+        member = self.get_object(club_id, membership_id)
+
+        serializer = ClubMembershipUpdateSerializer(
+            member,
+            data=request.data,
+            partial=True,
+        )
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        response_serializer = ClubMembershipListSerializer(member)
+
+        return Response(
+            {
+                "message": "동아리원 정보가 수정되었습니다.",
+                "member": response_serializer.data,
+            },
             status=status.HTTP_200_OK,
         )

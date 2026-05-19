@@ -6,6 +6,7 @@ import {
   fetchClubJoinRequests,
   fetchClubMembers,
   rejectClubJoinRequest,
+  updateClubMember,
 } from '../../api/clubMembers.js';
 
 import '../../styles/club/clubDashboard.css';
@@ -234,6 +235,64 @@ function ClubMemberListPage() {
     }
   };
 
+  const handleOpenUpdateModal = (member) => {
+    setSelectedMember(member);
+    setUpdateForm({
+      role: member.role,
+      status: member.status,
+      activity_score: member.activity_score,
+    });
+    setUpdateErrorMessage('');
+    setIsUpdateModalOpen(true);
+  };
+
+  const handleCloseUpdateModal = () => {
+    if (isUpdatingMember) {
+      return;
+    }
+
+    setIsUpdateModalOpen(false);
+    setSelectedMember(null);
+    setUpdateErrorMessage('');
+  };
+
+  const handleUpdateFormChange = (event) => {
+    const { name, value } = event.target;
+
+    setUpdateForm((prevForm) => ({
+      ...prevForm,
+      [name]: name === 'activity_score' ? Number(value) : value,
+    }));
+  };
+
+  const handleSubmitUpdateMember = async (event) => {
+    event.preventDefault();
+
+    if (!selectedMember) {
+      return;
+    }
+
+    try {
+      setIsUpdatingMember(true);
+      setUpdateErrorMessage('');
+
+      await updateClubMember(clubId, selectedMember.id, updateForm);
+
+      setIsUpdateModalOpen(false);
+      setSelectedMember(null);
+
+      await loadMembers();
+    } catch (error) {
+      setUpdateErrorMessage(
+        error.message ||
+          error.activity_score?.[0] ||
+          '동아리원 정보 수정에 실패했습니다.'
+      );
+    } finally {
+      setIsUpdatingMember(false);
+    }
+  };
+
   const summary = useMemo(() => {
     const totalCount = members.length;
     const newCount = members.filter((member) => member.status === 'new').length;
@@ -261,6 +320,16 @@ function ClubMemberListPage() {
 
     return value;
   };
+
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [selectedMember, setSelectedMember] = useState(null);
+  const [updateForm, setUpdateForm] = useState({
+    role: 'member',
+    status: 'new',
+    activity_score: 0,
+  });
+  const [isUpdatingMember, setIsUpdatingMember] = useState(false);
+  const [updateErrorMessage, setUpdateErrorMessage] = useState('');
 
   return (
     <div className="club-dashboard-page">
@@ -611,6 +680,7 @@ function ClubMemberListPage() {
                         <span>상태</span>
                         <span>활동 점수</span>
                         <span>가입일</span>
+                        <span>관리</span>
                       </div>
 
                       {members.map((member) => (
@@ -634,6 +704,15 @@ function ClubMemberListPage() {
                           </span>
                           <span>{member.activity_score ?? 0}점</span>
                           <span>{formatDate(member.joined_at)}</span>
+                          <span className="member-action-cell">
+                            <button
+                              type="button"
+                              className="member-edit-button"
+                              onClick={() => handleOpenUpdateModal(member)}
+                            >
+                              수정
+                            </button>
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -644,6 +723,100 @@ function ClubMemberListPage() {
           </div>
         </main>
       </div>
+
+      {isUpdateModalOpen && selectedMember && (
+        <div className="member-update-modal-backdrop">
+          <div className="member-update-modal">
+            <div className="member-update-modal-header">
+              <div>
+                <h3>동아리원 정보 수정</h3>
+                <p>
+                  {selectedMember.name}님의 역할, 상태, 활동 점수를 수정합니다.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="member-update-modal-close"
+                onClick={handleCloseUpdateModal}
+                disabled={isUpdatingMember}
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitUpdateMember} className="member-update-form">
+              <label>
+                역할
+                <select
+                  name="role"
+                  value={updateForm.role}
+                  onChange={handleUpdateFormChange}
+                >
+                  <option value="president">회장</option>
+                  <option value="vice_president">부회장</option>
+                  <option value="executive">운영진</option>
+                  <option value="treasurer">총무</option>
+                  <option value="member">일반 회원</option>
+                </select>
+              </label>
+
+              <label>
+                상태
+                <select
+                  name="status"
+                  value={updateForm.status}
+                  onChange={handleUpdateFormChange}
+                >
+                  <option value="new">신입 회원</option>
+                  <option value="regular">정회원</option>
+                  <option value="inactive">휴면 회원</option>
+                  <option value="withdrawn">탈퇴 회원</option>
+                  <option value="fee_unpaid">회비 미납자</option>
+                  <option value="restricted">이용 제한 회원</option>
+                </select>
+              </label>
+
+              <label>
+                활동 점수
+                <input
+                  type="number"
+                  name="activity_score"
+                  min="0"
+                  max="100"
+                  value={updateForm.activity_score}
+                  onChange={handleUpdateFormChange}
+                />
+              </label>
+
+              {updateErrorMessage && (
+                <p className="member-update-error-message">
+                  {updateErrorMessage}
+                </p>
+              )}
+
+              <div className="member-update-modal-actions">
+                <button
+                  type="button"
+                  className="member-update-cancel-button"
+                  onClick={handleCloseUpdateModal}
+                  disabled={isUpdatingMember}
+                >
+                  취소
+                </button>
+
+                <button
+                  type="submit"
+                  className="member-update-save-button"
+                  disabled={isUpdatingMember}
+                >
+                  {isUpdatingMember ? '저장 중...' : '저장'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
