@@ -352,8 +352,7 @@ function ClubEditPage() {
             </Link>
 
 
-            {/* 아직 실제 페이지 연결 전인 메뉴들 */}
-            <Link to="/club/members" className="sidebar-link">
+            <Link to={`/club/${clubId}/members`} className="sidebar-link">
               <Users size={19} />
               동아리원 관리
             </Link>

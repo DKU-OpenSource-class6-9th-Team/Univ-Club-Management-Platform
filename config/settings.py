@@ -46,10 +46,14 @@ INSTALLED_APPS = [
     'corsheaders',
 
     'accounts.apps.AccountsConfig',
+
     'applications.apps.ApplicationsConfig',
     'clubs.apps.ClubsConfig',
     'recruitments.apps.RecruitmentsConfig',
     'club_members.apps.ClubMembersConfig',
+
+    #회비 관리 기능 담당하는 앱
+    'fees.apps.FeesConfig',
 ]
 
 MIDDLEWARE = [
@@ -169,3 +173,9 @@ CSRF_COOKIE_SAMESITE = "Lax"
 
 #CSRF_TRUSTED_ORIGINS
 #→ React 주소를 신뢰할 수 있는 요청 출처로 등록
+
+#업로드한 파일에 접근 시 사용할 url
+MEDIA_URL = '/media/'
+
+#실제로 파일이 저장되는 폴더 위치, 프로젝트 폴더 media폴더에 저장.
+MEDIA_ROOT = BASE_DIR / 'media'

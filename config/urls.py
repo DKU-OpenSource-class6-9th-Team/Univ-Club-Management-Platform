@@ -19,11 +19,22 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
+#업로드 파일을 서버에서 보기 위한 작업
+from django.conf import settings
+from django.conf.urls.static import static
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/accounts/', include('accounts.urls')),
     path('api/', include('clubs.urls')),
     path("api/", include("club_members.urls")),
+
+    #KAN-35 fees앱 API연결
+    #urls.py 에서 URL관리
+    path('api/', include('fees.urls')),
 ]
 
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# DEBUG=True인 개발 환경에서 파일을 Django 개발 서버가 제공
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+

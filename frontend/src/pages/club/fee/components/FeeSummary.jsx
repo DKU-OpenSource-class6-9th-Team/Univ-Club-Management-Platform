@@ -25,9 +25,9 @@ function FeeSummaryCards({
         <div>
           <span>총 회비 잔액</span>
           <strong>
-            {summary ? formatWon(summary.balance) : '기능 구현 중'} {/*조건 부 렌더링*/}
+            {summary ? formatWon(summary.balance) : '로딩 중...'} {/*조건 부 렌더링*/}
           </strong>
-          <p>API 연동 예정</p>
+          <p>{summary ? '총 수입 - 총 지출 기준' : '조회 중...'} </p>
         </div>
       </article>
 
@@ -37,9 +37,9 @@ function FeeSummaryCards({
         <div>
           <span>이번 달 수입</span>
           <strong>
-            {summary ? formatWon(summary.monthlyIncome) : '기능 구현 중'} {/*조건 부 렌더링*/}
+            {summary ? formatWon(summary.monthlyIncome) : '로딩 중...'} {/*조건 부 렌더링*/}
           </strong>
-          <p>API 연동 예정</p>
+          <p>{summary ? '이번 달 등록된 수입 합계' : '조회 중...'}</p>
         </div>
       </article>
 
@@ -49,9 +49,9 @@ function FeeSummaryCards({
         <div>
           <span>이번 달 지출</span>
           <strong>
-            {summary ? formatWon(summary.monthlyExpense) : '기능 구현 중'} {/*조건 부 렌더링*/}
+            {summary ? formatWon(summary.monthlyExpense) : '로딩 중...'} {/*조건 부 렌더링*/}
           </strong>
-          <p>API 연동 예정</p>
+          <p>{summary ? '이번 달 등록된 지출 합계' : '로딩 중...'}</p>
         </div>
       </article>
 
