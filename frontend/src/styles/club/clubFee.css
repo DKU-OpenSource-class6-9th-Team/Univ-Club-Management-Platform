@@ -1,0 +1,814 @@
+/* ==========================================================================
+   1. 전체 레이아웃 / 사이드바 / 메인 영역
+   ========================================================================== */
+
+/* 회비 관리 페이지에서 관리자 사이드바 폭을 270px로 고정한다. */
+.club-dashboard-page .dashboard-sidebar {
+  width: 270px;
+  min-width: 270px;
+}
+
+/* 사이드바를 제외한 오른쪽 메인 콘텐츠 영역이다. 화면 높이를 채우고 내부 스크롤을 허용한다. */
+.club-fee-main {
+  flex: 1;
+  height: 100vh;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 22px 34px 36px;
+  background: #f5f7fb;
+}
+
+/* ==========================================================================
+   2. 상단 헤더 / breadcrumb / 제목 / 설명
+   ========================================================================== */
+
+/* 상단 헤더 영역이다. 왼쪽 제목 정보와 오른쪽 사용자 프로필을 양끝에 배치한다. */
+.club-fee-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 18px;
+}
+
+/* 현재 페이지 위치를 보여주는 breadcrumb 텍스트 스타일이다. */
+.club-fee-breadcrumb {
+  margin: 0 0 14px;
+  color: #1e3a8a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* breadcrumb의 > 구분자 여백과 색상을 지정한다. */
+.club-fee-breadcrumb span {
+  margin: 0 10px;
+  color: #64748b;
+}
+
+/* breadcrumb에서 현재 페이지명인 회비 관리를 강조한다. */
+.club-fee-breadcrumb strong {
+  color: #4f63e7;
+}
+
+/* 페이지 제목인 회비 관리의 크기와 굵기를 지정한다. */
+.club-fee-header h1 {
+  margin: 0 0 8px;
+  color: #111827;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+/* 제목 아래 회비 관리 페이지 설명 문구 스타일이다. */
+.club-fee-desc {
+  margin: 0;
+  color: #344767;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   3. 상단 액션 버튼 영역
+   ========================================================================== */
+
+/* 상단 우측 액션 버튼 영역이다. 다운로드 버튼 2개를 같은 너비로 배치한다. */
+.club-fee-actions {
+  width: min(460px, 100%);
+  margin-left: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+/* 상단 액션 버튼 공통 스타일이다. 아이콘과 텍스트를 가운데 정렬한다. */
+.club-fee-actions button {
+  height: 42px;
+  padding: 0 18px;
+  border: 1px solid #dbe3f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: pointer;
+}
+
+/* ==========================================================================
+   4. 상단 회비 요약 카드 영역
+   ========================================================================== */
+
+/* 총 회비 잔액, 수입, 지출, 미납 회원, 납부율 카드 5개를 배치하는 그리드다. */
+.club-fee-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+/* 상단 회비 요약 카드 하나의 공통 스타일이다. */
+.club-fee-summary-card {
+  min-height: 112px;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+/* 요약 카드 안의 아이콘 박스 공통 스타일이다. */
+.club-fee-summary-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 15px;
+  background: #eef2ff;
+  color: #4f63e7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 23px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+/* 이번 달 수입 카드 아이콘 색상이다. */
+.club-fee-summary-icon.income {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+/* 이번 달 지출 카드 아이콘 색상이다. */
+.club-fee-summary-icon.expense {
+  background: #ffedd5;
+  color: #ea580c;
+}
+
+/* 미납 회원 카드 아이콘 색상이다. */
+.club-fee-summary-icon.unpaid {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+/* 납부율 카드 아이콘 색상이다. */
+.club-fee-summary-icon.rate {
+  background: #ede9fe;
+  color: #7c3aed;
+}
+
+/* 요약 카드의 제목 텍스트 스타일이다. */
+.club-fee-summary-card span {
+  display: block;
+  color: #4b5563;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* 요약 카드의 핵심 숫자/금액 스타일이다. */
+.club-fee-summary-card strong {
+  display: block;
+  margin: 5px 0;
+  color: #111827;
+  font-size: 21px;
+  font-weight: 800;
+}
+
+/* 요약 카드의 보조 설명 텍스트 스타일이다. */
+.club-fee-summary-card p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   5. 공통 상태 색상
+   ========================================================================== */
+
+/* 수입, 증가, 긍정 상태를 초록색으로 표시한다. */
+.positive {
+  color: #16a34a !important;
+  font-weight: 800;
+}
+
+/* 지출, 감소, 경고 상태를 빨간색으로 표시한다. */
+.negative {
+  color: #ef4444 !important;
+  font-weight: 800;
+}
+
+/* ==========================================================================
+   6. 본문 2단 레이아웃 / 공통 카드
+   ========================================================================== */
+
+/* 본문을 왼쪽 등록/내역 영역과 오른쪽 회원 현황 영역으로 나누는 2단 그리드다. */
+.club-fee-content-grid {
+  display: grid;
+  grid-template-columns: minmax(480px, 0.95fr) minmax(560px, 1.05fr);
+  gap: 16px;
+  align-items: start;
+}
+
+/* 본문 왼쪽/오른쪽 컬럼의 카드들을 세로로 쌓고 간격을 지정한다. */
+.club-fee-left-column,
+.club-fee-right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+}
+
+/* 회비 페이지에서 사용하는 흰색 카드 패널 공통 스타일이다. */
+.club-fee-panel {
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 18px;
+}
+
+/* 카드 제목 h2 공통 스타일이다. */
+.club-fee-panel-title h2,
+.club-fee-table-header h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+/* 테이블 카드 제목 아래 설명 문구 스타일이다. */
+.club-fee-table-header p {
+  margin: 6px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+/* ==========================================================================
+   7. 수입 / 지출 내역 등록 패널
+   ========================================================================== */
+
+/* 수입/지출 내역 등록 카드의 내부 여백을 조정한다. */
+.fee-register-panel {
+  padding: 18px 18px 16px;
+}
+
+/* 등록 카드 제목과 입력 폼 사이 여백을 지정한다. */
+.fee-register-panel .club-fee-panel-title {
+  margin-bottom: 14px;
+}
+
+/* 등록 카드 제목의 글자 크기와 굵기를 지정한다. */
+.fee-register-panel .club-fee-panel-title h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 800;
+  color: #111827;
+}
+
+/* 수입/지출 선택 탭 버튼 묶음이다. */
+.fee-register-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+/* 수입/지출 탭 버튼 기본 스타일이다. */
+.fee-register-tabs button {
+  min-width: 52px;
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid #dbe3f0;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #4b5563;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* 현재 선택된 수입/지출 탭 버튼 강조 스타일이다. */
+.fee-register-tabs button.active {
+  border-color: #4f63e7;
+  background: #4f63e7;
+  color: #ffffff;
+}
+
+/* 등록 폼 입력칸을 3열 그리드로 배치한다. */
+.fee-register-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px 12px;
+}
+
+/* 각 입력 필드를 라벨 텍스트와 입력칸이 세로로 쌓이게 한다. */
+.fee-register-form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* 입력 필드 라벨 텍스트 스타일이다. */
+.fee-register-form-grid label span {
+  color: #111827;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* 필수 입력 항목 앞에 빨간 별표를 표시한다. */
+.required-label::before {
+  content: '* ';
+  color: #ef4444;
+  font-weight: 800;
+}
+
+/* 등록 폼 input/select 공통 스타일이다. */
+.fee-register-form-grid input,
+.fee-register-form-grid select {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #dbe3f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #111827;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+/* 등록 폼 placeholder 텍스트 색상을 연하게 지정한다. */
+.fee-register-form-grid input::placeholder {
+  color: #94a3b8;
+}
+
+/* 금액 입력칸 오른쪽에 원 단위를 배치하기 위한 기준 박스다. */
+.amount-input-wrap {
+  position: relative;
+}
+
+/* 금액 input 오른쪽에 원 단위가 겹치지 않도록 여백을 둔다. */
+.amount-input-wrap input {
+  padding-right: 34px;
+}
+
+/* 금액 입력칸 오른쪽의 원 단위 텍스트 스타일이다. */
+.amount-unit {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* 등록 폼 하단의 영수증 첨부 영역과 예상 잔액 카드를 나란히 배치한다. */
+.fee-register-bottom-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 190px;
+  gap: 14px;
+  margin-top: 14px;
+  align-items: stretch;
+}
+
+/* 영수증 첨부 제목과 첨부 박스를 세로로 배치한다. */
+.fee-receipt-upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 영수증 첨부 섹션 제목 스타일이다. */
+.upload-section-title {
+  margin: 0;
+  color: #111827;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* 영수증 파일을 첨부하는 드래그 앤 드롭 형태의 박스 스타일이다. */
+.fee-register-upload-box {
+  min-height: 98px;
+  border: 1px dashed #bfd0ea;
+  border-radius: 12px;
+  background: #fbfdff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-align: center;
+  padding: 14px;
+}
+
+/* 영수증 첨부 박스 안의 파일 아이콘 색상이다. */
+.fee-register-upload-box svg {
+  color: #64748b;
+}
+
+/* 영수증 첨부 박스의 주요 안내 문구 스타일이다. */
+.fee-register-upload-box strong {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* 영수증 첨부 박스의 보조 안내 문구 스타일이다. */
+.fee-register-upload-box span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+/* 등록 후 예상 잔액 변화를 보여주는 카드 스타일이다. */
+.fee-balance-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* 예상 잔액 카드의 작은 제목 텍스트 스타일이다. */
+.fee-balance-label {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* 예상 잔액 카드의 핵심 금액 텍스트 스타일이다. */
+.fee-balance-card strong {
+  margin: 8px 0 10px;
+  color: #111827;
+  font-size: 23px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+/* 예상 잔액 카드의 보조 정보 줄 스타일이다. */
+.fee-balance-card p {
+  margin: 2px 0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* 예상 잔액 카드 보조 정보 안의 금액/수치 스타일이다. */
+.fee-balance-card p span {
+  margin-left: 6px;
+  color: #111827;
+  font-weight: 700;
+}
+
+/* 등록 폼 하단의 초기화/등록 버튼 영역이다. */
+.fee-register-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+}
+
+/* 등록 폼 하단 버튼 공통 스타일이다. */
+.fee-register-actions button {
+  height: 36px;
+  min-width: 84px;
+  padding: 0 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* 초기화 버튼 스타일이다. */
+.fee-register-actions .secondary-btn {
+  border: 1px solid #dbe3f0;
+  background: #ffffff;
+  color: #334155;
+}
+
+/* 등록 버튼 스타일이다. */
+.fee-register-actions .primary {
+  border: 1px solid #4f63e7;
+  background: #4f63e7;
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   8. 회원별 납부 현황 패널 / 테이블 / 필터
+   ========================================================================== */
+
+/* 회원별 납부 현황 카드다. 10명 표시를 위해 높이를 크게 잡고 세로 flex 구조를 사용한다. */
+.member-payment-panel {
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 회원별 납부 현황 헤더를 위쪽 기준으로 정렬한다. */
+.member-table-header {
+  align-items: flex-start;
+}
+
+/* 테이블 카드 상단 헤더 영역이다. 제목/설명과 검색창 또는 버튼을 좌우 배치한다. */
+.club-fee-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+/* 회원별 납부 현황 검색 input 스타일이다. */
+.club-fee-table-header input {
+  width: 220px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #dbe3f0;
+  border-radius: 10px;
+  outline: none;
+  color: #111827;
+}
+
+/* 최근 수입/지출 내역의 더보기 버튼 스타일이다. */
+.club-fee-table-header button {
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid #dbe3f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* 전체/완료/미납 필터 버튼 묶음이다. */
+.club-fee-filter-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0 14px;
+}
+
+/* 필터 버튼 기본 스타일이다. */
+.club-fee-filter-tabs button {
+  height: 34px;
+  padding: 0 18px;
+  border: 1px solid #dbe3f0;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #4b5563;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* 선택된 필터 버튼을 파란색으로 강조한다. */
+.club-fee-filter-tabs button.active {
+  border-color: #4f63e7;
+  background: #4f63e7;
+  color: #ffffff;
+}
+
+/* 회비 페이지에서 사용하는 테이블 공통 스타일이다. */
+.club-fee-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  font-weight: 445;
+}
+
+/* 테이블 헤더 셀 스타일이다. */
+.club-fee-table th {
+  height: 38px;
+  padding: 0 10px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f8fafc;
+  color: #4b5563;
+  text-align: left;
+  font-weight: 700;
+}
+
+/* 테이블 본문 셀 스타일이다. */
+.club-fee-table td {
+  height: 42px;
+  padding: 0 10px;
+  border-bottom: 1px solid #eef2f7;
+  color: #1f2937;
+}
+
+/* 회원별 납부 현황 테이블 행 높이를 컴팩트하게 조정한다. */
+.member-payment-table td {
+  height: 38px;
+}
+
+/* 완료/미납 상태를 클릭 가능한 pill 버튼으로 표시하는 공통 스타일이다. */
+.payment-status {
+  min-width: 76px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* 납부 완료 상태 버튼 스타일이다. */
+.payment-status.paid {
+  border-color: #86efac;
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+/* 미납 상태 버튼 스타일이다. */
+.payment-status.unpaid {
+  border-color: #fecaca;
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+/* ==========================================================================
+   9. 회원별 납부 현황 페이지네이션
+   ========================================================================== */
+
+/* 회원별 납부 현황 하단 페이지네이션 영역이다. */
+.member-pagination-row {
+  display: grid;
+  grid-template-columns: 1fr auto 116px;
+  align-items: center;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 14px;
+  color: #1e3a8a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* 페이지 번호와 이전/다음 버튼 묶음이다. */
+.member-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 페이지네이션 버튼 기본 스타일이다. */
+.member-pagination-controls button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #dbe3f0;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #334155;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* 현재 선택된 페이지 번호 버튼 스타일이다. */
+.member-pagination-controls button.active {
+  border-color: #4f63e7;
+  background: #4f63e7;
+  color: #ffffff;
+}
+
+/* 사용할 수 없는 이전/다음 버튼 스타일이다. */
+.member-pagination-controls button:disabled {
+  color: #cbd5e1;
+  cursor: not-allowed;
+}
+
+/* 10개씩/20개씩/30개씩 선택 select 스타일이다. */
+.member-pagination-row select {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid #dbe3f0;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #334155;
+  font-weight: 700;
+  outline: none;
+}
+
+/* ==========================================================================
+   10. 최근 수입/지출 배지
+   ========================================================================== */
+
+/* 최근 수입/지출 내역의 수입/지출 배지 공통 스타일이다. */
+.transaction-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 24px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* 수입 배지 스타일이다. */
+.transaction-badge.income {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+/* 지출 배지 스타일이다. */
+.transaction-badge.expense {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+/* ==========================================================================
+   11. 오른쪽 아래 보조 카드
+   ========================================================================== */
+
+/* 오른쪽 아래 보조 카드 3개를 가로로 배치하는 그리드다. */
+.club-fee-side-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+/* 이의제기, 만족도, 증빙 카드 공통 스타일이다. */
+.club-fee-side-card {
+  min-height: 122px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 18px;
+}
+
+/* 보조 카드 안의 아이콘 색상과 하단 여백이다. */
+.club-fee-side-card svg {
+  color: #4f63e7;
+  margin-bottom: 8px;
+}
+
+/* 보조 카드 제목 텍스트 스타일이다. */
+.club-fee-side-card span {
+  display: block;
+  color: #111827;
+  font-weight: 700;
+}
+
+/* 보조 카드의 핵심 수치 스타일이다. */
+.club-fee-side-card strong {
+  display: block;
+  margin: 8px 0 5px;
+  color: #111827;
+  font-size: 23px;
+}
+
+/* 보조 카드의 보조 설명 문구 스타일이다. */
+.club-fee-side-card p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* ==========================================================================
+   12. 반응형 처리
+   ========================================================================== */
+
+/* 1400px 이하 화면에서 카드/본문 레이아웃을 줄여 깨짐을 방지한다. */
+@media (max-width: 1400px) {
+  /* 총 회비 잔액, 수입, 지출, 미납 회원, 납부율 카드 5개를 배치하는 그리드다. */
+.club-fee-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* 본문을 왼쪽 등록/내역 영역과 오른쪽 회원 현황 영역으로 나누는 2단 그리드다. */
+.club-fee-content-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 1200px 이하 화면에서 등록 폼과 페이지네이션을 더 좁은 화면에 맞게 조정한다. */
+@media (max-width: 1200px) {
+  /* 등록 폼 입력칸을 3열 그리드로 배치한다. */
+.fee-register-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* 등록 폼 하단의 영수증 첨부 영역과 예상 잔액 카드를 나란히 배치한다. */
+.fee-register-bottom-row {
+    grid-template-columns: 1fr;
+  }
+
+  /* 회원별 납부 현황 하단 페이지네이션 영역이다. */
+.member-pagination-row {
+    grid-template-columns: 1fr;
+    justify-items: start;
+  }
+}
+
+/* 700px 이하 모바일 수준 화면에서 폼과 보조 카드를 1열로 쌓는다. */
+@media (max-width: 700px) {
+  /* 등록 폼 입력칸을 3열 그리드로 배치한다. */
+.fee-register-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* 오른쪽 아래 보조 카드 3개를 가로로 배치하는 그리드다. */
+.club-fee-side-card-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -303,7 +303,7 @@ function ClubMemberListPage() {
               동아리원 관리
             </Link>
 
-            <Link to="/club/fee" className="sidebar-link">
+            <Link to={`/club/${clubId}/fee`} className="sidebar-link">
               <CreditCard size={19} />
               회비 관리
             </Link>
