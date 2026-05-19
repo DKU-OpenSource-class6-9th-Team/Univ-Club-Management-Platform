@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Building2,
   CalendarDays,
@@ -10,10 +11,12 @@ import {
   Users,
 } from 'lucide-react';
 import AuthLayout from '../../components/AuthLayout.jsx';
-
+import { createClub } from '../../api/clubs.js';
 import '../../styles/club/clubCreate.css';
 
 function ClubCreatePage() {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     school: '단국대학교',
     clubName: '',
@@ -22,11 +25,13 @@ function ClubCreatePage() {
     recruitType: 'ALWAYS',
     startDate: '',
     endDate: '',
-    maxMembers: '',
+    capacity: '',
+    recruitMembers: '',
     leaderName: '',
     phone: '',
     email: '',
     clubRoom: '',
+    image: null,
   });
 
   const [errorMessage, setErrorMessage] = useState('');
@@ -37,6 +42,15 @@ function ClubCreatePage() {
     setFormData((prev) => ({
       ...prev,
       [name]: value,
+    }));
+  };
+
+  const handleImageChange = (event) => {
+    const file = event.target.files[0];
+
+    setFormData((prev) => ({
+      ...prev,
+      image: file,
     }));
   };
 
@@ -68,7 +82,7 @@ function ClubCreatePage() {
     return '마감';
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     setErrorMessage('');
@@ -83,19 +97,40 @@ function ClubCreatePage() {
       return;
     }
 
-    const clubData = {
-      ...formData,
-      recruitStatus: getRecruitStatus(),
-    };
+    try {
+      const clubData = {
+        name: formData.clubName,
+        category: formData.clubType,
+        club_type: formData.clubType,
+        description: formData.description,
+        is_recruiting: getRecruitStatus() === '모집중',
+        recruit_start_date: formData.recruitType === 'PERIOD' ? formData.startDate : '',
+        recruit_end_date: formData.recruitType === 'PERIOD' ? formData.endDate : '',
+        capacity: formData.capacity,
+        recruit_members: formData.recruitMembers,
+        leader_name: formData.leaderName,
+        contact_phone: formData.phone,
+        contact_email: formData.email,
+        location: formData.clubRoom,
+        image: formData.image,
+      };
 
-    console.log('동아리 등록 데이터:', clubData);
-    alert('동아리 등록 정보가 임시 저장되었습니다. 이후 API 연동 시 서버로 전송하면 됩니다.');
+      await createClub(clubData);
+
+      alert('동아리 정보가 등록되었습니다.');
+      navigate('/main');
+
+    } catch (error) {
+      console.error(error);
+      setErrorMessage('동아리 등록에 실패했습니다. 로그인 상태와 입력값을 다시 확인해주세요.');
+    }
   };
 
   return (
     <AuthLayout
       title="동아리 정보 등록"
       subtitle="동아리 기본 정보와 모집 정보를 입력해주세요"
+      showAuthLink={false}
     >
       <form className="auth-commonform club-create-form" onSubmit={handleSubmit}>
         <label className="form-label">
@@ -285,6 +320,19 @@ function ClubCreatePage() {
           </div>
         </label>
 
+        <label className="form-label">
+          <span>동아리 이미지</span>
+          <div className="input-box">
+            <FileText size={20} />
+            <input
+              type="file"
+              name="image"
+              accept="image/*"
+              onChange={handleImageChange}
+            />
+          </div>
+        </label>
+
         {errorMessage && (
           <p className="form-error-text">{errorMessage}</p>
         )}
@@ -294,7 +342,7 @@ function ClubCreatePage() {
         </button>
 
         <p className="auth-guide-text">
-          등록 후 동아리 관리 페이지에서 대표 이미지를 변경할 수 있습니다.
+          입력한 동아리 정보는 등록 후 동아리 관리 페이지에서 수정할 수 있습니다.
         </p>
       </form>
     </AuthLayout>

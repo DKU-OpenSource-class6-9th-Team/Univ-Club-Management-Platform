@@ -55,6 +55,10 @@ function ClubFeePage() {
   const [summary, setSummary] = useState(null) //상단 카드영역 내용 저장
   const [sideStats, setSideStats] = useState(null) //우하단 요약 카드 내용 저장
 
+  const [allTransactions, setAllTransactions] = useState([])
+  const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
+  const [isTransactionModalLoading, setIsTransactionModalLoading] = useState(false)
+
   const [isLoading, setIsLoading] = useState(false) //회비 데이터를 불러오는 중인지 상태
   const [isSubmitting, setIsSubmitting] = useState(false) //등록 요청 진행중인지 상태
 
@@ -65,9 +69,7 @@ function ClubFeePage() {
   const [pageSize, setPageSize] = useState(10) //한 페이지에 보여주는 인원 수
   const [transactionType, setTransactionType] = useState('수입') //수입/지출 등록 중 선택한 값
 
-  const feePath = clubId ? `/clubs/${clubId}/fee` : '/club/fee'
-
-  const filteredMembers = useMemo(() => { //프론트 회원 배열의 검색어, 필터 적용 결과
+  const filteredMembers = useMemo(() => { //프론트 회원 배열의 검색어, 필터 적용(데이터 연동 시 삭제 예정)
     const normalizedSearch = memberSearch.trim().toLowerCase()
 
     return members.filter((member) => {
@@ -172,10 +174,33 @@ const handleCreateTransaction = async (formData) => {
 }
 
 
+const handleOpenTransactionModal = async () => {
+  if (!effectiveClubId) {
+    alert('내역을 불러올 수 없습니다.')
+    return
+  }
+
+  try {
+    setIsTransactionModalLoading(true)
+
+    const data = await getFeeTransactions(effectiveClubId, { limit: 'all' })
+
+    setAllTransactions(data.results || [])
+    setIsTransactionModalOpen(true)
+  } catch (error) {
+    console.error('전체 수입/지출 내역 조회 실패:', error)
+    alert('전체 수입/지출 내역을 불러오지 못했습니다.')
+  } finally {
+    setIsTransactionModalLoading(false)
+  }
+}
+
+
   //전체 화면 구조//
   return (
     <div className="club-dashboard-page">
-      <aside className="dashboard-sidebar">
+      <div className="dashboard-fixed-canvas">
+        <aside className="dashboard-sidebar">
         <div className="sidebar-logo">
           <div className="logo-icon">
             <LayoutDashboard size={22} />
@@ -188,31 +213,27 @@ const handleCreateTransaction = async (formData) => {
         </div>
 
         <nav className="sidebar-menu">
-          <Link to="/club/dashboard" className="sidebar-link">
+          <Link to={`/club/${clubId}/dashboard`} className="sidebar-link">
             <LayoutDashboard size={19} />
             대시보드
           </Link>
 
-          <div className="sidebar-menu-group">
-            <div className="sidebar-link sidebar-parent-link">
-              <FileText size={19} />
-              동아리 정보
-            </div>
+          <Link to={`/club/${clubId}/info`} className="sidebar-link sidebar-parent-link">
+            <FileText size={19} />
+            동아리 정보
+          </Link>
 
-            <div className="sidebar-submenu">
-              <Link to="/club/edit" className="sidebar-sub-link">
-                <Edit3 size={16} />
-                동아리 정보 수정
-              </Link>
-            </div>
-          </div>
+          <Link to={`/club/${clubId}/edit`} className="sidebar-sub-link">
+            <Edit3 size={16} />
+            동아리 정보 수정
+          </Link>
 
-          <Link to="/club/members" className="sidebar-link">
+          <Link to={`/club/${clubId}/members`} className="sidebar-link">
             <Users size={19} />
             동아리원 관리
           </Link>
 
-          <Link to={feePath} className="sidebar-link active">
+          <Link to={`/club/${clubId}/fee`} className="sidebar-link active">
             <CreditCard size={19} />
             회비 관리
           </Link>
@@ -232,10 +253,11 @@ const handleCreateTransaction = async (formData) => {
           <LogOut size={18} />
           로그아웃
         </button>
-      </aside>
+        </aside>
+
 
         {/*페이지 제목, 설명, 알림버튼, 사용자 프로필 영역*/}
-      <main className="club-fee-main">
+        <main className="club-fee-main">
         <header className="club-fee-header"> 
           <div>
             <p className="club-fee-breadcrumb">
@@ -303,8 +325,12 @@ const handleCreateTransaction = async (formData) => {
             {/*최근 수입/지출 내역 영역*/}
             <RecentTransactionTable
               transactions={transactions}
+              allTransactions={allTransactions}
+              isAllTransactionModalOpen={isTransactionModalOpen}
+              isAllTransactionModalLoading={isTransactionModalLoading}
+              onOpenAllTransactions={handleOpenTransactionModal}
+              onCloseAllTransactions={() => setIsTransactionModalOpen(false)}
               formatWon={formatWon}
-              onFeatureInProgress={showFeatureInProgress}
             />
           </div>
 
@@ -335,7 +361,8 @@ const handleCreateTransaction = async (formData) => {
             <FeeSideCards sideStats={sideStats} />
           </div>
         </section>
-      </main>
+        </main>
+      </div>
     </div>
   )
 }

@@ -12,6 +12,11 @@ from rest_framework.response import Response
 
 from .models import FeeReceipt, FeeTransaction, validate_receipt_file
 
+import mimetypes
+from django.http import FileResponse, Http404
+from django.shortcuts import get_object_or_404
+from django.views.decorators.clickjacking import xframe_options_exempt
+
 
 #프론트에서 넘어온 수입/지출 값 DB용 값으로 변환하는 함수(INCOME, EXPENSE)
 def normalize_transaction_type(value):
@@ -30,13 +35,37 @@ def get_sum(queryset, transaction_type):
         total=Sum('amount')
     )['total'] or 0
 
+#pdf에서 차단 기능 해제하는 함수(pdf내용 볼 수 있도록 함)
+@xframe_options_exempt #iframe 차단 헤더 제거
+def fee_receipt_file(request, receipt_id): #id를 통해 증빙자료 파일 확인
+    receipt = get_object_or_404(FeeReceipt, id=receipt_id)
+
+    if not receipt.file:
+        raise Http404('영수증 파일이 없습니다.')
+
+    content_type, _ = mimetypes.guess_type(receipt.file.name)
+
+    response = FileResponse( #파일을 브라우저에 내려받음
+        receipt.file.open('rb'),
+        content_type=content_type or 'application/octet-stream',
+    )
+
+    #inline방식으로 브라우저 상에 열 수 있도록 하는 코드
+    response['Content-Disposition'] = f'inline; filename="{receipt.original_name}"'
+
+    return response
+
 
 #FeeReceipt 객체를 프론트가 사용할 수 있도록 JSON 형태로 변경하는 함수
 def serialize_receipt(receipt, request):
+    receipt_url = request.build_absolute_uri(
+        f'/api/fees/receipts/{receipt.id}/file/'
+    )
+
     return {
         'id': receipt.id,
         'name': receipt.original_name,
-        'url': request.build_absolute_uri(receipt.file.url),
+        'url': receipt_url,
     }
 
 
@@ -102,8 +131,11 @@ def fee_transactions(request, club_id):
         transactions = (
             FeeTransaction.objects
             .filter(club_id=club_id)
-            .prefetch_related('receipts')[:10] #최근 내역 10개 가져옴
+            .prefetch_related('receipts') 
         )
+
+        if request.query_params.get('limit') != 'all': #더보기 에서는 전체 내역 요청하도록 함
+            transactions = transactions[:5] #최근 내역 5개 가져옴
 
         return Response({ #내역들은 프론트에서 사용할 수 있는 JSON파일로 변환 후 반환
             'results': [

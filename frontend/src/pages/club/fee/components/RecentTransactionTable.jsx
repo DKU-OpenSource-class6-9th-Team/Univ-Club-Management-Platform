@@ -5,11 +5,30 @@ import { useState } from 'react'
 import { getTransactionTypeClass } from '../utils/feeFormat.js'
 
 function RecentTransactionTable({
-  transactions, //수입/지출 내역 배열
+  transactions = [],
+  allTransactions = [],
+  isAllTransactionModalOpen,
+  isAllTransactionModalLoading,
+  onOpenAllTransactions,
+  onCloseAllTransactions,
   formatWon,
-  onFeatureInProgress, //구현 안된 부분은 따로 안내메세지 출력 함수
 }) {
   const [selectedReceipts, setSelectedReceipts] = useState(null)
+
+  //영수증 첨부 여부에 따라 버튼 또는 미첨부 표시를 반환하는 함수
+  const renderReceiptCell = (transaction) => {
+    return transaction.receipts?.length > 0 ? (
+      <button
+        type="button"
+        className="receipt-open-button"
+        onClick={() => setSelectedReceipts(transaction.receipts)}
+      >
+        첨부 {transaction.receipts.length}개
+      </button>
+    ) : (
+      <span className="receipt-empty">미첨부</span>
+    )
+  }
 
   return (
     <>
@@ -22,9 +41,10 @@ function RecentTransactionTable({
 
           <button
             type="button"
-            onClick={() => onFeatureInProgress('수입 / 지출 내역 더보기')}
+            onClick={onOpenAllTransactions}
+            disabled={isAllTransactionModalLoading}
           >
-            더보기
+            {isAllTransactionModalLoading ? '로딩 중...' : '더보기'}
           </button>
         </div>
 
@@ -66,19 +86,7 @@ function RecentTransactionTable({
                     {formatWon(transaction.amount)}
                   </td>
 
-                  <td>
-                    {transaction.receipts?.length > 0 ? (
-                      <button
-                        type="button"
-                        className="receipt-open-button"
-                        onClick={() => setSelectedReceipts(transaction.receipts)}
-                      >
-                        첨부 {transaction.receipts.length}개
-                      </button>
-                    ) : (
-                      <span className="receipt-empty">미첨부</span>
-                    )}
-                  </td>
+                  <td>{renderReceiptCell(transaction)}</td>
                 </tr>
               ))
             ) : (
@@ -89,6 +97,88 @@ function RecentTransactionTable({
           </tbody>
         </table>
       </section>
+
+      {/*더보기 버튼 클릭 시 전체 수입/지출 내역을 보여주는 모달*/}
+      {isAllTransactionModalOpen && (
+        <div
+          className="receipt-modal-backdrop"
+          onClick={onCloseAllTransactions}
+        >
+          <div
+            className="receipt-modal transaction-more-modal"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="receipt-modal-header">
+              <h3>전체 수입 / 지출 내역</h3>
+
+              <button type="button" onClick={onCloseAllTransactions}>
+                닫기
+              </button>
+            </div>
+
+            <div className="transaction-more-table-wrap">
+              <table className="club-fee-table transaction-more-table">
+                <thead>
+                  <tr>
+                    <th>날짜</th>
+                    <th>구분</th>
+                    <th>내용</th>
+                    <th>카테고리</th>
+                    <th>금액</th>
+                    <th>관련 대상</th>
+                    <th>메모</th>
+                    <th>영수증</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {allTransactions.length > 0 ? (
+                    allTransactions.map((transaction) => (
+                      <tr key={transaction.id}>
+                        <td>{transaction.date}</td>
+
+                        <td>
+                          <span
+                            className={`transaction-badge ${getTransactionTypeClass(
+                              transaction.type,
+                            )}`}
+                          >
+                            {transaction.type}
+                          </span>
+                        </td>
+
+                        <td>{transaction.content}</td>
+                        <td>{transaction.category}</td>
+
+                        <td
+                          className={
+                            transaction.amount > 0 ? 'positive' : 'negative'
+                          }
+                        >
+                          {transaction.amount > 0 ? '+' : ''}
+                          {formatWon(transaction.amount)}
+                        </td>
+
+                        <td>{transaction.target || '-'}</td>
+
+                        <td className="transaction-memo-cell">
+                          {transaction.memo || '-'}
+                        </td>
+
+                        <td>{renderReceiptCell(transaction)}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="8">등록된 수입 / 지출 내역이 없습니다.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       {selectedReceipts && (
         <div
@@ -109,22 +199,24 @@ function RecentTransactionTable({
 
             <div className="receipt-preview-list">
               {selectedReceipts.map((receipt) => {
-                const isPdf = receipt.url.toLowerCase().endsWith('.pdf')
+                const receiptName = receipt.name || ''
+                const receiptUrl = receipt.url || ''
+                const isPdf = receiptName.toLowerCase().endsWith('.pdf')
 
                 return (
                   <div key={receipt.id} className="receipt-preview-item">
-                    <p>{receipt.name}</p>
+                    <p>{receiptName}</p>
 
                     {isPdf ? (
                       <iframe
-                        src={receipt.url}
-                        title={receipt.name}
+                        src={receiptUrl}
+                        title={receiptName}
                         className="receipt-pdf-preview"
                       />
                     ) : (
                       <img
-                        src={receipt.url}
-                        alt={receipt.name}
+                        src={receiptUrl}
+                        alt={receiptName}
                         className="receipt-image-preview"
                       />
                     )}

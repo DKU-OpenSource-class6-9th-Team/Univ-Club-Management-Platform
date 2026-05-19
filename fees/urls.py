@@ -11,4 +11,9 @@ urlpatterns = [
          views.fee_transactions,
          name='fee-transactions',
          ),
+
+     path( 'fees/receipts/<int:receipt_id>/file/',
+          views.fee_receipt_file,
+          name = 'fee-receipt-file',
+          ),
 ]

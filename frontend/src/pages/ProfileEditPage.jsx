@@ -67,7 +67,12 @@ function ProfileEditPage() {
   };
 
   return (
-    <AuthLayout title="프로필 수정" subtitle="내 정보를 수정하세요.">
+    <AuthLayout
+      title="사용자 정보 수정"
+      subtitle="사용자 정보를 수정하세요"
+      headerButtonText="메인화면으로"
+      headerButtonTo="/main"
+    >
       <form className="auth-commonform signup-form" onSubmit={handleSubmit}>
         {errorMessage && (
           <p className="form-error-text">{errorMessage}</p>

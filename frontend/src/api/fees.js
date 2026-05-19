@@ -80,8 +80,16 @@ export async function updateFeePaymentStatus(clubId, paymentId, status) {
 }
 
 //최근 수입/지출 내역 가져오는 함수
-export async function getFeeTransactions(clubId) {
-  return request(`/clubs/${clubId}/fees/transactions/`)
+export async function getFeeTransactions(clubId, params ={} ) {
+  const searchParams = new URLSearchParams()
+
+  if(params.limit) {
+    searchParams.set('limit', params.limit)
+  }
+
+  const queryString = searchParams.toString()
+
+  return request(`/clubs/${clubId}/fees/transactions/${queryString ? `?${queryString}` : ''}`,)
 }
 
 // 수입/지출 내역 등록하는 함수

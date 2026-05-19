@@ -47,6 +47,11 @@ INSTALLED_APPS = [
 
     'accounts.apps.AccountsConfig',
 
+    'applications.apps.ApplicationsConfig',
+    'clubs.apps.ClubsConfig',
+    'recruitments.apps.RecruitmentsConfig',
+    'club_members.apps.ClubMembersConfig',
+
     #회비 관리 기능 담당하는 앱
     'fees.apps.FeesConfig',
 ]
@@ -135,6 +140,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# 업로드된 이미지 파일을 브라우저에서 볼 수 있게 하는 설정
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field

@@ -1084,3 +1084,26 @@
     padding: 16px;
   }
 }
+
+
+.transaction-more-modal {
+  width: min(1100px, calc(100vw - 48px));
+  max-height: 82vh;
+}
+
+.transaction-more-table-wrap {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 62vh;
+}
+
+.transaction-more-table {
+  min-width: 980px;
+}
+
+.transaction-memo-cell {
+  max-width: 220px;
+  white-space: normal;
+  word-break: keep-all;
+  line-height: 1.5;
+}
