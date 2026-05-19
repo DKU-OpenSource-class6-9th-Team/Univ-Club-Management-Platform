@@ -1,0 +1,777 @@
+/* ==============================
+   플랫폼 메인 전체
+================================= */
+.main-page {
+  width: 100vw;
+  min-width: 1280px;
+  min-height: 100vh;
+  background: #f8fafc;
+  color: #111827;
+  overflow-x: auto;
+}
+
+/* ==============================
+   상단 헤더
+================================= */
+.main-topbar {
+  height: 64px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0 42px;
+
+  display: grid;
+  grid-template-columns: 230px minmax(360px, 520px) 1fr;
+  align-items: center;
+  gap: 24px;
+
+  box-sizing: border-box;
+}
+
+/* 로고 */
+.main-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  color: #111827;
+  text-decoration: none;
+  font-size: 21px;
+  font-weight: 800;
+}
+
+.main-logo-mark {
+  width: 28px;
+  height: 28px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #2563eb;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+/* 검색창 */
+.main-search-box {
+  height: 40px;
+  border: 1px solid #dbe1ea;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 0 14px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.main-search-box input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+
+  font-size: 14px;
+  color: #111827;
+}
+
+.main-search-box input::placeholder {
+  color: #94a3b8;
+}
+
+.main-search-box svg {
+  color: #1e3a8a;
+}
+
+/* 사용자 영역 */
+/* 프로필 이미지 + 사용자 이름 묶음 */
+.main-profile-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.main-user-area {
+  justify-self: end;
+
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+
+.main-bell-button {
+  position: relative;
+
+  border: none;
+  background: transparent;
+  color: #64748b;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+}
+
+.main-bell-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+
+  background: #ef4444;
+  color: #ffffff;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.main-profile-image {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+
+  background: linear-gradient(135deg, #bfdbfe, #2563eb);
+  color: #ffffff;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.main-user-button {
+  border: none;
+  background: transparent;
+  color: #111827;
+
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ==============================
+   본문
+================================= */
+.main-content {
+  padding: 26px 40px 38px;
+  box-sizing: border-box;
+}
+
+/* 제목 */
+.main-title-section {
+  margin-bottom: 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.main-title-section h1 {
+  margin: 0;
+  font-size: 25px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.main-title-section p {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.main-create-club-button {
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 9px;
+  background: #2563eb;
+  color: #ffffff;
+  text-decoration: none;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.main-create-club-button:hover {
+  background: #1d4ed8;
+}
+
+/* ==============================
+   요약 카드
+================================= */
+.main-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.main-summary-card {
+  height: 100px;
+  background: #ffffff;
+  border: 1px solid #dfe5ee;
+  border-radius: 13px;
+  padding: 20px;
+
+  display: flex;
+  align-items: center;
+  gap: 20px;
+
+  box-sizing: border-box;
+}
+
+.main-summary-icon {
+  width: 58px;
+  height: 58px;
+  min-width: 58px;
+  border-radius: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.main-summary-icon.joined {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.main-summary-icon.request {
+  background: #ecfdf5;
+  color: #16a34a;
+}
+
+.main-summary-icon.schedule {
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+
+.main-summary-icon.health {
+  background: #fef3c7;
+  color: #f59e0b;
+}
+
+.main-summary-card p {
+  margin: 0;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.main-summary-card strong {
+  display: inline-block;
+  margin-top: 8px;
+
+  font-size: 26px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.main-summary-card span {
+  margin-left: 10px;
+
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ==============================
+   공통 패널
+================================= */
+.main-board-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.main-bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.main-panel {
+  background: #ffffff;
+  border: 1px solid #dfe5ee;
+  border-radius: 13px;
+  padding: 16px;
+
+  box-sizing: border-box;
+}
+
+.main-panel-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 14px;
+}
+
+.main-panel-title-row h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #111827;
+}
+
+/* 빈 데이터 */
+.main-empty-box {
+  min-height: 170px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 11px;
+  background: #f8fafc;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.main-empty-box p {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ==============================
+   내가 가입한 동아리
+================================= */
+.joined-club-panel {
+  min-height: 250px;
+}
+
+.joined-club-list {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.joined-club-name-link {
+  font-weight: 800;
+  color: #111827;
+  text-decoration: none;
+}
+
+.joined-club-name-link:hover {
+  color: #4f63e6;
+  text-decoration: underline;
+}
+
+.joined-club-item {
+  min-height: 66px;
+  padding: 12px 18px;
+  border-bottom: 1px solid #e5e7eb;
+
+  display: grid;
+  grid-template-columns: 52px 1fr 120px;
+  align-items: center;
+  gap: 14px;
+}
+
+.joined-club-item:last-child {
+  border-bottom: none;
+}
+
+.club-symbol {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+
+  background: #eff6ff;
+  color: #2563eb;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.joined-club-info strong {
+  display: block;
+  font-size: 15px;
+  color: #111827;
+}
+
+.joined-club-info span {
+  display: block;
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.dashboard-move-button {
+  height: 32px;
+  border: 1px solid #dbeafe;
+  border-radius: 6px;
+
+  color: #2563eb;
+  background: #ffffff;
+  text-decoration: none;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* ==============================
+   나의 일정
+================================= */
+.schedule-panel {
+  min-height: 250px;
+}
+
+.schedule-list {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.schedule-item {
+  min-height: 62px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #e5e7eb;
+
+  display: grid;
+  grid-template-columns: 62px 1fr 52px;
+  align-items: center;
+  gap: 14px;
+}
+
+.schedule-item:last-child {
+  border-bottom: none;
+}
+
+.schedule-date-box {
+  width: 54px;
+  height: 48px;
+  border-radius: 8px;
+  background: #eff6ff;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.schedule-date-box strong {
+  font-size: 14px;
+  color: #111827;
+}
+
+.schedule-date-box span {
+  margin-top: 4px;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.schedule-item > div:nth-child(2) strong {
+  font-size: 15px;
+  color: #111827;
+}
+
+.schedule-item > div:nth-child(2) p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.schedule-item > div:nth-child(2) span {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.schedule-dday {
+  height: 28px;
+  border-radius: 6px;
+  background: #eff6ff;
+  color: #2563eb;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* ==============================
+   전체 동아리 목록
+================================= */
+.all-club-panel {
+  min-height: 300px;
+}
+
+.club-list-title-row {
+  align-items: center;
+}
+
+.club-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.club-filter-row input,
+.club-filter-row select {
+  height: 34px;
+  border: 1px solid #dbe1ea;
+  border-radius: 7px;
+  background: #ffffff;
+
+  padding: 0 12px;
+  color: #334155;
+  font-size: 13px;
+  outline: none;
+}
+
+.club-filter-row input {
+  width: 170px;
+}
+
+.club-table {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.club-table-head,
+.club-table-row {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 130px 90px 110px;
+  align-items: center;
+}
+
+.club-table-head {
+  height: 42px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+
+  color: #334155;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.club-table-head span,
+.club-table-row span {
+  padding: 0 14px;
+}
+
+.club-table-row {
+  height: 46px;
+  border-bottom: 1px solid #e5e7eb;
+
+  color: #111827;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.club-table-row:last-child {
+  border-bottom: none;
+}
+
+.club-table-empty {
+  min-height: 150px;
+  background: #ffffff;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.club-table-empty p {
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.join-button {
+  height: 28px;
+  padding: 0 13px;
+
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #2563eb;
+
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.join-button.joined {
+  color: #6b7280;
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+  cursor: default;
+}
+
+.join-button.joined:hover {
+  color: #6b7280;
+  background-color: #f3f4f6;
+}
+
+/* ==============================
+   랭킹
+================================= */
+.ranking-panel {
+  min-height: 300px;
+}
+
+.ranking-table {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.ranking-table-head,
+.ranking-row {
+  display: grid;
+  grid-template-columns: 46px 1.5fr 0.8fr 0.8fr;
+  align-items: center;
+}
+
+.ranking-table-head {
+  height: 42px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+
+  color: #334155;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.ranking-table-head span,
+.ranking-row span {
+  padding: 0 12px;
+}
+
+.ranking-row {
+  height: 46px;
+  border-bottom: 1px solid #e5e7eb;
+
+  color: #111827;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.ranking-row:last-child {
+  border-bottom: none;
+}
+
+.ranking-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #64748b;
+  font-weight: 800;
+}
+
+.ranking-empty {
+  min-height: 200px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ranking-empty p {
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ==============================
+   화면 폭이 줄어들 때
+================================= */
+@media (max-width: 1300px) {
+  .main-topbar {
+    padding: 0 28px;
+  }
+
+  .main-content {
+    padding: 24px 28px 34px;
+  }
+
+  .main-summary-card {
+    padding: 16px;
+  }
+
+  .club-filter-row input {
+    width: 130px;
+  }
+}
+
+/* 사용자 프로필 드롭다운 기준 위치 */
+.main-profile-group {
+  position: relative;
+}
+
+/* 사용자 프로필 드롭다운 메뉴 */
+.main-user-dropdown {
+  position: absolute;
+  top: 48px;
+  right: 0;
+  width: 160px;
+
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+
+  padding: 8px;
+  z-index: 50;
+}
+
+/* 드롭다운 안의 버튼 */
+.main-user-dropdown button {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 10px 12px;
+  border-radius: 10px;
+
+  color: #374151;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+
+  cursor: pointer;
+}
+
+/* 드롭다운 버튼 hover */
+.main-user-dropdown button:hover {
+  background: #f3f6ff;
+  color: #4f63e7;
+}
+
+/* 로그아웃 버튼만 살짝 위험 동작처럼 표시 */
+.main-user-dropdown button:last-child:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}

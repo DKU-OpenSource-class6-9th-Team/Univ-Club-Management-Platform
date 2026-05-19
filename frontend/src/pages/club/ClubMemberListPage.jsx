@@ -1,0 +1,470 @@
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { getClub } from '../../api/clubs.js';
+import { fetchClubMembers } from '../../api/clubMembers.js';
+
+import '../../styles/club/clubDashboard.css';
+import '../../styles/club/clubMembers.css';
+
+import {
+  Bell,
+  CalendarDays,
+  CreditCard,
+  Edit3,
+  FileText,
+  Filter,
+  HeartPulse,
+  LayoutDashboard,
+  LogOut,
+  RotateCcw,
+  Search,
+  ShieldCheck,
+  UserCheck,
+  UserPlus,
+  UserX,
+  Users,
+} from 'lucide-react';
+
+const INITIAL_FILTERS = {
+  search: '',
+  role: '',
+  status: '',
+  scoreRange: '',
+};
+
+function ClubMemberListPage() {
+  const navigate = useNavigate();
+  const { clubId } = useParams();
+
+  const [club, setClub] = useState(null);
+  const [members, setMembers] = useState([]);
+
+  const [isClubLoading, setIsClubLoading] = useState(true);
+  const [isMemberLoading, setIsMemberLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const [filterInputs, setFilterInputs] = useState(INITIAL_FILTERS);
+  const [appliedFilters, setAppliedFilters] = useState(INITIAL_FILTERS);
+
+  const loginUser = JSON.parse(localStorage.getItem('loginUser')) || {};
+  const isClubManager = loginUser.role === 'CLUB_MANAGER';
+
+  const currentPageName = '동아리원 관리';
+
+  const hasActiveFilters =
+    appliedFilters.search.trim() !== '' ||
+    appliedFilters.role !== '' ||
+    appliedFilters.status !== '' ||
+    appliedFilters.scoreRange !== '';
+
+  useEffect(() => {
+    const loadClub = async () => {
+      try {
+        const data = await getClub(clubId);
+        setClub(data);
+      } catch (error) {
+        console.error('동아리 정보를 불러오지 못했습니다.', error);
+      } finally {
+        setIsClubLoading(false);
+      }
+    };
+
+    loadClub();
+  }, [clubId]);
+
+  useEffect(() => {
+    const loadMembers = async () => {
+      try {
+        setIsMemberLoading(true);
+        setErrorMessage('');
+
+        const apiFilters = buildApiFilters(appliedFilters);
+        const data = await fetchClubMembers(clubId, apiFilters);
+
+        setMembers(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error('동아리원 목록을 불러오지 못했습니다.', error);
+        setErrorMessage('동아리원 목록을 불러오지 못했습니다.');
+      } finally {
+        setIsMemberLoading(false);
+      }
+    };
+
+    loadMembers();
+  }, [clubId, appliedFilters]);
+
+  const buildApiFilters = (filters) => {
+    const apiFilters = {
+      search: filters.search.trim(),
+      role: filters.role,
+      status: filters.status,
+    };
+
+    if (filters.scoreRange === '80') {
+      apiFilters.minScore = 80;
+    }
+
+    if (filters.scoreRange === '50-79') {
+      apiFilters.minScore = 50;
+      apiFilters.maxScore = 79;
+    }
+
+    if (filters.scoreRange === '0-49') {
+      apiFilters.maxScore = 49;
+    }
+
+    return apiFilters;
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('loginUser');
+    navigate('/login');
+  };
+
+  const handleFilterChange = (event) => {
+    const { name, value } = event.target;
+
+    setFilterInputs((prevFilters) => ({
+      ...prevFilters,
+      [name]: value,
+    }));
+  };
+
+  const handleFilterSubmit = (event) => {
+    event.preventDefault();
+    setAppliedFilters(filterInputs);
+  };
+
+  const handleResetFilters = () => {
+    setFilterInputs(INITIAL_FILTERS);
+    setAppliedFilters(INITIAL_FILTERS);
+  };
+
+  const summary = useMemo(() => {
+    const totalCount = members.length;
+    const newCount = members.filter((member) => member.status === 'new').length;
+    const regularCount = members.filter((member) => member.status === 'regular').length;
+    const inactiveCount = members.filter((member) => member.status === 'inactive').length;
+
+    return {
+      totalCount,
+      newCount,
+      regularCount,
+      inactiveCount,
+    };
+  }, [members]);
+
+  const formatDate = (dateValue) => {
+    if (!dateValue) return '-';
+
+    return String(dateValue).slice(0, 10);
+  };
+
+  const getDisplayValue = (value) => {
+    if (value === null || value === undefined || value === '') {
+      return '-';
+    }
+
+    return value;
+  };
+
+  return (
+    <div className="club-dashboard-page">
+      <div className="dashboard-fixed-canvas">
+        <aside className="dashboard-sidebar">
+          <div className="sidebar-logo">
+            <Link to="/main" className="sidebar-clubflow-logo">
+              <span className="sidebar-logo-cf">CF</span>
+              <span className="sidebar-logo-text">ClubFlow</span>
+            </Link>
+          </div>
+
+          <nav className="sidebar-menu">
+            <Link to={`/club/${clubId}/dashboard`} className="sidebar-link">
+              <LayoutDashboard size={19} />
+              대시보드
+            </Link>
+
+            <div className="sidebar-menu-group">
+              <Link
+                to={`/club/${clubId}/info`}
+                className="sidebar-link sidebar-parent-link"
+              >
+                <FileText size={19} />
+                동아리 정보
+              </Link>
+
+              {isClubManager && (
+                <div className="sidebar-submenu">
+                  <Link to={`/club/${clubId}/edit`} className="sidebar-sub-link">
+                    <Edit3 size={16} />
+                    동아리 정보 수정
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            <Link to={`/club/${clubId}/members`} className="sidebar-link active">
+              <Users size={19} />
+              동아리원 관리
+            </Link>
+
+            <Link to={`/club/${clubId}/fee`} className="sidebar-link">
+              <CreditCard size={19} />
+              회비 관리
+            </Link>
+
+            <Link to="/club/schedule" className="sidebar-link">
+              <CalendarDays size={19} />
+              일정 관리 / 공지
+            </Link>
+
+            <Link to="/club/settings" className="sidebar-link">
+              <HeartPulse size={19} />
+              건강도 분석
+            </Link>
+          </nav>
+
+          <button type="button" className="logout-button" onClick={handleLogout}>
+            <LogOut size={18} />
+            로그아웃
+          </button>
+        </aside>
+
+        <main className="dashboard-main club-member-main">
+          <div className="dashboard-frame club-member-frame">
+            <nav className="dashboard-breadcrumb">
+              <Link to="/main">플랫폼 메인</Link>
+              <span>›</span>
+              <Link to="/main">내 동아리</Link>
+              <span>›</span>
+              <span>{isClubLoading ? '불러오는 중...' : club?.name || '동아리'}</span>
+              <span>›</span>
+              <span className="breadcrumb-current">{currentPageName}</span>
+            </nav>
+
+            <header className="dashboard-header">
+              <div>
+                <p className="dashboard-label">Club Members</p>
+                <h1>{currentPageName}</h1>
+                <p className="dashboard-desc">
+                  동아리원의 역할, 상태, 활동 점수와 가입 정보를 확인할 수 있습니다.
+                </p>
+              </div>
+
+              <div className="dashboard-user-box">
+                <button type="button" className="notice-button">
+                  <Bell size={19} />
+                </button>
+
+                <div className="user-profile">
+                  <div className="user-avatar">
+                    {loginUser.nickname ? loginUser.nickname[0] : '관'}
+                  </div>
+
+                  <div>
+                    <strong>{loginUser.nickname || '관리자'}</strong>
+                    <span>{loginUser.school_name || '학교 정보 없음'}</span>
+                  </div>
+                </div>
+              </div>
+            </header>
+
+            <section className="summary-grid">
+              <article className="summary-card">
+                <div className="summary-icon members">
+                  <Users size={22} />
+                </div>
+
+                <div>
+                  <span>{hasActiveFilters ? '검색 결과' : '전체 동아리원'}</span>
+                  <strong>{summary.totalCount}</strong>
+                  <p>{hasActiveFilters ? '조건에 맞는 인원입니다.' : '관리 대상 인원입니다.'}</p>
+                </div>
+              </article>
+
+              <article className="summary-card">
+                <div className="summary-icon new-member">
+                  <UserPlus size={22} />
+                </div>
+
+                <div>
+                  <span>신입 회원</span>
+                  <strong>{summary.newCount}</strong>
+                  <p>초기 적응 확인 대상입니다.</p>
+                </div>
+              </article>
+
+              <article className="summary-card">
+                <div className="summary-icon regular-member">
+                  <UserCheck size={22} />
+                </div>
+
+                <div>
+                  <span>정회원</span>
+                  <strong>{summary.regularCount}</strong>
+                  <p>정상 활동 중인 회원입니다.</p>
+                </div>
+              </article>
+
+              <article className="summary-card">
+                <div className="summary-icon inactive-member">
+                  <UserX size={22} />
+                </div>
+
+                <div>
+                  <span>휴면 회원</span>
+                  <strong>{summary.inactiveCount}</strong>
+                  <p>활동 확인이 필요합니다.</p>
+                </div>
+              </article>
+            </section>
+
+            <section className="club-member-content">
+              <article className="club-member-panel">
+                <div className="club-member-panel-header">
+                  <div>
+                    <h2>동아리원 목록</h2>
+                    <p>
+                      이름, 아이디, 이메일, 학번, 학과, 역할, 상태, 활동 점수 기준으로 동아리원을 찾을 수 있습니다.
+                    </p>
+                  </div>
+
+                  <ShieldCheck size={22} />
+                </div>
+
+                <form className="club-member-filter-bar" onSubmit={handleFilterSubmit}>
+                  <div className="member-search-box">
+                    <Search size={17} />
+                    <input
+                      type="text"
+                      name="search"
+                      placeholder="이름, 아이디, 이메일, 학번, 학과 검색"
+                      value={filterInputs.search}
+                      onChange={handleFilterChange}
+                    />
+                  </div>
+
+                  <select
+                    name="role"
+                    value={filterInputs.role}
+                    onChange={handleFilterChange}
+                    aria-label="역할 필터"
+                  >
+                    <option value="">역할 전체</option>
+                    <option value="president">회장</option>
+                    <option value="vice_president">부회장</option>
+                    <option value="executive">운영진</option>
+                    <option value="treasurer">총무</option>
+                    <option value="member">일반 회원</option>
+                  </select>
+
+                  <select
+                    name="status"
+                    value={filterInputs.status}
+                    onChange={handleFilterChange}
+                    aria-label="상태 필터"
+                  >
+                    <option value="">상태 전체</option>
+                    <option value="new">신입 회원</option>
+                    <option value="regular">정회원</option>
+                    <option value="inactive">휴면 회원</option>
+                    <option value="withdrawn">탈퇴 회원</option>
+                    <option value="fee_unpaid">회비 미납자</option>
+                    <option value="restricted">이용 제한 회원</option>
+                  </select>
+
+                  <select
+                    name="scoreRange"
+                    value={filterInputs.scoreRange}
+                    onChange={handleFilterChange}
+                    aria-label="활동 점수 필터"
+                  >
+                    <option value="">활동 점수 전체</option>
+                    <option value="80">80점 이상</option>
+                    <option value="50-79">50점 이상 79점 이하</option>
+                    <option value="0-49">50점 미만</option>
+                  </select>
+
+                  <button type="submit" className="member-filter-submit-button">
+                    <Filter size={16} />
+                    적용
+                  </button>
+
+                  <button
+                    type="button"
+                    className="member-filter-reset-button"
+                    onClick={handleResetFilters}
+                  >
+                    <RotateCcw size={16} />
+                    초기화
+                  </button>
+                </form>
+
+                {isMemberLoading ? (
+                  <div className="club-member-empty-box">
+                    <p>동아리원 목록을 불러오는 중입니다.</p>
+                  </div>
+                ) : errorMessage ? (
+                  <div className="club-member-empty-box error">
+                    <p>{errorMessage}</p>
+                  </div>
+                ) : members.length === 0 ? (
+                  <div className="club-member-empty-box">
+                    <p>
+                      {hasActiveFilters
+                        ? '조건에 맞는 동아리원이 없습니다.'
+                        : '등록된 동아리원이 없습니다.'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="club-member-table-wrap">
+                    <div className="club-member-table">
+                      <div className="club-member-table-head">
+                        <span>이름</span>
+                        <span>아이디</span>
+                        <span>이메일</span>
+                        <span>학번</span>
+                        <span>학과</span>
+                        <span>역할</span>
+                        <span>상태</span>
+                        <span>활동 점수</span>
+                        <span>가입일</span>
+                      </div>
+
+                      {members.map((member) => (
+                        <div className="club-member-table-row" key={member.id}>
+                          <span className="member-name">
+                            {getDisplayValue(member.name)}
+                          </span>
+                          <span>{getDisplayValue(member.username)}</span>
+                          <span>{getDisplayValue(member.email)}</span>
+                          <span>{getDisplayValue(member.student_id)}</span>
+                          <span>{getDisplayValue(member.department)}</span>
+                          <span>
+                            <em className="member-badge role">
+                              {getDisplayValue(member.role_display || member.role)}
+                            </em>
+                          </span>
+                          <span>
+                            <em className={`member-badge status ${member.status}`}>
+                              {getDisplayValue(member.status_display || member.status)}
+                            </em>
+                          </span>
+                          <span>{member.activity_score ?? 0}점</span>
+                          <span>{formatDate(member.joined_at)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </article>
+            </section>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+export default ClubMemberListPage;
