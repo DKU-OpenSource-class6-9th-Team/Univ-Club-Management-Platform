@@ -143,14 +143,14 @@
 }
 
 .club-member-table {
-  min-width: 1220px;
+  min-width: 1360px;
 }
 
 /* 테이블 헤더 / 행 공통 */
 .club-member-table-head,
 .club-member-table-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 1.4fr 1fr 1.2fr 0.9fr 0.9fr 0.8fr 0.9fr 0.9fr 0.8fr;
+  grid-template-columns: 1fr 1fr 1.4fr 1fr 1.2fr 0.9fr 1.2fr 0.9fr 0.8fr 0.9fr 0.9fr 0.8fr;
   align-items: center;
 }
 
@@ -293,13 +293,43 @@
   color: #dc2626;
 }
 
+.member-badge.permission {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.member-badge.permission.owner {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.member-badge.permission.manager {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.member-badge.permission.staff {
+  background: #ecfdf5;
+  color: #15803d;
+}
+
+.member-badge.permission.finance {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.member-badge.permission.basic {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
 /* ==============================
    반응형
 ================================= */
 
 @media (max-width: 1300px) {
   .club-member-table {
-    min-width: 1180px;
+    min-width: 1320px;
   }
 
   .club-member-table-head,
@@ -311,6 +341,7 @@
       0.8fr
       1fr
       0.8fr
+      1.2fr
       0.8fr
       0.8fr
       0.8fr
@@ -808,4 +839,31 @@
 .member-update-save-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.member-role-permission-box {
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  background: #f8fbff;
+  padding: 12px;
+}
+
+.member-role-permission-box strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #1d4ed8;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.member-role-permission-box ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.member-role-permission-box li {
+  margin: 4px 0;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
 }

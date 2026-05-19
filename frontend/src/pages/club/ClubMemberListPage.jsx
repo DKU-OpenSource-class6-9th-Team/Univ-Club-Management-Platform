@@ -41,6 +41,66 @@ const INITIAL_FILTERS = {
   scoreRange: '',
 };
 
+const ROLE_PERMISSION_INFO = {
+  president: {
+    level: 'owner',
+    summary: '전체 관리 권한',
+    permissions: [
+      '동아리 정보 관리',
+      '동아리원 관리',
+      '역할 및 권한 관리',
+      '일정 관리',
+      '회비 관리',
+      '홍보/모집 관리',
+      '건강도 대시보드 관리',
+    ],
+  },
+  vice_president: {
+    level: 'manager',
+    summary: '운영 보조 및 주요 관리 권한',
+    permissions: [
+      '동아리원 관리',
+      '일정 관리',
+      '홍보/모집 관리',
+      '건강도 대시보드 확인',
+    ],
+  },
+  executive: {
+    level: 'staff',
+    summary: '일정, 출석, 홍보 운영 권한',
+    permissions: [
+      '일정 관리',
+      '출석 관리',
+      '홍보/모집 관리',
+      '동아리원 활동 정보 확인',
+    ],
+  },
+  treasurer: {
+    level: 'finance',
+    summary: '회비 관리 권한',
+    permissions: [
+      '회비 납부 내역 관리',
+      '수입/지출 내역 관리',
+      '영수증 관리',
+      '회비 건강도 확인',
+    ],
+  },
+  member: {
+    level: 'basic',
+    summary: '조회 및 참여 권한',
+    permissions: [
+      '동아리 정보 조회',
+      '일정 확인',
+      '활동 참여',
+      '본인 활동 정보 확인',
+    ],
+  },
+};
+
+function getRolePermissionInfo(role) {
+  return ROLE_PERMISSION_INFO[role] || ROLE_PERMISSION_INFO.member;
+}
+
 function buildApiFilters(filters) {
   const apiFilters = {
     search: filters.search.trim(),
@@ -295,21 +355,19 @@ function ClubMemberListPage() {
 
   const summary = useMemo(() => {
     const totalCount = members.length;
-    const excellentCount = members.filter(
-      (member) => member.activity_grade === 'excellent'
+    const managerCount = members.filter((member) =>
+      ['president', 'vice_president'].includes(member.role)
     ).length;
-    const warningCount = members.filter(
-      (member) => member.activity_grade === 'warning'
+    const staffCount = members.filter((member) =>
+      ['executive', 'treasurer'].includes(member.role)
     ).length;
-    const dangerCount = members.filter(
-      (member) => member.activity_grade === 'danger'
-    ).length;
+    const basicCount = members.filter((member) => member.role === 'member').length;
 
     return {
       totalCount,
-      excellentCount,
-      warningCount,
-      dangerCount,
+      managerCount,
+      staffCount,
+      basicCount,
     };
   }, [members]);
 
@@ -458,9 +516,9 @@ function ClubMemberListPage() {
                 </div>
 
                 <div>
-                  <span>우수 등급</span>
-                  <strong>{summary.excellentCount}</strong>
-                  <p>활동 점수 90점 이상 회원입니다.</p>
+                  <span>관리 권한</span>
+                  <strong>{summary.managerCount}</strong>
+                  <p>회장·부회장 역할의 회원입니다.</p>
                 </div>
               </article>
 
@@ -470,9 +528,9 @@ function ClubMemberListPage() {
                 </div>
 
                 <div>
-                  <span>주의 등급</span>
-                  <strong>{summary.warningCount}</strong>
-                  <p>활동 점수 30점 이상 50점 미만 회원입니다.</p>
+                  <span>운영 권한</span>
+                  <strong>{summary.staffCount}</strong>
+                  <p>운영진·총무 역할의 회원입니다.</p>
                 </div>
               </article>
 
@@ -482,9 +540,9 @@ function ClubMemberListPage() {
                 </div>
 
                 <div>
-                  <span>위험 등급</span>
-                  <strong>{summary.dangerCount}</strong>
-                  <p>활동 점수 30점 미만 회원입니다.</p>
+                  <span>일반 권한</span>
+                  <strong>{summary.basicCount}</strong>
+                  <p>조회 및 참여 중심의 회원입니다.</p>
                 </div>
               </article>
             </section>
@@ -683,6 +741,7 @@ function ClubMemberListPage() {
                         <span>학번</span>
                         <span>학과</span>
                         <span>역할</span>
+                        <span>권한</span>
                         <span>상태</span>
                         <span>활동 점수</span>
                         <span>활동 등급</span>
@@ -704,6 +763,13 @@ function ClubMemberListPage() {
                               {getDisplayValue(member.role_display || member.role)}
                             </em>
                           </span>
+
+                          <span>
+                            <em className={`member-badge permission ${member.role_permission_level}`}>
+                              {getDisplayValue(member.role_permission_summary)}
+                            </em>
+                          </span>
+
                           <span>
                             <em className={`member-badge status ${member.status}`}>
                               {getDisplayValue(member.status_display || member.status)}
@@ -772,6 +838,16 @@ function ClubMemberListPage() {
                   <option value="member">일반 회원</option>
                 </select>
               </label>
+
+              <div className="member-role-permission-box">
+                <strong>{getRolePermissionInfo(updateForm.role).summary}</strong>
+
+                <ul>
+                  {getRolePermissionInfo(updateForm.role).permissions.map((permission) => (
+                    <li key={permission}>{permission}</li>
+                  ))}
+                </ul>
+              </div>
 
               <label>
                 상태
