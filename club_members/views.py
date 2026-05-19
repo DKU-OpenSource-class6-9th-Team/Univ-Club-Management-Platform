@@ -1,9 +1,20 @@
+from django.db import transaction
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
+
+from rest_framework import status
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from .models import ClubMembership
-from .serializers import ClubMembershipListSerializer
+from clubs.models import ClubMembership as ClubJoinMembership
+
+from .models import ClubMembership as ManagedClubMembership
+from .serializers import (
+    ClubJoinRequestListSerializer,
+    ClubMembershipListSerializer,
+)
 
 
 class ClubMembershipListView(ListAPIView):
@@ -14,7 +25,7 @@ class ClubMembershipListView(ListAPIView):
         club_id = self.kwargs["club_id"]
 
         queryset = (
-            ClubMembership.objects
+            ManagedClubMembership.objects
             .filter(club_id=club_id)
             .select_related("user", "club")
             .order_by("-joined_at", "id")
@@ -22,7 +33,7 @@ class ClubMembershipListView(ListAPIView):
 
         search = self.request.query_params.get("search", "").strip()
         role = self.request.query_params.get("role", "").strip()
-        status = self.request.query_params.get("status", "").strip()
+        status_value = self.request.query_params.get("status", "").strip()
         min_score = self.request.query_params.get("min_score", "").strip()
         max_score = self.request.query_params.get("max_score", "").strip()
 
@@ -39,8 +50,8 @@ class ClubMembershipListView(ListAPIView):
         if role:
             queryset = queryset.filter(role=role)
 
-        if status:
-            queryset = queryset.filter(status=status)
+        if status_value:
+            queryset = queryset.filter(status=status_value)
 
         if min_score:
             try:
@@ -55,3 +66,91 @@ class ClubMembershipListView(ListAPIView):
                 pass
 
         return queryset
+
+
+class ClubJoinRequestListView(ListAPIView):
+    serializer_class = ClubJoinRequestListSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        club_id = self.kwargs["club_id"]
+
+        return (
+            ClubJoinMembership.objects
+            .filter(
+                club_id=club_id,
+                status=ClubJoinMembership.STATUS_PENDING,
+            )
+            .select_related("club", "profile", "profile__user")
+            .order_by("-joined_at", "id")
+        )
+
+
+class ClubJoinRequestApproveView(APIView):
+    permission_classes = [AllowAny]
+
+    @transaction.atomic
+    def post(self, request, club_id, membership_id):
+        join_request = get_object_or_404(
+            ClubJoinMembership.objects.select_related(
+                "club",
+                "profile",
+                "profile__user",
+            ),
+            id=membership_id,
+            club_id=club_id,
+        )
+
+        if join_request.status != ClubJoinMembership.STATUS_PENDING:
+            return Response(
+                {"message": "승인 대기 상태의 가입 신청만 승인할 수 있습니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        join_request.status = ClubJoinMembership.STATUS_ACTIVE
+        join_request.save(update_fields=["status"])
+
+        ManagedClubMembership.objects.get_or_create(
+            user=join_request.profile.user,
+            club=join_request.club,
+            defaults={
+                "role": "member",
+                "status": "new",
+                "activity_score": 0,
+            },
+        )
+
+        return Response(
+            {"message": "가입 신청을 승인했습니다."},
+            status=status.HTTP_200_OK,
+        )
+
+
+class ClubJoinRequestRejectView(APIView):
+    permission_classes = [AllowAny]
+
+    @transaction.atomic
+    def post(self, request, club_id, membership_id):
+        join_request = get_object_or_404(
+            ClubJoinMembership.objects.select_related(
+                "club",
+                "profile",
+                "profile__user",
+            ),
+            id=membership_id,
+            club_id=club_id,
+        )
+
+        if join_request.status != ClubJoinMembership.STATUS_PENDING:
+            return Response(
+                {"message": "승인 대기 상태의 가입 신청만 거절할 수 있습니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        join_request.status = ClubJoinMembership.STATUS_REJECTED
+        join_request.save(update_fields=["status"])
+
+        return Response(
+            {"message": "가입 신청을 거절했습니다."},
+            status=status.HTTP_200_OK,
+        )

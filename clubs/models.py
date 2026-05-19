@@ -74,11 +74,13 @@ class ClubMembership(models.Model):
     STATUS_ACTIVE = 'ACTIVE'
     STATUS_PENDING = 'PENDING'
     STATUS_INACTIVE = 'INACTIVE'
+    STATUS_REJECTED = 'REJECTED'
 
     STATUS_CHOICES = [
         (STATUS_ACTIVE, '활동 중'),
         (STATUS_PENDING, '승인 대기'),
         (STATUS_INACTIVE, '비활동'),
+        (STATUS_REJECTED, '거절됨')
     ]
 
     # 어떤 동아리에 속해 있는지 저장

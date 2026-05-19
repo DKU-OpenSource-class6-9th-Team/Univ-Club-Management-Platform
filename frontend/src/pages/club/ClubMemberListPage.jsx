@@ -1,7 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { getClub } from '../../api/clubs.js';
-import { fetchClubMembers } from '../../api/clubMembers.js';
+import {
+  approveClubJoinRequest,
+  fetchClubJoinRequests,
+  fetchClubMembers,
+  rejectClubJoinRequest,
+} from '../../api/clubMembers.js';
 
 import '../../styles/club/clubDashboard.css';
 import '../../styles/club/clubMembers.css';
@@ -9,6 +14,8 @@ import '../../styles/club/clubMembers.css';
 import {
   Bell,
   CalendarDays,
+  CheckCircle,
+  ClipboardList,
   CreditCard,
   Edit3,
   FileText,
@@ -23,6 +30,7 @@ import {
   UserPlus,
   UserX,
   Users,
+  XCircle,
 } from 'lucide-react';
 
 const INITIAL_FILTERS = {
@@ -32,16 +40,57 @@ const INITIAL_FILTERS = {
   scoreRange: '',
 };
 
+function buildApiFilters(filters) {
+  const apiFilters = {
+    search: filters.search.trim(),
+    role: filters.role,
+    status: filters.status,
+  };
+
+  if (filters.scoreRange === '80') {
+    apiFilters.minScore = 80;
+  }
+
+  if (filters.scoreRange === '50-79') {
+    apiFilters.minScore = 50;
+    apiFilters.maxScore = 79;
+  }
+
+  if (filters.scoreRange === '0-49') {
+    apiFilters.maxScore = 49;
+  }
+
+  return apiFilters;
+}
+
+function getErrorMessage(error, fallbackMessage) {
+  if (typeof error === 'string') {
+    return error;
+  }
+
+  if (error?.message) {
+    return error.message;
+  }
+
+  return fallbackMessage;
+}
+
 function ClubMemberListPage() {
   const navigate = useNavigate();
   const { clubId } = useParams();
 
   const [club, setClub] = useState(null);
   const [members, setMembers] = useState([]);
+  const [joinRequests, setJoinRequests] = useState([]);
 
   const [isClubLoading, setIsClubLoading] = useState(true);
   const [isMemberLoading, setIsMemberLoading] = useState(true);
+  const [isJoinRequestLoading, setIsJoinRequestLoading] = useState(true);
+
   const [errorMessage, setErrorMessage] = useState('');
+  const [joinRequestErrorMessage, setJoinRequestErrorMessage] = useState('');
+  const [joinRequestActionMessage, setJoinRequestActionMessage] = useState('');
+  const [processingRequestId, setProcessingRequestId] = useState(null);
 
   const [filterInputs, setFilterInputs] = useState(INITIAL_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(INITIAL_FILTERS);
@@ -72,49 +121,49 @@ function ClubMemberListPage() {
     loadClub();
   }, [clubId]);
 
-  useEffect(() => {
-    const loadMembers = async () => {
-      try {
-        setIsMemberLoading(true);
-        setErrorMessage('');
+  const loadMembers = useCallback(async () => {
+    try {
+      setIsMemberLoading(true);
+      setErrorMessage('');
 
-        const apiFilters = buildApiFilters(appliedFilters);
-        const data = await fetchClubMembers(clubId, apiFilters);
+      const apiFilters = buildApiFilters(appliedFilters);
+      const data = await fetchClubMembers(clubId, apiFilters);
 
-        setMembers(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error('동아리원 목록을 불러오지 못했습니다.', error);
-        setErrorMessage('동아리원 목록을 불러오지 못했습니다.');
-      } finally {
-        setIsMemberLoading(false);
-      }
-    };
-
-    loadMembers();
+      setMembers(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('동아리원 목록을 불러오지 못했습니다.', error);
+      setErrorMessage(
+        getErrorMessage(error, '동아리원 목록을 불러오지 못했습니다.')
+      );
+    } finally {
+      setIsMemberLoading(false);
+    }
   }, [clubId, appliedFilters]);
 
-  const buildApiFilters = (filters) => {
-    const apiFilters = {
-      search: filters.search.trim(),
-      role: filters.role,
-      status: filters.status,
-    };
+  const loadJoinRequests = useCallback(async () => {
+    try {
+      setIsJoinRequestLoading(true);
+      setJoinRequestErrorMessage('');
 
-    if (filters.scoreRange === '80') {
-      apiFilters.minScore = 80;
+      const data = await fetchClubJoinRequests(clubId);
+      setJoinRequests(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('가입 신청 목록을 불러오지 못했습니다.', error);
+      setJoinRequestErrorMessage(
+        getErrorMessage(error, '가입 신청 목록을 불러오지 못했습니다.')
+      );
+    } finally {
+      setIsJoinRequestLoading(false);
     }
+  }, [clubId]);
 
-    if (filters.scoreRange === '50-79') {
-      apiFilters.minScore = 50;
-      apiFilters.maxScore = 79;
-    }
+  useEffect(() => {
+    loadMembers();
+  }, [loadMembers]);
 
-    if (filters.scoreRange === '0-49') {
-      apiFilters.maxScore = 49;
-    }
-
-    return apiFilters;
-  };
+  useEffect(() => {
+    loadJoinRequests();
+  }, [loadJoinRequests]);
 
   const handleLogout = () => {
     localStorage.removeItem('loginUser');
@@ -138,6 +187,51 @@ function ClubMemberListPage() {
   const handleResetFilters = () => {
     setFilterInputs(INITIAL_FILTERS);
     setAppliedFilters(INITIAL_FILTERS);
+  };
+
+  const handleApproveJoinRequest = async (membershipId) => {
+    try {
+      setProcessingRequestId(membershipId);
+      setJoinRequestActionMessage('');
+      setJoinRequestErrorMessage('');
+
+      await approveClubJoinRequest(clubId, membershipId);
+
+      setJoinRequestActionMessage('가입 신청을 승인했습니다.');
+
+      await Promise.all([
+        loadJoinRequests(),
+        loadMembers(),
+      ]);
+    } catch (error) {
+      console.error('가입 신청 승인에 실패했습니다.', error);
+      setJoinRequestErrorMessage(
+        getErrorMessage(error, '가입 신청 승인에 실패했습니다.')
+      );
+    } finally {
+      setProcessingRequestId(null);
+    }
+  };
+
+  const handleRejectJoinRequest = async (membershipId) => {
+    try {
+      setProcessingRequestId(membershipId);
+      setJoinRequestActionMessage('');
+      setJoinRequestErrorMessage('');
+
+      await rejectClubJoinRequest(clubId, membershipId);
+
+      setJoinRequestActionMessage('가입 신청을 거절했습니다.');
+
+      await loadJoinRequests();
+    } catch (error) {
+      console.error('가입 신청 거절에 실패했습니다.', error);
+      setJoinRequestErrorMessage(
+        getErrorMessage(error, '가입 신청 거절에 실패했습니다.')
+      );
+    } finally {
+      setProcessingRequestId(null);
+    }
   };
 
   const summary = useMemo(() => {
@@ -248,7 +342,7 @@ function ClubMemberListPage() {
                 <p className="dashboard-label">Club Members</p>
                 <h1>{currentPageName}</h1>
                 <p className="dashboard-desc">
-                  동아리원의 역할, 상태, 활동 점수와 가입 정보를 확인할 수 있습니다.
+                  가입 신청 승인부터 동아리원 목록 관리까지 한 화면에서 처리할 수 있습니다.
                 </p>
               </div>
 
@@ -321,6 +415,93 @@ function ClubMemberListPage() {
             </section>
 
             <section className="club-member-content">
+              <article className="club-join-request-panel">
+                <div className="club-join-request-header">
+                  <div>
+                    <h2>가입 신청 관리</h2>
+                    <p>승인 대기 중인 가입 신청을 확인하고 승인 또는 거절할 수 있습니다.</p>
+                  </div>
+
+                  <ClipboardList size={22} />
+                </div>
+
+                {joinRequestActionMessage && (
+                  <div className="join-request-action-message success">
+                    {joinRequestActionMessage}
+                  </div>
+                )}
+
+                {joinRequestErrorMessage && (
+                  <div className="join-request-action-message error">
+                    {joinRequestErrorMessage}
+                  </div>
+                )}
+
+                {isJoinRequestLoading ? (
+                  <div className="join-request-empty-box">
+                    <p>가입 신청 목록을 불러오는 중입니다.</p>
+                  </div>
+                ) : joinRequests.length === 0 ? (
+                  <div className="join-request-empty-box">
+                    <p>승인 대기 중인 가입 신청이 없습니다.</p>
+                  </div>
+                ) : (
+                  <div className="join-request-table-wrap">
+                    <div className="join-request-table">
+                      <div className="join-request-table-head">
+                        <span>이름</span>
+                        <span>아이디</span>
+                        <span>이메일</span>
+                        <span>학번</span>
+                        <span>학과</span>
+                        <span>상태</span>
+                        <span>신청일</span>
+                        <span>관리</span>
+                      </div>
+
+                      {joinRequests.map((request) => (
+                        <div className="join-request-table-row" key={request.id}>
+                          <span className="member-name">
+                            {getDisplayValue(request.name)}
+                          </span>
+                          <span>{getDisplayValue(request.username)}</span>
+                          <span>{getDisplayValue(request.email)}</span>
+                          <span>{getDisplayValue(request.student_id)}</span>
+                          <span>{getDisplayValue(request.department)}</span>
+                          <span>
+                            <em className="join-request-badge">
+                              {getDisplayValue(request.status_display || request.status)}
+                            </em>
+                          </span>
+                          <span>{formatDate(request.joined_at)}</span>
+                          <span className="join-request-action-cell">
+                            <button
+                              type="button"
+                              className="join-request-approve-button"
+                              disabled={processingRequestId === request.id}
+                              onClick={() => handleApproveJoinRequest(request.id)}
+                            >
+                              <CheckCircle size={15} />
+                              승인
+                            </button>
+
+                            <button
+                              type="button"
+                              className="join-request-reject-button"
+                              disabled={processingRequestId === request.id}
+                              onClick={() => handleRejectJoinRequest(request.id)}
+                            >
+                              <XCircle size={15} />
+                              거절
+                            </button>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </article>
+
               <article className="club-member-panel">
                 <div className="club-member-panel-header">
                   <div>

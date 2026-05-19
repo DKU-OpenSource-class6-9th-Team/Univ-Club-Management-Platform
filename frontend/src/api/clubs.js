@@ -156,3 +156,24 @@ export async function getMyClubs() {
 
   return data;
 }
+
+// 동아리 가입 신청
+export async function requestJoinClub(clubId) {
+  const csrfHeaders = await getCsrfHeaders();
+
+  const response = await fetch(`${API_BASE_URL}/${clubId}/join/`, {
+    method: "POST",
+    headers: {
+      ...csrfHeaders,
+    },
+    credentials: "include",
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw data;
+  }
+
+  return data;
+}

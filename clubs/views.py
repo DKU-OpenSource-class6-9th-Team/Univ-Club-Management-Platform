@@ -1,4 +1,4 @@
-from rest_framework import viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
@@ -52,3 +52,67 @@ class ClubViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(clubs, many=True)
 
         return Response(serializer.data)
+    
+        # 사용자가 동아리에 가입 신청
+    @action(detail=True, methods=['post'], url_path='join')
+    def join_club(self, request, pk=None):
+        if not request.user.is_authenticated:
+            return Response(
+                {'message': '로그인이 필요합니다.'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        club = self.get_object()
+
+        profile = getattr(request.user, 'profile', None)
+
+        if profile is None:
+            return Response(
+                {'message': '프로필 정보가 없어 가입 신청을 할 수 없습니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        membership, created = ClubMembership.objects.get_or_create(
+            club=club,
+            profile=profile,
+            defaults={
+                'role': ClubMembership.ROLE_MEMBER,
+                'status': ClubMembership.STATUS_PENDING,
+            }
+        )
+
+        if created:
+            return Response(
+                {'message': '가입 신청이 완료되었습니다.'},
+                status=status.HTTP_201_CREATED
+            )
+
+        if membership.status == ClubMembership.STATUS_ACTIVE:
+            return Response(
+                {'message': '이미 가입된 동아리입니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if membership.status == ClubMembership.STATUS_PENDING:
+            return Response(
+                {'message': '이미 가입 신청 대기 중입니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if membership.status in [
+            ClubMembership.STATUS_INACTIVE,
+            ClubMembership.STATUS_REJECTED,
+        ]:
+            membership.status = ClubMembership.STATUS_PENDING
+            membership.role = ClubMembership.ROLE_MEMBER
+            membership.save(update_fields=['status', 'role'])
+
+            return Response(
+                {'message': '가입 신청이 다시 접수되었습니다.'},
+                status=status.HTTP_200_OK
+            )
+
+        return Response(
+            {'message': '가입 신청을 처리할 수 없는 상태입니다.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
