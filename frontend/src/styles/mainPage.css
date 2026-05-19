@@ -562,7 +562,7 @@
 .club-table-head,
 .club-table-row {
   display: grid;
-  grid-template-columns: 1.4fr 0.8fr 0.8fr 0.9fr 0.9fr;
+  grid-template-columns: 1.5fr 1fr 130px 90px 110px;
   align-items: center;
 }
 

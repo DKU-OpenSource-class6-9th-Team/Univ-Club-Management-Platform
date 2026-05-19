@@ -22,8 +22,11 @@ class Club(models.Model):
     recruit_start_date = models.DateField(null=True, blank=True)
     recruit_end_date = models.DateField(null=True, blank=True)
 
-    # 모집 인원
-    max_members = models.PositiveIntegerField(null=True, blank=True)
+    # 동아리 총 정원
+    capacity = models.PositiveIntegerField(null=True, blank=True)
+
+    # 이번 모집 인원
+    recruit_members = models.PositiveIntegerField(null=True, blank=True)
 
     # 대표자 이름
     leader_name = models.CharField(max_length=50, blank=True)

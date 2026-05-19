@@ -65,6 +65,21 @@ function ClubInfoPage() {
     fetchClub();
   }, [clubId]);
 
+  // 이미지 주소를 화면에 표시 가능한 전체 주소로 바꿔주는 함수
+  const getImageUrl = (imageUrl) => {
+  // 이미지가 없으면 빈 문자열 반환
+  if (!imageUrl) return '';
+
+  // 이미 http로 시작하는 완전한 주소면 그대로 사용
+  if (imageUrl.startsWith('http')) {
+    return imageUrl;
+  }
+
+  // /media/club_images/... 처럼 상대 경로로 올 경우
+  // Django 서버 주소를 앞에 붙여서 완전한 이미지 주소로 만듦
+  return `http://localhost:8000${imageUrl}`;
+  };
+
   // 로그아웃 버튼 클릭 시 로그인 정보를 삭제하고 로그인 페이지로 이동
   const handleLogout = () => {
     localStorage.removeItem('loginUser');
@@ -239,7 +254,7 @@ function ClubInfoPage() {
               <section className="club-info-hero-card">
                 <div className="club-info-image-box">
                   {club.image ? (
-                    <img src={club.image} alt={`${club.name} 이미지`} />
+                    <img src={getImageUrl(club.image)} alt={`${club.name} 이미지`} />
                   ) : (
                     <Building2 size={52} />
                   )}
@@ -272,10 +287,8 @@ function ClubInfoPage() {
                 <article className="club-info-summary-card">
                   <Users size={24} />
                   <div>
-                    <span>모집 인원</span>
-                    <strong>
-                      {club.max_members ? `${club.max_members}명` : '-'}
-                    </strong>
+                    <span>회원 수/총 정원</span>
+                    <strong>{club.member_count ?? 0}/{club.capacity ?? 0}</strong>
                   </div>
                 </article>
 
@@ -360,10 +373,8 @@ function ClubInfoPage() {
                     </div>
 
                     <div className="club-info-detail-row">
-                      <span>모집 인원</span>
-                      <strong>
-                        {club.max_members ? `${club.max_members}명` : '-'}
-                      </strong>
+                      <span>이번 모집 인원</span>
+                      <strong>{club.recruit_members ? `${club.recruit_members}명` : '-'}</strong>
                     </div>
                   </div>
                 </article>
@@ -393,27 +404,17 @@ function ClubInfoPage() {
                   </div>
                 </article>
 
-                {/* 이동 버튼 패널 */}
-                <article className="club-info-panel">
-                  <div className="club-info-panel-title">
-                    <LayoutDashboard size={20} />
-                    <h3>바로가기</h3>
-                  </div>
-
-                  <div className="club-info-action-box">
-                    <Link to="/main" className="club-info-sub-button">
-                      <ArrowLeft size={18} />
-                      메인으로 돌아가기
-                    </Link>
-
+                {/* 우측 하단 빈 공간 + 수정하기 버튼 */}
+                <div className="club-info-empty-space">
+                  {isClubManager && (
                     <Link
-                      to={`/club/${clubId}/dashboard`}
-                      className="club-info-primary-button"
+                      to={`/club/${clubId}/edit`}
+                      className="club-info-edit-button"
                     >
-                      대시보드로 이동
+                      수정하기
                     </Link>
-                  </div>
-                </article>
+                  )}
+                </div>
               </section>
             </section>
           </div>

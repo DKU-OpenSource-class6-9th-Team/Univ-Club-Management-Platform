@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { getClubs, getMyClubs, requestJoinClub } from "../api/clubs";
-import { getCurrentUser } from '../api/accounts.js';
+import { useEffect, useState } from 'react';
+import { getClubs, getMyClubs, requestJoinClub } from '../api/clubs.js';
+import { getCurrentUser, logout } from '../api/accounts.js';
 import { Link, useNavigate } from 'react-router-dom';
 import '../styles/mainPage.css';
+
 
 import {
   Bell,
@@ -98,21 +100,35 @@ function MainPage() {
     '사용자';
   
   // 사용자 메뉴 열기/닫기
-  const handleToggleUserMenu = () => {
+  const handleToggleUserMenu = (event) => {
+    event.stopPropagation();
     setIsUserMenuOpen((prev) => !prev);
   };
 
-  // 사용자 정보 수정 페이지로 이동
-  const handleMoveToUserEdit = () => {
+  // 마이 페이지로 이동
+  const handleMoveToMyPage = (event) => {
+    event.stopPropagation();
     setIsUserMenuOpen(false);
-    navigate('/user/edit'); // 실제 라우터 주소에 맞게 수정 필요
+    navigate('/mypage'); 
   };
 
-  // 로그아웃
-  const handleLogout = () => {
-    localStorage.removeItem('loginUser');
-    setIsUserMenuOpen(false);
-    navigate('/login');
+  // 로그아웃 처리
+  const handleLogout = async (event) => {
+    event.stopPropagation();
+
+    try {
+        await logout();
+
+        localStorage.removeItem('loginUser');
+        setLoginUser({});
+        setProfile(null);
+        setIsUserMenuOpen(false);
+
+        alert('로그아웃되었습니다.');
+        navigate('/login', { replace: true });
+    } catch (error) {
+        console.error('로그아웃 중 오류가 발생했습니다.', error);
+    }
   };
 
   // 동아리 분야 라벨 변환 
@@ -170,8 +186,7 @@ function MainPage() {
                 <div className="main-profile-image" onClick={handleToggleUserMenu}>
                     {userName[0]}
                 </div>
-
-                {/* 사용자 이름/화살표 버튼 클릭 시 드롭다운 메뉴 열기 */}
+  
                 <button
                   type="button"
                   className="main-user-button"
@@ -179,17 +194,26 @@ function MainPage() {
                 >
                   <span>{userName}</span>
                   <ChevronDown size={18} />
-                </button>
+                  </button>
 
                 {/* 사용자 프로필 드롭다운 메뉴 */}
                 {isUserMenuOpen && (
-                  <div className="main-user-dropdown">
-                    <button type="button" onClick={handleMoveToUserEdit}>
-                      사용자 정보 수정
+                  <div 
+                    className="main-user-dropdown"
+                    onClick={(event) => event.stopPropagation()}
+                 >
+                    <button
+                      type="button"
+                      onClick={handleMoveToMyPage}
+                    >
+                      마이페이지
                     </button>
 
-                    <button type="button" onClick={handleLogout}>
-                      로그아웃하기
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                    >
+                       로그아웃하기
                     </button>
                   </div>
                 )}
@@ -314,7 +338,7 @@ function MainPage() {
                         >
                             {club.name}
                         </Link>
-                        <span>{club.category}</span>
+                        <span>{getClubCategoryLabel(club.category)}</span>
                     </div>
 
                     {/* 해당 동아리 대시보드로 이동 */}
@@ -398,7 +422,7 @@ function MainPage() {
               <div className="club-table-head">
                 <span>동아리명</span>
                 <span>분야</span>
-                <span>회원 수</span>
+                <span>회원 수/총 정원</span>
                 <span>건강도</span>
                 <span>가입 신청</span>
               </div>
@@ -422,10 +446,12 @@ function MainPage() {
                             <span>{club.name}</span>
 
                             {/* 분야/카테고리 */}
-                            <span>{club.category}</span>
+                            <span>{getClubCategoryLabel(club.category)}</span>
 
-                            {/* 아직 실제 회원 수 API가 없으므로 모집 인원으로 표시 */}
-                            <span>{club.max_members || '-'}</span>
+                            {/* 현재 회원 수*/}
+                            <span>
+                                {club.member_count ?? 0}/{club.capacity || '-'}
+                            </span>
 
                             {/* 건강도 점수는 추후 분석 API 구현 후 연결 */}
                             <span>-</span>
@@ -464,8 +490,8 @@ function MainPage() {
               <div className="ranking-table-head">
                 <span></span>
                 <span>동아리명</span>
+                <span>분야</span>
                 <span>건강도</span>
-                <span>회원 수</span>
               </div>
 
               {/* 랭킹 데이터가 없을 때 */}
@@ -486,8 +512,8 @@ function MainPage() {
                     </span>
 
                     <span>{club.name}</span>
+                    <span>{getClubCategoryLabel(club.category)}</span>
                     <span>{club.healthScore || '-'}</span>
-                    <span>{club.memberCount || club.max_members || '-'}</span>
                   </div>
                 ))
               )}
