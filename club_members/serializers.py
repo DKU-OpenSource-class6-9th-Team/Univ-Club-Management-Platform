@@ -16,6 +16,9 @@ class ClubMembershipListSerializer(serializers.ModelSerializer):
     role_display = serializers.CharField(source="get_role_display", read_only=True)
     status_display = serializers.CharField(source="get_status_display", read_only=True)
 
+    activity_grade = serializers.SerializerMethodField()
+    activity_grade_display = serializers.SerializerMethodField()
+
     class Meta:
         model = ClubMembership
         fields = [
@@ -33,6 +36,8 @@ class ClubMembershipListSerializer(serializers.ModelSerializer):
             "status",
             "status_display",
             "activity_score",
+            "activity_grade",
+            "activity_grade_display",
             "joined_at",
             "updated_at",
         ]
@@ -55,6 +60,36 @@ class ClubMembershipListSerializer(serializers.ModelSerializer):
     def get_department(self, obj):
         profile = getattr(obj.user, "profile", None)
         return getattr(profile, "department", "")
+    
+    def get_activity_grade(self, obj):
+        score = obj.activity_score or 0
+
+        if score >= 90:
+            return "excellent"
+
+        if score >= 70:
+            return "active"
+
+        if score >= 50:
+            return "normal"
+
+        if score >= 30:
+            return "warning"
+
+        return "danger"
+
+    def get_activity_grade_display(self, obj):
+        grade = self.get_activity_grade(obj)
+
+        grade_labels = {
+            "excellent": "우수",
+            "active": "활발",
+            "normal": "보통",
+            "warning": "주의",
+            "danger": "위험",
+        }
+
+        return grade_labels.get(grade, "보통")
     
 
 class ClubJoinRequestListSerializer(serializers.ModelSerializer):

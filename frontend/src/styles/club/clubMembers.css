@@ -143,14 +143,14 @@
 }
 
 .club-member-table {
-  min-width: 1120px;
+  min-width: 1220px;
 }
 
 /* 테이블 헤더 / 행 공통 */
 .club-member-table-head,
 .club-member-table-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 1.4fr 1fr 1.2fr 0.9fr 0.9fr 0.8fr 0.9fr 0.8fr;
+  grid-template-columns: 1fr 1fr 1.4fr 1fr 1.2fr 0.9fr 0.9fr 0.8fr 0.9fr 0.9fr 0.8fr;
   align-items: center;
 }
 
@@ -263,13 +263,43 @@
   color: #b91c1c;
 }
 
+.member-badge.grade {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.member-badge.grade.excellent {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.member-badge.grade.active {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.member-badge.grade.normal {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.member-badge.grade.warning {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.member-badge.grade.danger {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
 /* ==============================
    반응형
 ================================= */
 
 @media (max-width: 1300px) {
   .club-member-table {
-    min-width: 1040px;
+    min-width: 1180px;
   }
 
   .club-member-table-head,
@@ -283,7 +313,9 @@
       0.8fr
       0.8fr
       0.8fr
-      0.9fr;
+      0.8fr
+      0.9fr
+      0.8fr;
   }
 
   .club-member-filter-bar {
