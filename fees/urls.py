@@ -16,4 +16,14 @@ urlpatterns = [
           views.fee_receipt_file,
           name = 'fee-receipt-file',
           ),
+
+     path( 'clubs/<int:club_id>/fees/payments/',
+          views.fee_payments,
+          name='fee-payments',
+          ),
+
+     path( 'clubs/<int:club_id>/fees/payments/<int:payment_id>/',
+          views.fee_payment_detail,
+          name='fee-payment-detail',
+          ),
 ]

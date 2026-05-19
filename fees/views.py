@@ -10,12 +10,14 @@ from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 
-from .models import FeeReceipt, FeeTransaction, validate_receipt_file
+from .models import FeeReceipt, FeeTransaction, MemberFeePayment, validate_receipt_file
+from club_members.models import ClubMembership
 
 import mimetypes
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
 from django.views.decorators.clickjacking import xframe_options_exempt
+
 
 
 #프론트에서 넘어온 수입/지출 값 DB용 값으로 변환하는 함수(INCOME, EXPENSE)
@@ -94,6 +96,31 @@ def serialize_transaction(transaction_obj, request):
         ],
     }
 
+#회원의 프로필 정보를 가져오는 함수
+def serialize_member_payment(payment):
+    profile = getattr(payment.user, 'profile', None) #profile모델을 확인(이름, 학번, 학과)
+
+    if profile:
+        name = getattr(profile, 'nickname', '') or payment.user.username
+        department = getattr(profile, 'department', '')
+        student_id = getattr(profile, 'student_id', '')
+    else:
+        name = payment.user.get_full_name() or payment.user.username
+        department = ''
+        student_id = ''
+
+    return {
+        'id': payment.id,
+        'userId': payment.user.id,
+        'name': name,
+        'department': department,
+        'studentId': student_id,
+        'status': payment.get_status_display(), #프론트에 완료 / 미납으로 보여주기 위한 함수코드
+        'amount': payment.amount,
+        'paidDate': payment.paid_at.strftime('%Y-%m-%d') if payment.paid_at else '-',
+        'memo': payment.note,
+    }
+
 
 @api_view(['GET']) #상단의 요약카드에 데이터를 주는 API
 def fee_summary(request, club_id): 
@@ -119,6 +146,104 @@ def fee_summary(request, club_id):
         'monthlyIncome': monthly_income,
         'monthlyExpense': monthly_expense,
     })
+
+#회원별 납부 현황 조회 API 함수
+@api_view(['GET'])
+def fee_payments(request, club_id):
+    memberships = ( #동아리에 맞는 회원의 목록을 가져오는 코드
+        ClubMembership.objects
+        .filter(club_id=club_id)
+        .select_related('user', 'user__profile')
+        .order_by('user__username')
+    )
+
+    #동아리원의 납부 데이터가 없다면 미납 상태로 만드는 코드
+    for membership in memberships:
+        MemberFeePayment.objects.get_or_create(
+            club_id=club_id,
+            user=membership.user,
+            defaults={
+                'status': MemberFeePayment.UNPAID,
+                'amount': 0,
+            },
+        )
+
+    payments = (  #화면에 표시할 회원별 납부 목록
+        MemberFeePayment.objects
+        .filter(club_id=club_id, user__in=[membership.user for membership in memberships])
+        .select_related('user', 'user__profile')
+        .order_by('user__username')
+    )
+
+    status_filter = request.query_params.get('status')
+    search = request.query_params.get('search', '').strip()
+
+    if status_filter == '완료':
+        payments = payments.filter(status=MemberFeePayment.PAID)
+
+    if status_filter == '미납':
+        payments = payments.filter(status=MemberFeePayment.UNPAID)
+
+    if search: #회원 검색(이름만 가능)
+        payments = payments.filter(
+            user__username__icontains=search
+        )
+
+    total_count = payments.count()
+    paid_count = payments.filter(status=MemberFeePayment.PAID).count()
+    unpaid_count = payments.filter(status=MemberFeePayment.UNPAID).count()
+    payment_rate = round((paid_count / total_count) * 100) if total_count else 0
+
+    return Response({ #상단 요약 카드에 필요한 부분
+        'summary': {
+            'totalMemberCount': total_count, #총 동아리원 수
+            'paidMemberCount': paid_count, #납부한 인원 수
+            'unpaidMemberCount': unpaid_count, #미납한 인원 수
+            'paymentRate': payment_rate, #납부율
+        },
+        'results': [ #db에 들어있는 값을 JSON형태로 변환, 프론트 통신을 위한 serilize
+            serialize_member_payment(payment)
+            for payment in payments
+        ],
+    })
+
+
+#회원 납부 상태 변경 API
+@api_view(['PATCH'])
+def fee_payment_detail(request, club_id, payment_id):
+    payment = get_object_or_404(
+        MemberFeePayment,
+        id=payment_id,
+        club_id=club_id,
+    )
+
+    status_value = request.data.get('status') #프론트에서 온 상태값 읽는 코드
+
+    if status_value in ['완료', 'PAID', 'paid']: #납부 완료 변경 코드
+        payment.status = MemberFeePayment.PAID
+
+        #회비 금액 설정 미구현 관계로 3만원 고정 상태(이후 동아리 관리 페이지에서 회비 필드 추가)
+        if payment.amount == 0:
+            payment.amount = 30000
+
+        if not payment.paid_at: #납부일 비어있다면 해당 날짜 자동 입력
+            payment.paid_at = timezone.localdate()
+
+    elif status_value in ['미납', 'UNPAID', 'unpaid']: #미납 변경 코드
+        payment.status = MemberFeePayment.UNPAID
+        payment.amount = 0
+        payment.paid_at = None
+
+    else:
+        return Response(
+            {'message': '납부 상태 값이 올바르지 않습니다.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    payment.save()
+
+    #수정 완료된 결과 프론트에 return
+    return Response(serialize_member_payment(payment))
 
 
 @api_view(['GET', 'POST']) #GET은 수입/지출 내역 조회, POST는 내역 등록(영수증 파일 저장)

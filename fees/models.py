@@ -141,3 +141,57 @@ class FeeReceipt(models.Model):
 
     def __str__(self):
         return self.original_name
+    
+
+class MemberFeePayment(models.Model):
+    """
+    회원별 회비 납부 현황 테이블
+
+    한 동아리 안에서 특정 회원이 회비를 납부했는지,
+    얼마를 냈는지, 언제 냈는지 관리하기 위한 모델.
+    """
+
+    PAID = 'PAID'
+    UNPAID = 'UNPAID'
+
+    PAYMENT_STATUS_CHOICES = [
+        (PAID, '완료'),
+        (UNPAID, '미납'),
+    ]
+
+    club_id = models.PositiveIntegerField() #어떤 동아리의 납부인지 확인
+
+    #어느 회원의 납부인지 확인하는 코드
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, #user model 참조
+        on_delete=models.CASCADE,
+        related_name='fee_payments',
+    )
+
+    #회원의 납부 상태 저장
+    status = models.CharField(
+        max_length=10,
+        choices=PAYMENT_STATUS_CHOICES,
+        default=UNPAID, #기본은 미납 상태
+    )
+
+    amount = models.PositiveIntegerField(default=0)
+
+    paid_at = models.DateField(null=True, blank=True)
+
+    note = models.CharField(max_length=100, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True) #수정된 날짜
+
+    class Meta: #해당 모델의 추가 설정 파트
+        ordering = ['user__username'] #아이디 정렬
+        constraints = [
+            models.UniqueConstraint( #한 동아리에 같은 회원의 중복납부 방지
+                fields=['club_id', 'user'],
+                name='unique_member_fee_payment_per_club_user',
+            )
+        ]
+
+    def __str__(self):
+        return f'{self.club_id} - {self.user.username} - {self.get_status_display()}'

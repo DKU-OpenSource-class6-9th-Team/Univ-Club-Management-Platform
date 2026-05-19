@@ -62,10 +62,8 @@ function FeeSummaryCards({
 
         <div>
           <span>미납 회원</span>
-          <strong>
-            {totalMemberCount > 0 ? `${unpaidMemberCount}명` : '기능 구현 중'} {/*조건 부 렌더링*/}
-          </strong>
-          <p>API 연동 예정</p>
+          <strong> {unpaidMemberCount}명 </strong>
+          <p>전체 {totalMemberCount}명 중 미납</p>
         </div>
       </article>
 
@@ -75,13 +73,9 @@ function FeeSummaryCards({
         <div>
           <span>납부율</span>
           <strong>
-            {paymentRate !== null ? `${paymentRate}%` : '기능 구현 중'} {/*조건 부 렌더링*/}
+            {paymentRate !== null ? `${paymentRate}%` : '0%'} {/*조건 부 렌더링*/}
           </strong>
-          <p>
-            {paymentRate !== null
-              ? `완료 ${paidMemberCount}명 / 전체 ${totalMemberCount}명`
-              : 'API 연동 예정'}
-          </p>
+          <p>완료 {paidMemberCount}명 / 전체 {totalMemberCount}명 </p>
         </div>
       </article>
     </section>
