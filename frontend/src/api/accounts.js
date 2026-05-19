@@ -33,42 +33,48 @@ export async function getAccountsApiHome() {
   return response.json();
 }
 
-export async function signup(signupData) {
-  const response = await fetch(`${API_BASE_URL}/signup/`, {
+export async function signup(data) {
+  const csrfHeaders = await getCsrfHeaders();
+
+  const response = await fetch("http://localhost:8000/api/accounts/signup/", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...csrfHeaders,
     },
     credentials: "include",
-    body: JSON.stringify(signupData),
+    body: JSON.stringify(data),
   });
 
-  const data = await response.json();
+  const result = await response.json();
 
   if (!response.ok) {
-    throw data;
+    throw result;
   }
 
-  return data;
+  return result;
 }
 
-export async function login(loginData) {
-  const response = await fetch(`${API_BASE_URL}/login/`, {
+export async function login(data) {
+  const csrfHeaders = await getCsrfHeaders();
+
+  const response = await fetch("http://localhost:8000/api/accounts/login/", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...csrfHeaders,
     },
     credentials: "include",
-    body: JSON.stringify(loginData),
+    body: JSON.stringify(data),
   });
 
-  const data = await response.json();
+  const result = await response.json();
 
   if (!response.ok) {
-    throw data;
+    throw result;
   }
 
-  return data;
+  return result;
 }
 
 export async function logout() {

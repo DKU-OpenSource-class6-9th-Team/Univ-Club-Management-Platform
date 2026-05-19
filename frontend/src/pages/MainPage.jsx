@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getClubs, getMyClubs } from '../api/clubs.js';
+import { getClubs, getMyClubs, requestJoinClub } from "../api/clubs";
 import { getCurrentUser } from '../api/accounts.js';
 import { Link, useNavigate } from 'react-router-dom';
 import '../styles/mainPage.css';
@@ -122,6 +122,19 @@ function MainPage() {
 
     return category || '-';
   };
+
+  const handleJoinClub = async (clubId) => {
+  try {
+    const result = await requestJoinClub(clubId);
+
+    alert(result.message || "가입 신청이 완료되었습니다.");
+
+    // 가입 신청 후 화면 데이터 새로고침
+    window.location.reload();
+  } catch (error) {
+    alert(error.message || "가입 신청에 실패했습니다.");
+  }
+};
 
   return (
     <div className="main-page">
@@ -419,14 +432,18 @@ function MainPage() {
                       
                             <span>
                                 {isMyClub ? (
-                                    <button type="button" className="join-button joined" disabled>
-                                      가입중
-                                    </button>
-                                ) : (
-                                  <button type="button" className="join-button">
+                                  <button type="button" className="join-button joined" disabled>
+                                    가입중
+                                  </button>
+                              ) : (
+                                  <button
+                                    type="button"
+                                    className="join-button"
+                                    onClick={() => handleJoinClub(club.id)}
+                                  >
                                     가입 신청
                                   </button>
-                                )}
+                              )}
                             </span>
                           </div>
                         );
