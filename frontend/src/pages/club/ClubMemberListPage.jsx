@@ -343,8 +343,8 @@ function ClubMemberListPage() {
         <aside className="dashboard-sidebar">
           <div className="sidebar-logo">
             <Link to="/main" className="sidebar-clubflow-logo">
-              <span className="sidebar-logo-cf">CF</span>
-              <span className="sidebar-logo-text">ClubFlow</span>
+              <span className="sidebar-logo-cf">CM</span>
+              <span className="sidebar-logo-text">Club Management</span>
             </Link>
           </div>
 

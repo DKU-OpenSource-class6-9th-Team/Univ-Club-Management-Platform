@@ -31,6 +31,7 @@ import { formatWon } from './fee/utils/feeFormat.js' // 입력받은 숫자 100�
 //왼쪽 사이드바, 로고, 사용자 프로필, 로그아웃 버튼 같은 기본 관리자 레이아웃을 재사용
 import '../../styles/club/clubDashboard.css'
 import '../../styles/club/clubFee.css'
+import { getClub } from '../../api/clubs.js'
 
 //fees.js에 만들어져있는 api 함수를 가져오는 코드
 import {
@@ -38,6 +39,7 @@ import {
   getFeeSummary,
   getFeeTransactions,
 } from '../../api/fees.js'
+
 
 
 //컴포넌트 시작
@@ -49,6 +51,14 @@ function ClubFeePage() {
   const effectiveClubId = clubId
 
   const loginUser = JSON.parse(localStorage.getItem('loginUser')) || {}
+  const isClubManager = loginUser.role === 'CLUB_MANAGER'
+
+  const currentPageName = '회비 관리'
+
+  const [club, setClub] = useState(null)
+  const [isClubLoading, setIsClubLoading] = useState(true)
+
+
 
   const [members, setMembers] = useState([]) //회원별 납부현황 데이터 저장
   const [transactions, setTransactions] = useState([]) //최근 수입/지출 내역 저장
@@ -109,6 +119,25 @@ function ClubFeePage() {
     }
   }, [currentPage, totalPageCount])
 
+  //페이지가 처음 렌더링 될 때 동아리 정보를 불러오는 역할 수행
+  useEffect(() => {
+  const loadClubInfo = async () => {
+    if (!effectiveClubId) return
+
+    try {
+      const data = await getClub(effectiveClubId)
+      setClub(data)
+    } catch (error) {
+      console.error('동아리 정보를 불러오지 못했습니다.', error)
+    } finally {
+      setIsClubLoading(false)
+    }
+  }
+
+  loadClubInfo()
+}, [effectiveClubId])
+
+
   const handleLogout = () => { //로그아웃 버튼 누르면 로그아웃, 로그인 페이지 이동
     localStorage.removeItem('loginUser')
     navigate('/login')
@@ -140,6 +169,8 @@ function ClubFeePage() {
       setIsLoading(false)
     }
   }
+
+  
 
 
 //페이지가 처음 렌더링 될 때 회비 데이터를 불러오는 역할 수행
@@ -202,14 +233,10 @@ const handleOpenTransactionModal = async () => {
       <div className="dashboard-fixed-canvas">
         <aside className="dashboard-sidebar">
         <div className="sidebar-logo">
-          <div className="logo-icon">
-            <LayoutDashboard size={22} />
-          </div>
-
-          <div>
-            <strong>동아리 관리자</strong>
-            <span>Club Management</span>
-          </div>
+          <Link to="/main" className="sidebar-clubflow-logo">
+            <span className="sidebar-logo-cf">CM</span>
+            <span className="sidebar-logo-text">Club Management</span>
+          </Link>
         </div>
 
         <nav className="sidebar-menu">
@@ -218,15 +245,24 @@ const handleOpenTransactionModal = async () => {
             대시보드
           </Link>
 
-          <Link to={`/club/${clubId}/info`} className="sidebar-link sidebar-parent-link">
-            <FileText size={19} />
-            동아리 정보
-          </Link>
+          <div className="sidebar-menu-group">
+            <Link
+              to={`/club/${clubId}/info`}
+              className="sidebar-link sidebar-parent-link"
+            >
+              <FileText size={19} />
+              동아리 정보
+            </Link>
 
-          <Link to={`/club/${clubId}/edit`} className="sidebar-sub-link">
-            <Edit3 size={16} />
-            동아리 정보 수정
-          </Link>
+            {isClubManager && (
+              <div className="sidebar-submenu">
+                <Link to={`/club/${clubId}/edit`} className="sidebar-sub-link">
+                  <Edit3 size={16} />
+                  동아리 정보 수정
+                </Link>
+              </div>
+            )}
+          </div>
 
           <Link to={`/club/${clubId}/members`} className="sidebar-link">
             <Users size={19} />
@@ -240,12 +276,12 @@ const handleOpenTransactionModal = async () => {
 
           <Link to="/club/schedule" className="sidebar-link">
             <CalendarDays size={19} />
-            일정 관리
+            일정 관리 / 공지
           </Link>
 
           <Link to="/club/settings" className="sidebar-link">
             <Settings size={19} />
-            설정
+            건강도 분석
           </Link>
         </nav>
 
@@ -258,21 +294,27 @@ const handleOpenTransactionModal = async () => {
 
         {/*페이지 제목, 설명, 알림버튼, 사용자 프로필 영역*/}
         <main className="club-fee-main">
-        <header className="club-fee-header"> 
-          <div>
-            <p className="club-fee-breadcrumb">
-              플랫폼 메인 <span>&gt;</span>  동아리 이름 연동 필요{' '}
-              <span>&gt;</span> <strong>회비 관리</strong>
-            </p>
+          <nav className='dashboard-breadcrumb'>
+            <Link to="/main">플랫폼 메인</Link>
+            <span>›</span>
+            <Link to="/main">내 동아리</Link>
+            <span>›</span>
+            <span>{isClubLoading ? '불러오는 중...' : club?.name || '동아리'}</span>
+            <span>›</span>
+            <span className="breadcrumb-current">회비 관리</span>
+          </nav>
 
-            <h1>회비 관리</h1>
+          <header className="dashboard-header club-fee-page-header">
+            <div>
+              <p className="dashboard-label">Club Fees</p>
+              <h1 className="club-fee-title">{currentPageName}</h1>
 
-            <p className="club-fee-desc">
-              회비 납부 현황과 수입 / 지출 내역을 관리할 수 있습니다.
-            </p>
-          </div>
+              <p className="dashboard-desc">
+                회비 납부 현황과 수입 / 지출 내역을 관리할 수 있습니다.
+              </p>
+            </div>
 
-          <div className="dashboard-user-box">
+            <div className="dashboard-user-box">
             <button type="button" className="notice-button">
               <Bell size={19} />
             </button>
@@ -283,13 +325,13 @@ const handleOpenTransactionModal = async () => {
               </div>
 
               <div>
-                <strong>{loginUser.nickname || '김이준'}</strong>
-                <span>관리자</span>
+                <strong>{loginUser.nickname || '관리자'}</strong>
+                <span>{loginUser.school_name || '단국대학교'}</span>
               </div>
             </div>
           </div>
-        </header>
-
+          </header>
+          
 
         {/*영수증 일괄 다운로드, 엑셀 다운로드 버튼 영역*/}
         <FeeActionButtons onFeatureInProgress={showFeatureInProgress} />

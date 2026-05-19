@@ -308,8 +308,8 @@ function ClubEditPage() {
           {/* 사이드바 상단 로고 */}
           <div className="sidebar-logo">
             <Link to="/main" className="sidebar-clubflow-logo">
-              <span className="sidebar-logo-cf">CF</span>
-              <span className="sidebar-logo-text">ClubFlow</span>
+              <span className="sidebar-logo-cf">CM</span>
+              <span className="sidebar-logo-text">Club Management</span>
             </Link>
           </div>
 
@@ -346,15 +346,14 @@ function ClubEditPage() {
               )}
             </div>
 
-            <Link to={`/club/${clubId}/fee`} className="sidebar-link">
-              <CreditCard size={19} />
-              회비 관리
-            </Link>
-
-
             <Link to={`/club/${clubId}/members`} className="sidebar-link">
               <Users size={19} />
               동아리원 관리
+            </Link>
+
+            <Link to={`/club/${clubId}/fee`} className="sidebar-link">
+              <CreditCard size={19} />
+              회비 관리
             </Link>
 
             <Link to="/club/schedule" className="sidebar-link">
