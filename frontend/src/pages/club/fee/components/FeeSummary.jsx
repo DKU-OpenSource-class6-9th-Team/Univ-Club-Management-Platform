@@ -1,0 +1,91 @@
+/* 회비 페이지 상단 요약 카드 파트 
+-총 회비 잔액
+-이번 달 수입
+-이번 달 지출
+-미납 회원
+-납부율   */
+
+import { Users, Wallet } from 'lucide-react'
+
+function FeeSummaryCards({
+  summary,
+  unpaidMemberCount, //미납 회원 수
+  totalMemberCount, //총 회원 수
+  paidMemberCount, //납부 회원 수
+  paymentRate, //회비 납부율
+  formatWon, //금액 format형태 변경 함수
+}) {
+  return (
+    <section className="club-fee-summary-grid">
+      <article className="club-fee-summary-card">
+        <div className="club-fee-summary-icon balance">
+          <Wallet size={22} />
+        </div>
+
+        <div>
+          <span>총 회비 잔액</span>
+          <strong>
+            {summary ? formatWon(summary.balance) : '기능 구현 중'} {/*조건 부 렌더링*/}
+          </strong>
+          <p>API 연동 예정</p>
+        </div>
+      </article>
+
+      <article className="club-fee-summary-card">
+        <div className="club-fee-summary-icon income">↗</div>
+
+        <div>
+          <span>이번 달 수입</span>
+          <strong>
+            {summary ? formatWon(summary.monthlyIncome) : '기능 구현 중'} {/*조건 부 렌더링*/}
+          </strong>
+          <p>API 연동 예정</p>
+        </div>
+      </article>
+
+      <article className="club-fee-summary-card">
+        <div className="club-fee-summary-icon expense">↘</div>
+
+        <div>
+          <span>이번 달 지출</span>
+          <strong>
+            {summary ? formatWon(summary.monthlyExpense) : '기능 구현 중'} {/*조건 부 렌더링*/}
+          </strong>
+          <p>API 연동 예정</p>
+        </div>
+      </article>
+
+      <article className="club-fee-summary-card">
+        <div className="club-fee-summary-icon unpaid">
+          <Users size={22} />
+        </div>
+
+        <div>
+          <span>미납 회원</span>
+          <strong>
+            {totalMemberCount > 0 ? `${unpaidMemberCount}명` : '기능 구현 중'} {/*조건 부 렌더링*/}
+          </strong>
+          <p>API 연동 예정</p>
+        </div>
+      </article>
+
+      <article className="club-fee-summary-card">
+        <div className="club-fee-summary-icon rate">%</div>
+
+        <div>
+          <span>납부율</span>
+          <strong>
+            {paymentRate !== null ? `${paymentRate}%` : '기능 구현 중'} {/*조건 부 렌더링*/}
+          </strong>
+          <p>
+            {paymentRate !== null
+              ? `완료 ${paidMemberCount}명 / 전체 ${totalMemberCount}명`
+              : 'API 연동 예정'}
+          </p>
+        </div>
+      </article>
+    </section>
+  )
+}
+
+export default FeeSummaryCards

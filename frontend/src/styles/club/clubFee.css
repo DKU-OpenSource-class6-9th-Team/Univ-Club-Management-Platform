@@ -812,3 +812,19 @@
     grid-template-columns: 1fr;
   }
 }
+
+.fee-api-ready-notice {
+  margin: 0 0 16px;
+  padding: 14px 18px;
+  border: 1px solid #dbe4ff;
+  border-radius: 12px;
+  background: #f5f8ff;
+  color: #1e3a8a;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.club-fee-summary-card strong,
+.club-fee-side-card strong {
+  word-break: keep-all;
+}
