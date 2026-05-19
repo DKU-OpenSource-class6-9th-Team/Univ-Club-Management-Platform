@@ -153,3 +153,32 @@ export async function rejectClubJoinRequest(clubId, membershipId) {
 
   return data;
 }
+
+export async function updateClubMember(clubId, membershipId, payload) {
+  if (!clubId || !membershipId) {
+    throw new Error('동아리원 정보가 없습니다.');
+  }
+
+  const csrfHeaders = await getCsrfHeaders();
+
+  const response = await fetch(
+    `${API_BASE_URL}/clubs/${clubId}/members/${membershipId}/`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...csrfHeaders,
+      },
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw data;
+  }
+
+  return data;
+}

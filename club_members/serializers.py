@@ -93,3 +93,18 @@ class ClubJoinRequestListSerializer(serializers.ModelSerializer):
             return obj.profile.user.first_name
 
         return obj.profile.user.username
+    
+class ClubMembershipUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ClubMembership
+        fields = [
+            "role",
+            "status",
+            "activity_score",
+        ]
+
+    def validate_activity_score(self, value):
+        if value < 0 or value > 100:
+            raise serializers.ValidationError("활동 점수는 0점 이상 100점 이하로 입력해야 합니다.")
+
+        return value

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useEffect, useState } from 'react';
 import { getClubs, getMyClubs, requestJoinClub } from '../api/clubs.js';
 import { getCurrentUser, logout } from '../api/accounts.js';
 import { Link, useNavigate } from 'react-router-dom';
