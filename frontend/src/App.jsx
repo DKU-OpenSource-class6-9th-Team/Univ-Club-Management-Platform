@@ -13,6 +13,7 @@ import ClubInfoPage from './pages/club/ClubInfoPage.jsx';
 import ClubEditPage from './pages/club/ClubEditPage.jsx';
 import ClubMemberListPage from './pages/club/ClubMemberListPage.jsx';
 import ClubFeePage from './pages/club/ClubFeePage.jsx'
+import ClubMemberDetailPage from './pages/club/ClubMemberDetailPage.jsx';
 
 function App() {
   return (
@@ -98,6 +99,15 @@ function App() {
         element={
           <ProtectedRoute>
             <ClubFeePage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/club/:clubId/members/:memberId"
+        element={
+          <ProtectedRoute>
+            <ClubMemberDetailPage />
           </ProtectedRoute>
         }
       />

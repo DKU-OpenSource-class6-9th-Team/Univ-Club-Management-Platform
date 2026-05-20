@@ -1,0 +1,332 @@
+.club-member-detail-main {
+  padding: 14px;
+}
+
+.club-member-detail-frame {
+  grid-template-rows: 22px 60px minmax(0, 1fr);
+}
+
+.club-member-detail-loading {
+  width: 100vw;
+  height: 100vh;
+  background: #f5f7fb;
+  color: #6b7280;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.club-member-detail-content {
+  min-width: 0;
+  min-height: 0;
+
+  display: grid;
+  grid-template-rows: 150px 110px minmax(0, 1fr);
+  gap: 12px;
+
+  overflow: hidden;
+}
+
+.member-detail-hero-card {
+  min-width: 0;
+  min-height: 0;
+
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 20px;
+
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.member-detail-avatar {
+  width: 86px;
+  height: 86px;
+  min-width: 86px;
+
+  border-radius: 28px;
+  background: #eef2ff;
+  color: #4f63e7;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.member-detail-hero-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.member-detail-hero-info h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 26px;
+  font-weight: 900;
+}
+
+.member-detail-hero-info p {
+  margin: 8px 0 0;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.member-detail-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.member-detail-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  height: 30px;
+  padding: 0 12px;
+
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.member-detail-badge.role {
+  background: #eef2ff;
+  color: #4f63e7;
+}
+
+.member-detail-badge.status {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.member-detail-badge.status.new {
+  background: #eef2ff;
+  color: #4f63e7;
+}
+
+.member-detail-badge.status.regular {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.member-detail-badge.status.inactive {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.member-detail-badge.status.withdrawn {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.member-detail-badge.status.fee_unpaid {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.member-detail-badge.status.restricted {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.member-detail-badge.grade {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.member-detail-badge.grade.excellent {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.member-detail-badge.grade.active {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.member-detail-badge.grade.normal {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.member-detail-badge.grade.warning {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.member-detail-badge.grade.danger {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.member-detail-back-button {
+  height: 42px;
+  padding: 0 15px;
+
+  border-radius: 13px;
+  background: #f3f6ff;
+  color: #4f63e7;
+  text-decoration: none;
+
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.member-detail-back-button:hover {
+  background: #eef2ff;
+}
+
+.member-detail-summary-grid {
+  min-width: 0;
+  min-height: 0;
+
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.member-detail-summary-card {
+  min-width: 0;
+
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 16px;
+
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+}
+
+.member-detail-summary-card span {
+  display: block;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.member-detail-summary-card strong {
+  display: block;
+  margin-top: 7px;
+  color: #111827;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.member-detail-summary-card p {
+  margin: 7px 0 0;
+  color: #9ca3af;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.member-detail-grid {
+  min-width: 0;
+  min-height: 0;
+
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+
+  overflow: hidden;
+}
+
+.member-detail-panel {
+  min-width: 0;
+  min-height: 0;
+
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 18px;
+
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+
+  overflow: auto;
+}
+
+.member-detail-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  margin-bottom: 16px;
+  color: #4f63e7;
+}
+
+.member-detail-panel-title h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.member-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.member-detail-row {
+  min-height: 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.member-detail-row span {
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.member-detail-row strong {
+  color: #111827;
+  font-size: 14px;
+  font-weight: 900;
+  text-align: right;
+}
+
+.member-permission-box {
+  border: 1px solid #dbeafe;
+  border-radius: 15px;
+  background: #f8fbff;
+  padding: 16px;
+}
+
+.member-permission-box strong {
+  display: block;
+  color: #1d4ed8;
+  font-size: 15px;
+  font-weight: 900;
+  margin-bottom: 10px;
+}
+
+.member-permission-box ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.member-permission-box li {
+  margin: 7px 0;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 700;
+}
