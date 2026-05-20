@@ -19,6 +19,7 @@ function SignupPage() {
   // 회원가입 폼 입력값 상태 관리
   const [formData, setFormData] = useState({
     username: '',
+    real_name: '',
     password: '',
     password_confirm: '',
     email_id: '',
@@ -26,7 +27,6 @@ function SignupPage() {
     student_id: '',
     nickname: '',
     phone_number: '',
-    role: 'USER',
   });
 
   // 회원가입 실패 메시지와 제출 상태 관리
@@ -54,6 +54,7 @@ function SignupPage() {
 
     const signupData = {
       username: formData.username,
+      real_name: formData.real_name,
       password: formData.password,
       password_confirm: formData.password_confirm,
       email: `${formData.email_id}@${emailDomain}`,
@@ -62,7 +63,6 @@ function SignupPage() {
       student_id: formData.student_id,
       nickname: formData.nickname,
       phone_number: formData.phone_number,
-      role: formData.role,
     };
 
     try {
@@ -90,6 +90,21 @@ function SignupPage() {
               value={formData.username}
               onChange={handleChange}
               placeholder="아이디를 입력하세요"
+              required
+            />
+          </div>
+        </label>
+
+        <label className="form-label">
+          <span>실명</span>
+          <div className="input-box">
+            <User size={20} />
+            <input
+              type="text"
+              name="real_name"
+              value={formData.real_name}
+              onChange={handleChange}
+              placeholder="실명을 입력하세요"
               required
             />
           </div>
@@ -246,20 +261,7 @@ function SignupPage() {
           </div>
         </label>
 
-        {/*사용자 역할 선택 영역*/}
-        <label className="form-label">
-          <span>사용자 역할</span>
-          <div className="input-box">
-            <select
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-            >
-              <option value="USER">일반 사용자</option>
-              <option value="CLUB_MANAGER">동아리 관리자</option>
-            </select>
-          </div>
-        </label>
+        
 
         {/*회원가입 실패 시 에러 메시지 출력*/}
         {errorMessage && (

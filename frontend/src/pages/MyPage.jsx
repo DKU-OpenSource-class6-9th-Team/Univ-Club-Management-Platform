@@ -113,7 +113,7 @@ function MyPage() {
           </div>
 
           <div>
-            <h3>{profile.nickname}</h3>
+            <h3>{profile.real_name || profile.nickname}</h3>
             <p>{profile.username}</p>
           </div>
         </div>
@@ -122,6 +122,11 @@ function MyPage() {
           <div className="profile-info-row">
             <span>아이디</span>
             <strong>{profile.username}</strong>
+          </div>
+
+          <div className="profile-info-row">
+            <span>실명</span>
+            <strong>{profile.real_name || '미입력'}</strong>
           </div>
 
           <div className="profile-info-row">
