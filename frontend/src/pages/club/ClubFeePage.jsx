@@ -38,6 +38,8 @@ import {
   createFeeTransaction,
   getFeeSummary,
   getFeeTransactions,
+  getFeePayments,
+  updateFeePaymentStatus,
 } from '../../api/fees.js'
 
 
@@ -107,7 +109,7 @@ function ClubFeePage() {
   const unpaidMemberCount = members.filter((member) => member.status === '미납').length
   const paymentRate = totalMemberCount
     ? Math.round((paidMemberCount / totalMemberCount) * 100)
-    : null
+    : 0
 
   useEffect(() => { //필터 및 검색어의 표시되는 개수 변경 시 1페이지로 이동
     setCurrentPage(1)
@@ -155,13 +157,20 @@ function ClubFeePage() {
       setIsLoading(true)
 
       //요약카드, 수입/지출내역 동시에 요청하는 코드
-      const [summaryData, transactionData] = await Promise.all([
+      const [summaryData, transactionData, paymentData] = await Promise.all([
         getFeeSummary(effectiveClubId),
         getFeeTransactions(effectiveClubId),
+        getFeePayments(effectiveClubId, { 
+          status: memberFilter,
+          search: memberSearch,
+          page: currentPage,
+          pageSize,
+        }),
       ])
 
       setSummary(summaryData) //불러온 값 summary 상태에 저장
       setTransactions(transactionData.results || []) //내역 배열을 transaction 상태에 저장
+      setMembers(paymentData.results || [])
     } catch (error){
       console.error('회비 데이터 조회 실패:', error)
       alert('회비 데이터를 불러오지 못했습니다.')
@@ -223,6 +232,21 @@ const handleOpenTransactionModal = async () => {
     alert('전체 수입/지출 내역을 불러오지 못했습니다.')
   } finally {
     setIsTransactionModalLoading(false)
+  }
+}
+
+
+//납부 상태 변경 함수
+const handleChangePaymentStatus = async (member) => {
+  const nextStatus = member.status === '완료' ? '미납' : '완료'
+
+  try { //백엔드 PATCH API 호출을 통해 db값 변경
+    await updateFeePaymentStatus(effectiveClubId, member.id, nextStatus)
+
+    await loadFeeData() //변경 후 다시 데이터 불러오기, 갱신
+  } catch (error) {
+    console.error('납부 상태 변경 실패:', error)
+    alert(error?.message || '납부 상태 변경에 실패했습니다.')
   }
 }
 
@@ -395,7 +419,7 @@ const handleOpenTransactionModal = async () => {
               pageEndIndex={pageEndIndex}
               totalCount={filteredMembers.length}
               formatWon={formatWon}
-              onFeatureInProgress={showFeatureInProgress}
+              onChangePaymentStatus={handleChangePaymentStatus}
             />
 
 

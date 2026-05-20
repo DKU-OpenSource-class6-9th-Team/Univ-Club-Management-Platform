@@ -18,7 +18,7 @@ function MemberPaymentTable({
   pageEndIndex, //현재 페이지 마지막 번호
   totalCount, //필터 적용 후 전체 수
   formatWon, //금액 형식 함수
-  onFeatureInProgress, //미구현 안내 출력 함수
+  onChangePaymentStatus, 
 }) {
   return (
     <section className="club-fee-panel member-payment-panel">
@@ -76,10 +76,8 @@ function MemberPaymentTable({
                 <td>
                   <button
                     type="button"
-                    className={`payment-status ${getPaymentStatusClass(
-                      member.status,
-                    )}`}
-                    onClick={() => onFeatureInProgress('납부 상태 변경')}
+                    className={`payment-status ${getPaymentStatusClass(member.status)}`}
+                    onClick={() => onChangePaymentStatus(member)} //회원의 납부 상태 실제로 변경
                   >
                     {member.status} ▾
                   </button>
@@ -92,7 +90,7 @@ function MemberPaymentTable({
             ))
           ) : (
             <tr>
-              <td colSpan="6">회원별 납부 현황 기능 구현 중입니다.</td>
+              <td colSpan="6">조건에 맞는 동아리원이 없습니다.</td>
             </tr>
           )}
         </tbody>
@@ -101,7 +99,7 @@ function MemberPaymentTable({
       <div className="member-pagination-row">
         <span>
           {totalCount === 0
-            ? 'API 연동 예정'
+            ? '0 - 0 of 0'
             : `${pageStartIndex + 1} - ${pageEndIndex} of ${totalCount}`}
         </span>
 
