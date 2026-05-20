@@ -697,6 +697,7 @@
 .member-action-cell {
   display: flex;
   justify-content: center;
+  gap: 7px;
 }
 
 .member-edit-button {
@@ -866,4 +867,20 @@
   color: #475569;
   font-size: 13px;
   font-weight: 600;
+}
+
+.member-detail-button {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  background-color: #f3f6ff;
+  color: #4f63e7;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.member-detail-button:hover {
+  background-color: #eef2ff;
 }

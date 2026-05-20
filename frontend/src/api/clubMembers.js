@@ -182,3 +182,28 @@ export async function updateClubMember(clubId, membershipId, payload) {
 
   return data;
 }
+
+export async function fetchClubMemberDetail(clubId, membershipId) {
+  if (!clubId || !membershipId) {
+    throw new Error('동아리원 정보가 없습니다.');
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}/clubs/${clubId}/members/${membershipId}/`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw data;
+  }
+
+  return data;
+}

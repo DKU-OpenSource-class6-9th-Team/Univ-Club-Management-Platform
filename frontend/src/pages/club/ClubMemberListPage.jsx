@@ -783,6 +783,13 @@ function ClubMemberListPage() {
                           </span>
                           <span>{formatDate(member.joined_at)}</span>
                           <span className="member-action-cell">
+                            <Link
+                              to={`/club/${clubId}/members/${member.id}`}
+                              className="member-detail-button"
+                            >
+                              상세
+                            </Link>
+
                             <button
                               type="button"
                               className="member-edit-button"
