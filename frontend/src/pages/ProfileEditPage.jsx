@@ -7,6 +7,7 @@ function ProfileEditPage() {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
+    real_name: '',
     school_name: '',
     department: '',
     student_id: '',
@@ -23,6 +24,7 @@ function ProfileEditPage() {
         const data = await getProfile();
 
         setFormData({
+          real_name: data.real_name || '',
           school_name: data.school_name,
           department: data.department,
           student_id: data.student_id,
@@ -77,6 +79,20 @@ function ProfileEditPage() {
         {errorMessage && (
           <p className="form-error-text">{errorMessage}</p>
         )}
+
+        <label className="form-label">
+          <span>실명</span>
+          <div className="input-box">
+            <input
+              type="text"
+              name="real_name"
+              value={formData.real_name}
+              onChange={handleChange}
+              placeholder="실명을 입력하세요"
+              required
+            />
+          </div>
+        </label>
 
         <label className="form-label">
           <span>학교</span>

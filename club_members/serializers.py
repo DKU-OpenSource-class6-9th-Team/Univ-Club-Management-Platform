@@ -52,14 +52,14 @@ class ClubMembershipListSerializer(serializers.ModelSerializer):
     def get_name(self, obj):
         profile = getattr(obj.user, "profile", None)
 
-        if profile and getattr(profile, "nickname", None):
-            return profile.nickname
-
         if obj.user.first_name:
             return obj.user.first_name
 
-        return obj.user.username
+        if profile and getattr(profile, "nickname", None):
+            return profile.nickname
 
+        return obj.user.username
+    
     def get_student_id(self, obj):
         profile = getattr(obj.user, "profile", None)
         return getattr(profile, "student_id", "")
@@ -196,11 +196,11 @@ class ClubJoinRequestListSerializer(serializers.ModelSerializer):
         ]
 
     def get_name(self, obj):
-        if getattr(obj.profile, "nickname", None):
-            return obj.profile.nickname
-
         if obj.profile.user.first_name:
             return obj.profile.user.first_name
+
+        if getattr(obj.profile, "nickname", None):
+            return obj.profile.nickname
 
         return obj.profile.user.username
     

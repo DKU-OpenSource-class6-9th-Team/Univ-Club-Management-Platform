@@ -6,6 +6,10 @@ from rest_framework.response import Response
 from .models import Club, ClubMembership
 from .serializers import ClubSerializer
 
+from django.db import transaction
+from rest_framework.exceptions import ValidationError
+from club_members.models import ClubMembership as ManagedClubMembership
+
 # 동아리 등록/조회/수정/삭제 API를 처리하는 ViewSet
 class ClubViewSet(viewsets.ModelViewSet):
 
@@ -20,17 +24,35 @@ class ClubViewSet(viewsets.ModelViewSet):
     # 1. Club 테이블에 동아리 정보를 저장
     # 2. 등록한 사용자를 해당 동아리의 MANAGER로 ClubMembership에 자동 저장
     def perform_create(self, serializer):
+        profile = getattr(self.request.user, "profile", None)
 
-        # 현재 로그인한 사용자를 created_by로 저장
-        club = serializer.save(created_by=self.request.user)
+        if profile is None:
+            raise ValidationError({
+                "message": "프로필 정보가 없어 동아리를 생성할 수 없습니다."
+            })
 
-        # 동아리를 만든 사용자를 해당 동아리의 관리자로 자동 등록
-        ClubMembership.objects.create(
-            club=club,
-            profile=self.request.user.profile,
-            role=ClubMembership.ROLE_MANAGER,
-            status=ClubMembership.STATUS_ACTIVE
-        )
+        with transaction.atomic():
+            # 1. Club 테이블에 동아리 생성
+            club = serializer.save(created_by=self.request.user)
+
+            # 2. 메인페이지 '내 동아리' 목록용 가입 관계 생성
+            ClubMembership.objects.create(
+                club=club,
+                profile=profile,
+                role=ClubMembership.ROLE_MANAGER,
+                status=ClubMembership.STATUS_ACTIVE,
+            )
+
+            # 3. 동아리원 관리용 테이블에 생성자를 회장으로 자동 등록
+            ManagedClubMembership.objects.get_or_create(
+                club=club,
+                user=self.request.user,
+                defaults={
+                    "role": "president",
+                    "status": "regular",
+                    "activity_score": 0,
+                },
+            )
 
     # 현재 로그인한 사용자가 가입했거나 관리 중인 동아리 목록을 반환
     @action(detail=False, methods=['get'], url_path='my')

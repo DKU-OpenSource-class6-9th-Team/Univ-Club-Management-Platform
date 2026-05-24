@@ -11,6 +11,11 @@ User = get_user_model()
 
 class SignUpSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
+    real_name = serializers.CharField(
+        max_length=50,
+        required=True,
+        allow_blank=False
+    )
     password = serializers.CharField(write_only=True)
     password_confirm = serializers.CharField(write_only=True)
     email = serializers.EmailField(required=False, allow_blank=True)
@@ -25,11 +30,7 @@ class SignUpSerializer(serializers.Serializer):
         allow_blank=True
     )
 
-    role = serializers.ChoiceField(
-        choices=Profile.ROLE_CHOICES,
-        default=Profile.ROLE_USER
-    )
-
+    
     def validate_username(self, value):
         if User.objects.filter(username=value).exists():
             raise serializers.ValidationError("이미 사용 중인 아이디입니다.")
@@ -44,21 +45,23 @@ class SignUpSerializer(serializers.Serializer):
 
     @transaction.atomic
     def create(self, validated_data):
+        username = validated_data.pop("username")
+        real_name = validated_data.pop("real_name")
         password = validated_data.pop("password")
         validated_data.pop("password_confirm")
 
         email = validated_data.pop("email", "")
 
         user = User.objects.create_user(
-            username=validated_data["username"],
+            username=username,
             password=password,
-            email=email
+            email=email,
+            first_name=real_name,
         )
-
-        validated_data.pop("username")
 
         Profile.objects.create(
             user=user,
+            role=Profile.ROLE_USER,
             **validated_data
         )
 
@@ -85,6 +88,11 @@ class LoginSerializer(serializers.Serializer):
 
 class ProfileSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True)
+    real_name = serializers.CharField(
+        source='user.first_name',
+        required=True,
+        allow_blank=False
+    )
     email = serializers.EmailField(source='user.email', read_only=True)
 
     class Meta:
@@ -93,6 +101,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             'id',
             'user',
             'username',
+            'real_name',
             'email',
             'school_name',
             'department',
@@ -112,6 +121,15 @@ class ProfileSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         ]
+
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop('user', {})
+
+        if 'first_name' in user_data:
+            instance.user.first_name = user_data['first_name']
+            instance.user.save(update_fields=['first_name'])
+
+        return super().update(instance, validated_data)
 
 class DeleteAccountSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
