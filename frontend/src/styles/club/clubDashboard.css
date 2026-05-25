@@ -821,3 +821,383 @@
 .notice-submit-button:hover {
   background: #1e40af;
 }
+
+
+/* ==============================
+   KAN-48. 대시보드 회비 요약 카드
+   - 수입/지출 건수 + 증빙자료 첨부율
+================================= */
+
+.dashboard-fee-title-row {
+  align-items: flex-start;
+}
+
+.dashboard-fee-detail-button {
+  height: 32px;
+  padding: 0 11px;
+  border: 1px solid #dbe3f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.dashboard-fee-detail-button:hover {
+  background: #f3f6ff;
+  color: #4f63e7;
+}
+
+.dashboard-fee-detail-button:disabled {
+  color: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.dashboard-fee-preview {
+  height: calc(100% - 52px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dashboard-fee-count-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.dashboard-fee-count-card {
+  min-width: 0;
+  height: 70px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 10px 11px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.dashboard-fee-count-card.income {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.dashboard-fee-count-card.expense {
+  border-color: #fecaca;
+  background: #fff7f7;
+}
+
+.dashboard-fee-count-icon {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.dashboard-fee-count-card.income .dashboard-fee-count-icon {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.dashboard-fee-count-card.expense .dashboard-fee-count-icon {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.dashboard-fee-corner-icon {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  stroke-width: 3;
+}
+
+.dashboard-fee-count-card span {
+  display: block;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dashboard-fee-count-card strong {
+  display: block;
+  margin-top: 4px;
+  color: #111827;
+  font-size: 21px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.dashboard-receipt-rate-box {
+  flex: 1;
+  min-height: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+}
+
+.dashboard-receipt-chart {
+  width: 92px;
+  height: 92px;
+  min-width: 92px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dashboard-receipt-chart-inner {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #111827;
+  font-size: 20px;
+  font-weight: 900;
+  box-shadow: inset 0 0 0 1px #eef2f7;
+}
+
+.dashboard-receipt-text {
+  min-width: 0;
+}
+
+.dashboard-receipt-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #4f63e7;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.dashboard-receipt-title span {
+  color: #111827;
+}
+
+.dashboard-receipt-text strong {
+  display: block;
+  margin-top: 8px;
+  color: #4b5563;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* 모달 뒤 어두운 배경 */
+.dashboard-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+/* 전체 수입/지출 내역 모달 본체 */
+.dashboard-transaction-modal {
+  width: min(1100px, calc(100vw - 48px));
+  max-height: 82vh;
+  overflow-y: auto;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.25);
+}
+
+/* 증빙자료 보기 모달 본체 */
+.dashboard-receipt-modal {
+  width: min(900px, 100%);
+  max-height: 85vh;
+  overflow-y: auto;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.25);
+}
+
+/* 모달 상단 제목 + 닫기 버튼 */
+.dashboard-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.dashboard-modal-header h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.dashboard-modal-header button {
+  border: 0;
+  border-radius: 10px;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dashboard-modal-header button:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+/* 전체 수입/지출 내역 테이블 스크롤 영역 */
+.dashboard-transaction-table-wrap {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 62vh;
+}
+
+/* 전체 수입/지출 내역 테이블 */
+.dashboard-transaction-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.dashboard-transaction-table th {
+  height: 38px;
+  padding: 0 10px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f8fafc;
+  color: #4b5563;
+  text-align: left;
+  font-weight: 800;
+}
+
+.dashboard-transaction-table td {
+  height: 42px;
+  padding: 0 10px;
+  border-bottom: 1px solid #eef2f7;
+  color: #1f2937;
+}
+
+/* 수입/지출 배지 */
+.dashboard-transaction-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 24px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.dashboard-transaction-badge.income {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.dashboard-transaction-badge.expense {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+/* 금액 색상 */
+.dashboard-amount.income {
+  color: #16a34a;
+  font-weight: 800;
+}
+
+.dashboard-amount.expense {
+  color: #ef4444;
+  font-weight: 800;
+}
+
+/* 메모가 길어질 경우 줄바꿈 */
+.dashboard-transaction-memo-cell {
+  max-width: 220px;
+  white-space: normal;
+  word-break: keep-all;
+  line-height: 1.5;
+}
+
+/* 증빙자료 첨부 버튼 */
+.dashboard-receipt-open-button {
+  border: 1px solid #dbe3ff;
+  background: #f5f7ff;
+  color: #4059e6;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.dashboard-receipt-open-button:hover {
+  background: #e9edff;
+  border-color: #b8c4ff;
+}
+
+/* 증빙자료가 없는 경우 */
+.dashboard-receipt-empty {
+  color: #9aa4b2;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* 증빙자료 미리보기 목록 */
+.dashboard-receipt-preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* 증빙자료 하나의 박스 */
+.dashboard-receipt-preview-item {
+  border: 1px solid #e5e9f2;
+  border-radius: 16px;
+  padding: 16px;
+  background: #ffffff;
+}
+
+.dashboard-receipt-preview-item p {
+  margin: 0 0 12px;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 700;
+  word-break: break-all;
+}
+
+/* 이미지 증빙자료 미리보기 */
+.dashboard-receipt-image-preview {
+  width: 100%;
+  max-height: 600px;
+  object-fit: contain;
+  border: 1px solid #eef2f7;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+/* PDF 증빙자료 미리보기 */
+.dashboard-receipt-pdf-preview {
+  width: 100%;
+  height: 600px;
+  border: 0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
