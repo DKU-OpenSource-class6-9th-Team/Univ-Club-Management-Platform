@@ -104,3 +104,60 @@
 .club-edit-cancel-button:hover {
   background: #f3f4f6;
 }
+
+.club-current-image-box {
+  margin-bottom: 10px;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.club-current-image-box img {
+  width: 120px;
+  height: 80px;
+
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid #e5e7eb;
+}
+
+.club-image-empty-box {
+  height: 80px;
+  margin-bottom: 10px;
+
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  background: #f8fafc;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  color: #9ca3af;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.club-image-empty-box svg {
+  color: #9ca3af;
+}
+
+.club-image-remove-button {
+  border: 1px solid #fecaca;
+  background: #ffffff;
+  color: #dc2626;
+
+  border-radius: 10px;
+  padding: 9px 12px;
+
+  font-size: 13px;
+  font-weight: 800;
+
+  cursor: pointer;
+}
+
+.club-image-remove-button:hover {
+  background: #fff1f2;
+}

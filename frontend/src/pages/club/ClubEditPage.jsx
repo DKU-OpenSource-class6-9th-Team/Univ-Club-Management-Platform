@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import {
@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   LogOut,
   Mail,
+  MessageCircleHeart,
   MapPin,
   Phone,
   User,
@@ -53,6 +54,11 @@ function ClubEditPage() {
   // 기존에 등록되어 있던 동아리 이미지 주소 저장
   // 새 이미지를 선택하기 전까지 현재 이미지를 미리 보여주기 위해 사용
   const [currentImage, setCurrentImage] = useState('');
+
+  // 이미지 삭제 시 기본 아이콘으로 돌아기기 위한 상태
+  const [removeImage, setRemoveImage] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
+  const imageInputRef = useRef(null);
 
   // 이미지 주소를 화면에 표시 가능한 전체 주소로 바꿔주는 함수
   const getImageUrl = (imageUrl) => {
@@ -160,7 +166,22 @@ function ClubEditPage() {
     }));
   };
 
-  // 파일 input에서 새 이미지를 선택했을 때 실행
+  // 기존 이미지 삭제 함수(기존 이미지를 화면에서 없애고, 파일 선택도 초기 상태처럼)
+  const handleRemoveImage = () => {
+    setFormData((prev) => ({
+      ...prev,
+      image: null,
+    }));
+
+    setPreviewImage(null);
+    setRemoveImage(true);
+
+    if (imageInputRef.current) {
+      imageInputRef.current.value = '';
+    }
+  };
+
+  // 파일 input에서 새 이미지를 선택했을 때 실행, 새 이미지를 선택하면 삭제 상태를 취소
   const handleImageChange = (event) => {
     const file = event.target.files[0];
 
@@ -168,8 +189,13 @@ function ClubEditPage() {
       ...prev,
       image: file,
     }));
-  };
 
+    if (file) {
+      setPreviewImage(URL.createObjectURL(file));
+      setRemoveImage(false);
+    }
+  };
+  
   // 모집 상태를 자동으로 계산하는 함수
   // 상시 모집이면 바로 모집중
   // 기간 지정 모집이면 오늘 날짜가 기간 안에 있는지 확인
@@ -269,6 +295,8 @@ function ClubEditPage() {
         // 새 이미지 파일
         // 새 이미지를 선택하지 않으면 null이므로 기존 이미지는 유지됨
         image: formData.image,
+        // 이미지 삭제 여부
+        remove_image: removeImage,
       };
 
       // PATCH 요청으로 동아리 정보 수정
@@ -359,6 +387,11 @@ function ClubEditPage() {
             <Link to="/club/schedule" className="sidebar-link">
               <CalendarDays size={19} />
               일정 관리 / 공지
+            </Link>
+
+            <Link to={`/club/${clubId}/survey`} className="sidebar-link">
+              <MessageCircleHeart size={19} />
+              만족도 조사
             </Link>
 
             <Link to="/club/settings" className="sidebar-link">
@@ -648,13 +681,40 @@ function ClubEditPage() {
                 <label className="form-label">
                   <span>동아리 이미지</span>
 
-                  {/* 기존 이미지가 있을 때만 현재 이미지 미리보기 표시 */}
-                  {currentImage && (
-                    <div className="club-edit-current-image">
-                      <img src={getImageUrl(currentImage)} alt="현재 동아리 이미지" />
-                      <p>
-                        현재 등록된 이미지입니다. 새 파일을 선택하면 이미지가 변경됩니다.
-                      </p>
+                  {/* 1. 새로 선택한 이미지가 있을 때 */}
+                  {previewImage ? (
+                    <div className="club-current-image-box">
+                      <img src={previewImage} alt="새로 선택한 동아리 이미지" />
+
+                      <button
+                        type="button"
+                        className="club-image-remove-button"
+                        onClick={handleRemoveImage}
+                      >
+                        이미지 삭제
+                      </button>
+                    </div>
+                  ) : currentImage && !removeImage ? (
+                    /* 2. 기존 등록 이미지가 있고, 아직 삭제하지 않았을 때 */
+                    <div className="club-current-image-box">
+                      <img
+                        src={getImageUrl(currentImage)}
+                        alt="현재 등록된 동아리 이미지"
+                      />
+
+                      <button
+                        type="button"
+                        className="club-image-remove-button"
+                        onClick={handleRemoveImage}
+                      >
+                        이미지 삭제
+                      </button>
+                    </div>
+                  ) : (
+                    /* 3. 이미지가 없거나 삭제 버튼을 누른 상태 */
+                    <div className="club-image-empty-box">
+                      <FileText size={24} />
+                      <span>등록된 이미지가 없습니다.</span>
                     </div>
                   )}
 
@@ -662,6 +722,7 @@ function ClubEditPage() {
                   <div className="input-box">
                     <FileText size={20} />
                     <input
+                      ref={imageInputRef}
                       type="file"
                       name="image"
                       accept="image/*"

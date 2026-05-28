@@ -117,6 +117,7 @@ export async function updateClub(clubId, clubData) {
   formData.append("contact_phone", clubData.contact_phone);
   formData.append("contact_email", clubData.contact_email);
   formData.append("location", clubData.location);
+  formData.append("remove_image", clubData.remove_image ? "true" : "false");
 
   if (clubData.image) {
     formData.append("image", clubData.image);
