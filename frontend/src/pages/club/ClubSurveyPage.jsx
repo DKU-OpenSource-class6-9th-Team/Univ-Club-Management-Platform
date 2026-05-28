@@ -484,10 +484,27 @@ function ClubSurveyPage() {
 			const selectedItems = selectableScheduleItems
 				.filter((item) => selectedScheduleIds.includes(item.id))
 				.sort((a, b) => getTimeValue(a) - getTimeValue(b))
-				.map((item) => ({
+        .map((item) => ({
 					id: `schedule-${item.id}`,
-					title: item.title,
-					date: item.date,
+					originalId: item.id,
+					title: item.title || item.name,
+					date: item.date || item.start_at || '-',
+
+					participants:
+						item.participants ??
+						item.response_count ??
+						item.responseCount ??
+						item.answered_count ??
+						item.answeredCount ??
+						0,
+
+					totalMembers:
+						item.totalMembers ??
+						item.total_members ??
+						item.totalMemberCount ??
+						item.member_count ??
+						item.memberCount ??
+						0,
 				}));
 
 			nextScheduleItems = selectedItems;
@@ -501,11 +518,28 @@ function ClubSurveyPage() {
 				.sort((a, b) => getTimeValue(a) - getTimeValue(b))
 				.map((item) => ({
 					id: `fee-${item.id}`,
+					originalId: item.id,
 					title: getFeeTitleText(item),
 					date: getFeeDateText(item),
 					type: getFeeTypeText(item),
 					category: getFeeCategoryText(item),
 					amount: Math.abs(getFeeAmountValue(item)),
+
+					participants:
+						item.participants ??
+						item.response_count ??
+						item.responseCount ??
+						item.answered_count ??
+						item.answeredCount ??
+						0,
+
+					totalMembers:
+						item.totalMembers ??
+						item.total_members ??
+						item.totalMemberCount ??
+						item.member_count ??
+						item.memberCount ??
+						0,
 				}));
 
 			nextFeeItems = selectedItems;
@@ -813,11 +847,9 @@ const getParticipationBadgeClass = (item) => {
                           </div>
 
                           {/* 오른쪽 참여율 배지 */}
-                          {activeTab === 'schedule' && (
                             <em className={getParticipationBadgeClass(item)}>
                               참여율 {getParticipationRate(item)}
                             </em>
-                          )}
                         </div>
 
                         {/* 만족도 평가 영역 */}
