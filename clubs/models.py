@@ -125,3 +125,82 @@ class ClubMembership(models.Model):
 
     def __str__(self):
         return f'{self.profile.nickname} - {self.club.name}'
+
+#만족도 조사 DB 테이블 추가
+class BiweeklySurvey(models.Model):
+    club = models.ForeignKey(
+        Club,
+        on_delete=models.CASCADE,
+        related_name='biweekly_surveys'
+    )
+
+    year = models.PositiveIntegerField()
+    month = models.PositiveIntegerField()
+
+    # 1차: 1일~14일 / 2차: 15일~말일
+    round_number = models.PositiveIntegerField()
+
+    period_start_date = models.DateField()
+    period_end_date = models.DateField()
+
+    # 운영진이 선택한 조사 항목
+    schedule_items = models.JSONField(default=list, blank=True)
+    fee_items = models.JSONField(default=list, blank=True)
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_biweekly_surveys'
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('club', 'year', 'month', 'round_number')
+
+    def __str__(self):
+        return f'{self.club.name} - {self.year}.{self.month} {self.round_number}차 조사'
+
+
+class BiweeklySurveyResponse(models.Model):
+    STATUS_DRAFT = 'DRAFT'
+    STATUS_SUBMITTED = 'SUBMITTED'
+
+    STATUS_CHOICES = [
+        (STATUS_DRAFT, '임시 저장'),
+        (STATUS_SUBMITTED, '최종 제출'),
+    ]
+
+    survey = models.ForeignKey(
+        BiweeklySurvey,
+        on_delete=models.CASCADE,
+        related_name='responses'
+    )
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='biweekly_survey_responses'
+    )
+
+    answers = models.JSONField(default=dict, blank=True)
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_DRAFT
+    )
+
+    submitted_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('survey', 'user')
+
+    def __str__(self):
+        return f'{self.survey} - {self.user}'
