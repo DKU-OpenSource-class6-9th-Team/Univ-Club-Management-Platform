@@ -5,6 +5,7 @@ from rest_framework.response import Response
 
 from .models import Club, ClubMembership, BiweeklySurvey, BiweeklySurveyResponse
 from .serializers import ClubSerializer
+from .services.health_analysis import build_health_analysis_payload
 
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
@@ -396,3 +397,21 @@ class ClubViewSet(viewsets.ModelViewSet):
             role=ClubMembership.ROLE_MANAGER,
             status=ClubMembership.STATUS_ACTIVE,
         ).exists()
+    
+
+    #동아리 운영 건강도 분석 API,   요청 주소: GET /api/clubs/{club_id}/health/
+    #역할:
+    #1. 현재 동아리의 회원, 회비, 만족도 데이터를 조회한다.
+    #2. health_analysis.py의 계산 함수를 호출한다.
+    #3. 프론트 건강도 분석 페이지에서 사용할 JSON 데이터를 반환한다.
+    #4. AI 기능은 아직 직접 실행하지 않고, 연동 예정 구조만 반환한다.
+    @action(detail=True, methods=['get'], url_path='health')
+    def get_health_analysis(self, request, pk=None):
+
+        # URL의 club_id에 해당하는 Club 객체를 가져옴
+        club = self.get_object()
+
+        # 실제 건강도 계산은 services/health_analysis.py에 분리
+        payload = build_health_analysis_payload(club)
+
+        return Response(payload)

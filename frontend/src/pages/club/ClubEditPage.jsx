@@ -394,7 +394,7 @@ function ClubEditPage() {
               만족도 조사
             </Link>
 
-            <Link to="/club/settings" className="sidebar-link">
+            <Link to={`/club/${clubId}/health`} className="sidebar-link">
               <HeartPulse size={19} />
               건강도 분석
             </Link>
