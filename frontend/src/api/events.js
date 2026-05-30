@@ -213,3 +213,34 @@ export async function fetchEventReport(clubId, eventId) {
 
   return request(`/clubs/${clubId}/events/${eventId}/report/`)
 }
+
+export async function fetchMemberActivitySummary(clubId) {
+  if (!clubId) throw new Error('동아리 ID가 없습니다.')
+
+  return request(`/clubs/${clubId}/events/member-activity/`)
+}
+
+export async function fetchMemberActivityDetail(clubId, userId) {
+  if (!clubId || !userId) throw new Error('회원 정보가 없습니다.')
+
+  return request(`/clubs/${clubId}/events/member-activity/${userId}/`)
+}
+
+export async function fetchLowParticipationMembers(clubId) {
+  if (!clubId) throw new Error('동아리 ID가 없습니다.')
+
+  return request(`/clubs/${clubId}/events/low-participation/`)
+}
+
+export async function syncMemberActivityScores(clubId) {
+  if (!clubId) throw new Error('동아리 ID가 없습니다.')
+
+  const csrfHeaders = await getCsrfHeaders()
+
+  return request(`/clubs/${clubId}/events/member-activity/sync/`, {
+    method: 'POST',
+    headers: {
+      ...csrfHeaders,
+    },
+  })
+}
