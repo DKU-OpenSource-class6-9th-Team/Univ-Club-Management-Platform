@@ -207,3 +207,9 @@ export async function fetchEventNoShows(clubId, eventId) {
 
   return request(`/clubs/${clubId}/events/${eventId}/no-shows/`)
 }
+
+export async function fetchEventReport(clubId, eventId) {
+  if (!clubId || !eventId) throw new Error('일정 정보가 없습니다.')
+
+  return request(`/clubs/${clubId}/events/${eventId}/report/`)
+}

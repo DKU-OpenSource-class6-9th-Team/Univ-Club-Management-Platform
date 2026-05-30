@@ -659,3 +659,120 @@ class EventNoShowListView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+    
+def build_event_evaluation(stats):
+    applied_count = stats["application"]["applied_count"]
+    attendance_rate = stats["rates"]["attendance_rate"]
+    no_show_rate = stats["rates"]["no_show_rate"]
+    no_show_count = stats["attendance"]["no_show_count"]
+    pre_canceled_count = stats["attendance"]["pre_canceled_count"]
+    total_checked_count = stats["attendance"]["total_checked_count"]
+    unchecked_count = max(applied_count - total_checked_count, 0)
+
+    recommendations = []
+
+    if applied_count == 0:
+        return {
+            "operation_level": "데이터 부족",
+            "level_code": "empty",
+            "summary": "참여 신청 데이터가 없어 일정 운영 상태를 판단하기 어렵습니다.",
+            "recommendations": [
+                "다음 일정에서는 참여 신청을 활성화해 운영 데이터를 확보하는 것이 좋습니다.",
+                "일정 공지와 신청 마감 시간을 명확히 안내하는 것이 좋습니다.",
+            ],
+            "unchecked_count": 0,
+        }
+
+    if unchecked_count > 0:
+        recommendations.append(
+            f"아직 출석 체크가 완료되지 않은 신청자가 {unchecked_count}명 있습니다."
+        )
+
+    if no_show_count > 0:
+        recommendations.append(
+            "무단 불참 회원에게 불참 사유를 확인하고 다음 일정 전 리마인드를 강화하는 것이 좋습니다."
+        )
+
+    if pre_canceled_count > 0:
+        recommendations.append(
+            "사전 취소 인원이 발생했으므로 일정 시간대나 진행 방식에 부담이 있었는지 확인해보는 것이 좋습니다."
+        )
+
+    if attendance_rate >= 90 and no_show_rate <= 5:
+        operation_level = "우수"
+        level_code = "excellent"
+        summary = "참석률이 매우 높고 노쇼율이 낮아 일정 운영이 안정적으로 이루어졌습니다."
+        recommendations.append("현재 일정 운영 방식을 우수 사례로 기록해도 좋습니다.")
+    elif attendance_rate >= 75 and no_show_rate <= 15:
+        operation_level = "양호"
+        level_code = "good"
+        summary = "전반적으로 일정 운영은 양호하지만 일부 개선 여지가 있습니다."
+        recommendations.append("일정 전날 공지와 참여자 확인을 유지하면 안정적인 운영이 가능합니다.")
+    elif attendance_rate >= 50 and no_show_rate <= 30:
+        operation_level = "주의"
+        level_code = "warning"
+        summary = "참석률이나 노쇼율에서 관리가 필요한 신호가 보입니다."
+        recommendations.append("참여 신청 후 실제 참석까지 이어지도록 일정 전 리마인드와 참석 의사 재확인이 필요합니다.")
+    else:
+        operation_level = "위험"
+        level_code = "danger"
+        summary = "참석률이 낮거나 노쇼율이 높아 일정 운영 방식 점검이 필요합니다."
+        recommendations.append("일정 시간, 장소, 공지 방식, 참여 부담을 전반적으로 재검토하는 것이 좋습니다.")
+
+    if not recommendations:
+        recommendations.append("현재 일정 운영 상태를 유지하면서 참여자 피드백을 수집해보는 것이 좋습니다.")
+
+    return {
+        "operation_level": operation_level,
+        "level_code": level_code,
+        "summary": summary,
+        "recommendations": recommendations,
+        "unchecked_count": unchecked_count,
+    }
+
+
+def build_event_report(event):
+    stats = calculate_event_stats(event)
+    evaluation = build_event_evaluation(stats)
+
+    return {
+        "event": {
+            "id": event.id,
+            "title": event.title,
+            "event_type": event.event_type,
+            "event_type_display": event.get_event_type_display(),
+            "status": event.status,
+            "status_display": event.get_status_display(),
+            "start_at": event.start_at,
+            "end_at": event.end_at,
+            "location": event.location,
+            "is_final_report": event.status == Event.STATUS_COMPLETED,
+        },
+        "application": stats["application"],
+        "attendance": stats["attendance"],
+        "rates": stats["rates"],
+        "evaluation": evaluation,
+        "satisfaction": {
+            "status": "not_linked",
+            "average_score": None,
+            "response_count": 0,
+            "message": "일정 만족도 조사는 추후 별도 만족도 조사 페이지와 연동 예정입니다.",
+        },
+    }
+
+
+class EventReportView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, club_id, event_id):
+        permission_error = require_event_manager(request, club_id)
+
+        if permission_error is not None:
+            return permission_error
+
+        event = get_event_or_404(club_id, event_id)
+
+        return Response(
+            build_event_report(event),
+            status=status.HTTP_200_OK,
+        )

@@ -30,6 +30,7 @@ import {
   fetchEventAttendances,
   fetchEvents,
   fetchEventNoShows,
+  fetchEventReport,
   fetchEventStats,
   fetchMyEventApplication,
   fetchMyEventRole,
@@ -185,6 +186,7 @@ function ClubEventPage() {
     attendances: [],
     stats: null,
     noShows: [],
+    report: null,
   })
   const [isManagerPanelLoading, setIsManagerPanelLoading] = useState(false)
 
@@ -313,19 +315,26 @@ function ClubEventPage() {
     try {
       setIsManagerPanelLoading(true)
 
-      const [applicationsData, attendancesData, statsData, noShowsData] =
-        await Promise.all([
-          fetchEventApplications(clubId, eventId),
-          fetchEventAttendances(clubId, eventId),
-          fetchEventStats(clubId, eventId),
-          fetchEventNoShows(clubId, eventId),
-        ])
+      const [
+        applicationsData,
+        attendancesData,
+        statsData,
+        noShowsData,
+        reportData,
+      ] = await Promise.all([
+        fetchEventApplications(clubId, eventId),
+        fetchEventAttendances(clubId, eventId),
+        fetchEventStats(clubId, eventId),
+        fetchEventNoShows(clubId, eventId),
+        fetchEventReport(clubId, eventId),
+      ])
 
       setManagerPanel({
         applications: applicationsData.results || [],
         attendances: attendancesData.results || [],
         stats: statsData,
         noShows: noShowsData.results || [],
+        report: reportData,
       })
     } catch (error) {
       console.error('운영진 패널 조회 실패:', error)
@@ -1024,6 +1033,67 @@ function ClubEventPage() {
                                     </strong>
                                   </article>
                                 </div>
+
+                                {managerPanel.report && (
+                                  <div className="event-report-card">
+                                    <div className="event-report-header">
+                                      <div>
+                                        <p className="event-section-label">Operation Report</p>
+                                        <h3>일정 운영 리포트</h3>
+                                      </div>
+
+                                      <span
+                                        className={`event-report-level ${managerPanel.report.evaluation.level_code}`}
+                                      >
+                                        {managerPanel.report.evaluation.operation_level}
+                                      </span>
+                                    </div>
+
+                                    <p className="event-report-summary">
+                                      {managerPanel.report.evaluation.summary}
+                                    </p>
+
+                                    <div className="event-report-metrics">
+                                      <article>
+                                        <span>총 신청</span>
+                                        <strong>{managerPanel.report.application.applied_count}명</strong>
+                                      </article>
+
+                                      <article>
+                                        <span>실제 참석</span>
+                                        <strong>{managerPanel.report.attendance.attended_count}명</strong>
+                                      </article>
+
+                                      <article>
+                                        <span>출석 미체크</span>
+                                        <strong>{managerPanel.report.evaluation.unchecked_count}명</strong>
+                                      </article>
+
+                                      <article>
+                                        <span>리포트 상태</span>
+                                        <strong>
+                                          {managerPanel.report.event.is_final_report ? '최종' : '진행 중'}
+                                        </strong>
+                                      </article>
+                                    </div>
+
+                                    <div className="event-report-recommendations">
+                                      <h4>개선 제안</h4>
+                                      <ul>
+                                        {managerPanel.report.evaluation.recommendations.map(
+                                          (recommendation) => (
+                                            <li key={recommendation}>{recommendation}</li>
+                                          ),
+                                        )}
+                                      </ul>
+                                    </div>
+
+                                    <div className="event-report-satisfaction">
+                                      <ClipboardCheck size={16} />
+                                      <span>{managerPanel.report.satisfaction.message}</span>
+                                    </div>
+                                  </div>
+                                )}
 
                                 <div className="event-application-table">
                                   <h3>신청자 목록</h3>
