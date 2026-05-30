@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   Bell,
   CalendarDays,
+  CheckCircle,
+  ClipboardCheck,
   CreditCard,
   Edit3,
   FileText,
@@ -13,14 +15,23 @@ import {
   Settings,
   Trash2,
   Users,
+  UserX,
   XCircle,
 } from 'lucide-react'
 
 import { getClub } from '../../api/clubs.js'
 import {
+  applyEvent,
+  cancelEventApplication,
+  checkEventAttendance,
   createEvent,
   deleteEvent,
+  fetchEventApplications,
+  fetchEventAttendances,
   fetchEvents,
+  fetchEventNoShows,
+  fetchEventStats,
+  fetchMyEventApplication,
   fetchMyEventRole,
   updateEvent,
 } from '../../api/events.js'
@@ -41,6 +52,13 @@ const STATUS_OPTIONS = [
   { value: 'scheduled', label: '예정' },
   { value: 'completed', label: '완료' },
   { value: 'canceled', label: '취소' },
+]
+
+const ATTENDANCE_STATUS_OPTIONS = [
+  { value: 'present', label: '참석' },
+  { value: 'late', label: '지각' },
+  { value: 'pre_canceled', label: '사전 취소' },
+  { value: 'no_show', label: '무단 불참' },
 ]
 
 const EMPTY_EVENT_FORM = {
@@ -148,7 +166,6 @@ function ClubEventPage() {
   const { clubId } = useParams()
 
   const loginUser = JSON.parse(localStorage.getItem('loginUser')) || {}
-  
 
   const [club, setClub] = useState(null)
   const [isClubLoading, setIsClubLoading] = useState(true)
@@ -159,6 +176,17 @@ function ClubEventPage() {
 
   const [eventRole, setEventRole] = useState(null)
   const [canManageEvents, setCanManageEvents] = useState(false)
+
+  const [myApplications, setMyApplications] = useState({})
+
+  const [selectedEventId, setSelectedEventId] = useState(null)
+  const [managerPanel, setManagerPanel] = useState({
+    applications: [],
+    attendances: [],
+    stats: null,
+    noShows: [],
+  })
+  const [isManagerPanelLoading, setIsManagerPanelLoading] = useState(false)
 
   const [filters, setFilters] = useState({
     eventType: '',
@@ -191,6 +219,21 @@ function ClubEventPage() {
       canceledCount,
     }
   }, [events])
+
+  const selectedEvent = useMemo(
+    () => events.find((event) => event.id === selectedEventId),
+    [events, selectedEventId],
+  )
+
+  const attendanceByUserId = useMemo(() => {
+    const map = {}
+
+    managerPanel.attendances.forEach((attendance) => {
+      map[attendance.user] = attendance
+    })
+
+    return map
+  }, [managerPanel.attendances])
 
   const handleLogout = () => {
     localStorage.removeItem('loginUser')
@@ -225,18 +268,70 @@ function ClubEventPage() {
     }
   }
 
+  const loadMyApplications = async (eventList) => {
+    if (!clubId || !eventList.length) {
+      setMyApplications({})
+      return
+    }
+
+    try {
+      const responses = await Promise.all(
+        eventList.map(async (event) => {
+          const data = await fetchMyEventApplication(clubId, event.id)
+          return [event.id, data]
+        }),
+      )
+
+      setMyApplications(Object.fromEntries(responses))
+    } catch (error) {
+      console.error('내 참여 신청 상태 조회 실패:', error)
+      setMyApplications({})
+    }
+  }
+
   const loadEvents = async () => {
     if (!clubId) return
 
     try {
       setIsLoading(true)
       const data = await fetchEvents(clubId, filters)
-      setEvents(data.results || [])
+      const eventList = data.results || []
+
+      setEvents(eventList)
+      await loadMyApplications(eventList)
     } catch (error) {
       console.error('일정 목록 조회 실패:', error)
       alert('일정 목록을 불러오지 못했습니다.')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const loadManagerPanel = async (eventId) => {
+    if (!clubId || !eventId) return
+
+    try {
+      setIsManagerPanelLoading(true)
+
+      const [applicationsData, attendancesData, statsData, noShowsData] =
+        await Promise.all([
+          fetchEventApplications(clubId, eventId),
+          fetchEventAttendances(clubId, eventId),
+          fetchEventStats(clubId, eventId),
+          fetchEventNoShows(clubId, eventId),
+        ])
+
+      setManagerPanel({
+        applications: applicationsData.results || [],
+        attendances: attendancesData.results || [],
+        stats: statsData,
+        noShows: noShowsData.results || [],
+      })
+    } catch (error) {
+      console.error('운영진 패널 조회 실패:', error)
+      alert(getApiErrorMessage(error))
+    } finally {
+      setIsManagerPanelLoading(false)
     }
   }
 
@@ -375,6 +470,67 @@ function ClubEventPage() {
     }
   }
 
+  const handleApplyEvent = async (eventId) => {
+    try {
+      await applyEvent(clubId, eventId)
+      alert('참여 신청이 완료되었습니다.')
+      await loadEvents()
+    } catch (error) {
+      console.error('참여 신청 실패:', error)
+      alert(getApiErrorMessage(error))
+    }
+  }
+
+  const handleCancelApplication = async (eventId) => {
+    const cancelReason = window.prompt(
+      '참여 신청 취소 사유를 입력하세요. 비워두어도 됩니다.',
+    )
+
+    if (cancelReason === null) return
+
+    try {
+      await cancelEventApplication(clubId, eventId, cancelReason)
+      alert('참여 신청이 취소되었습니다.')
+      await loadEvents()
+    } catch (error) {
+      console.error('참여 신청 취소 실패:', error)
+      alert(getApiErrorMessage(error))
+    }
+  }
+
+  const handleToggleManagerPanel = async (eventId) => {
+    if (selectedEventId === eventId) {
+      setSelectedEventId(null)
+      return
+    }
+
+    setSelectedEventId(eventId)
+    await loadManagerPanel(eventId)
+  }
+
+  const handleCheckAttendance = async (eventId, userId, attendanceStatus) => {
+    const statusLabel =
+      ATTENDANCE_STATUS_OPTIONS.find(
+        (option) => option.value === attendanceStatus,
+      )?.label || attendanceStatus
+
+    const confirmed = window.confirm(`${statusLabel} 상태로 저장하시겠습니까?`)
+
+    if (!confirmed) return
+
+    try {
+      await checkEventAttendance(clubId, eventId, {
+        userId,
+        status: attendanceStatus,
+      })
+
+      await loadManagerPanel(eventId)
+    } catch (error) {
+      console.error('출석 체크 실패:', error)
+      alert(getApiErrorMessage(error))
+    }
+  }
+
   return (
     <div className="club-dashboard-page">
       <div className="dashboard-fixed-canvas">
@@ -403,12 +559,12 @@ function ClubEventPage() {
 
               {canManageEvents && (
                 <div className="sidebar-submenu">
-                    <Link to={`/club/${clubId}/edit`} className="sidebar-sub-link">
-                        <Edit3 size={16} />
-                        동아리 정보 수정
-                    </Link>
+                  <Link to={`/club/${clubId}/edit`} className="sidebar-sub-link">
+                    <Edit3 size={16} />
+                    동아리 정보 수정
+                  </Link>
                 </div>
-                )}
+              )}
             </div>
 
             <Link to={`/club/${clubId}/members`} className="sidebar-link">
@@ -454,7 +610,7 @@ function ClubEventPage() {
               <p className="dashboard-label">Club Events</p>
               <h1 className="club-events-title">{currentPageName}</h1>
               <p className="dashboard-desc">
-                정기 모임, 행사, 모집 일정 등을 등록하고 운영 상태를 관리합니다.
+                일정 참여 신청, 출석 체크, 노쇼율을 함께 관리합니다.
               </p>
             </div>
 
@@ -772,87 +928,251 @@ function ClubEventPage() {
               </div>
             ) : (
               <div className="event-card-list">
-                {events.map((event) => (
-                  <article key={event.id} className="event-item-card">
-                    <div className="event-item-main">
-                      <div className="event-badge-row">
-                        <span className="event-type-badge">
-                          {event.event_type_display || event.event_type}
-                        </span>
-                        <span className={`event-status-badge ${event.status}`}>
-                          {event.status_display || event.status}
-                        </span>
-                      </div>
+                {events.map((event) => {
+                  const myApplication = myApplications[event.id]
+                  const hasApplication = Boolean(myApplication?.has_application)
 
-                      <h3>{event.title}</h3>
-
-                      <div className="event-meta-grid">
-                        <p>
-                          <strong>시작</strong>
-                          {formatDateTime(event.start_at)}
-                        </p>
-                        <p>
-                          <strong>종료</strong>
-                          {formatDateTime(event.end_at)}
-                        </p>
-                        <p>
-                          <strong>장소</strong>
-                          {event.location || '-'}
-                        </p>
-                        <p>
-                          <strong>정원</strong>
-                          {event.max_participants
-                            ? `${event.max_participants}명`
-                            : '제한 없음'}
-                        </p>
-                      </div>
-
-                      {event.description && (
-                        <p className="event-description">{event.description}</p>
-                      )}
-
-                      {event.status === 'canceled' && event.cancel_reason && (
-                        <div className="event-cancel-reason">
-                          <strong>취소 사유</strong>
-                          <p>{event.cancel_reason}</p>
+                  return (
+                    <article key={event.id} className="event-item-card">
+                      <div className="event-item-main">
+                        <div className="event-badge-row">
+                          <span className="event-type-badge">
+                            {event.event_type_display || event.event_type}
+                          </span>
+                          <span className={`event-status-badge ${event.status}`}>
+                            {event.status_display || event.status}
+                          </span>
+                          {hasApplication && (
+                            <span className="event-application-badge">
+                              참여 신청 완료
+                            </span>
+                          )}
                         </div>
-                      )}
-                    </div>
 
-                    {canManageEvents && (
-                      <div className="event-item-actions">
-                        <button
-                          type="button"
-                          className="event-secondary-button"
-                          onClick={() => handleEditEvent(event)}
-                        >
-                          <Edit3 size={15} />
-                          수정
-                        </button>
+                        <h3>{event.title}</h3>
 
-                        {event.status !== 'canceled' && (
-                          <button
-                            type="button"
-                            className="event-warning-button"
-                            onClick={() => handleCancelEvent(event)}
-                          >
-                            <XCircle size={15} />
-                            취소 처리
-                          </button>
+                        <div className="event-meta-grid">
+                          <p>
+                            <strong>시작</strong>
+                            {formatDateTime(event.start_at)}
+                          </p>
+                          <p>
+                            <strong>종료</strong>
+                            {formatDateTime(event.end_at)}
+                          </p>
+                          <p>
+                            <strong>장소</strong>
+                            {event.location || '-'}
+                          </p>
+                          <p>
+                            <strong>정원</strong>
+                            {event.max_participants
+                              ? `${event.max_participants}명`
+                              : '제한 없음'}
+                          </p>
+                        </div>
+
+                        {event.description && (
+                          <p className="event-description">{event.description}</p>
                         )}
 
-                        <button
-                          type="button"
-                          className="event-danger-button"
-                          onClick={() => handleDeleteEvent(event.id)}
-                        >
-                          <Trash2 size={15} />
-                          삭제
-                        </button>
+                        {event.status === 'canceled' && event.cancel_reason && (
+                          <div className="event-cancel-reason">
+                            <strong>취소 사유</strong>
+                            <p>{event.cancel_reason}</p>
+                          </div>
+                        )}
+
+                        {selectedEventId === event.id && canManageEvents && (
+                          <section className="event-manager-panel">
+                            <div className="event-section-title-row">
+                              <div>
+                                <p className="event-section-label">Attendance</p>
+                                <h2>{selectedEvent?.title} 출석 관리</h2>
+                              </div>
+                            </div>
+
+                            {isManagerPanelLoading ? (
+                              <div className="event-empty-box">
+                                신청자 및 출석 정보를 불러오는 중입니다.
+                              </div>
+                            ) : (
+                              <>
+                                <div className="event-stats-grid">
+                                  <article>
+                                    <span>신청자</span>
+                                    <strong>
+                                      {managerPanel.stats?.application?.applied_count || 0}명
+                                    </strong>
+                                  </article>
+                                  <article>
+                                    <span>참석률</span>
+                                    <strong>
+                                      {managerPanel.stats?.rates?.attendance_rate || 0}%
+                                    </strong>
+                                  </article>
+                                  <article>
+                                    <span>노쇼율</span>
+                                    <strong>
+                                      {managerPanel.stats?.rates?.no_show_rate || 0}%
+                                    </strong>
+                                  </article>
+                                  <article>
+                                    <span>무단 불참</span>
+                                    <strong>
+                                      {managerPanel.stats?.attendance?.no_show_count || 0}명
+                                    </strong>
+                                  </article>
+                                </div>
+
+                                <div className="event-application-table">
+                                  <h3>신청자 목록</h3>
+
+                                  {managerPanel.applications.length === 0 ? (
+                                    <div className="event-empty-box">
+                                      아직 참여 신청자가 없습니다.
+                                    </div>
+                                  ) : (
+                                    managerPanel.applications.map((application) => {
+                                      const attendance =
+                                        attendanceByUserId[application.user]
+
+                                      return (
+                                        <div
+                                          key={application.id}
+                                          className="event-application-row"
+                                        >
+                                          <div>
+                                            <strong>
+                                              {application.user_real_name || 
+                                              application.username}
+                                            </strong>
+                                            <span>
+                                              {application.status_display}
+                                              {attendance
+                                                ? ` · 출석: ${attendance.status_display}`
+                                                : ' · 출석 미체크'}
+                                            </span>
+                                          </div>
+
+                                          {application.status === 'applied' && (
+                                            <div className="event-attendance-buttons">
+                                              {ATTENDANCE_STATUS_OPTIONS.map((option) => (
+                                                <button
+                                                  key={option.value}
+                                                  type="button"
+                                                  className={`event-attendance-button ${option.value}`}
+                                                  onClick={() =>
+                                                    handleCheckAttendance(
+                                                      event.id,
+                                                      application.user,
+                                                      option.value,
+                                                    )
+                                                  }
+                                                >
+                                                  {option.label}
+                                                </button>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </div>
+                                      )
+                                    })
+                                  )}
+                                </div>
+
+                                <div className="event-no-show-box">
+                                  <h3>
+                                    <UserX size={17} />
+                                    노쇼 회원 목록
+                                  </h3>
+
+                                  {managerPanel.noShows.length === 0 ? (
+                                    <p>무단 불참으로 기록된 회원이 없습니다.</p>
+                                  ) : (
+                                    managerPanel.noShows.map((attendance) => (
+                                      <p key={attendance.id}>
+                                        {attendance.user_real_name || attendance.username}
+                                      </p>
+                                    ))
+                                  )}
+                                </div>
+                              </>
+                            )}
+                          </section>
+                        )}
                       </div>
-                    )}
-                  </article>
-                ))}
+
+                      <div className="event-item-actions">
+                        {event.status === 'scheduled' && (
+                          <>
+                            {hasApplication ? (
+                              <button
+                                type="button"
+                                className="event-warning-button"
+                                onClick={() => handleCancelApplication(event.id)}
+                              >
+                                <XCircle size={15} />
+                                신청 취소
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="event-apply-button"
+                                onClick={() => handleApplyEvent(event.id)}
+                              >
+                                <CheckCircle size={15} />
+                                참여 신청
+                              </button>
+                            )}
+                          </>
+                        )}
+
+                        {canManageEvents && (
+                          <>
+                            <button
+                              type="button"
+                              className="event-secondary-button"
+                              onClick={() => handleToggleManagerPanel(event.id)}
+                            >
+                              <ClipboardCheck size={15} />
+                              출석 관리
+                            </button>
+
+                            <button
+                              type="button"
+                              className="event-secondary-button"
+                              onClick={() => handleEditEvent(event)}
+                            >
+                              <Edit3 size={15} />
+                              수정
+                            </button>
+
+                            {event.status !== 'canceled' && (
+                              <button
+                                type="button"
+                                className="event-warning-button"
+                                onClick={() => handleCancelEvent(event)}
+                              >
+                                <XCircle size={15} />
+                                취소 처리
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
+                              className="event-danger-button"
+                              onClick={() => handleDeleteEvent(event.id)}
+                            >
+                              <Trash2 size={15} />
+                              삭제
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </article>
+                  )
+                })}
               </div>
             )}
           </section>

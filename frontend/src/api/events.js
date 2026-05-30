@@ -1,7 +1,6 @@
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
 
-// 브라우저 쿠키에서 특정 이름의 쿠키 값을 꺼내는 함수
 function getCookie(name) {
   const cookies = document.cookie ? document.cookie.split('; ') : []
 
@@ -16,7 +15,6 @@ function getCookie(name) {
   return null
 }
 
-// Django에서 CSRF 쿠키를 발급받기 위한 요청
 async function ensureCsrfCookie() {
   const response = await fetch(`${API_BASE_URL}/accounts/csrf/`, {
     method: 'GET',
@@ -28,39 +26,23 @@ async function ensureCsrfCookie() {
   }
 }
 
-// POST / PATCH / DELETE 요청에 사용할 CSRF 헤더 생성
 async function getCsrfHeaders() {
   await ensureCsrfCookie()
 
   const csrfToken = getCookie('csrftoken')
 
-  return csrfToken
-    ? { 'X-CSRFToken': csrfToken }
-    : {}
+  return csrfToken ? { 'X-CSRFToken': csrfToken } : {}
 }
 
-// API 에러 메시지를 화면에서 쓰기 좋게 변환하는 함수
 function normalizeApiError(data, fallbackMessage) {
-  if (!data) {
-    return new Error(fallbackMessage)
-  }
-
-  if (typeof data === 'string') {
-    return new Error(data)
-  }
-
-  if (data.message) {
-    return new Error(data.message)
-  }
-
-  if (data.detail) {
-    return new Error(data.detail)
-  }
+  if (!data) return new Error(fallbackMessage)
+  if (typeof data === 'string') return new Error(data)
+  if (data.message) return new Error(data.message)
+  if (data.detail) return new Error(data.detail)
 
   return data
 }
 
-// 공통 API 요청 함수
 async function request(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
@@ -80,25 +62,14 @@ async function request(path, options = {}) {
   return data
 }
 
-// 일정 목록 조회
 export async function fetchEvents(clubId, filters = {}) {
-  if (!clubId) {
-    throw new Error('동아리 ID가 없습니다.')
-  }
+  if (!clubId) throw new Error('동아리 ID가 없습니다.')
 
   const queryParams = new URLSearchParams()
 
-  if (filters.eventType) {
-    queryParams.set('event_type', filters.eventType)
-  }
-
-  if (filters.status) {
-    queryParams.set('status', filters.status)
-  }
-
-  if (filters.search) {
-    queryParams.set('search', filters.search)
-  }
+  if (filters.eventType) queryParams.set('event_type', filters.eventType)
+  if (filters.status) queryParams.set('status', filters.status)
+  if (filters.search) queryParams.set('search', filters.search)
 
   const queryString = queryParams.toString()
 
@@ -107,29 +78,20 @@ export async function fetchEvents(clubId, filters = {}) {
   )
 }
 
-// 일정 상세 조회
 export async function fetchEventDetail(clubId, eventId) {
-  if (!clubId || !eventId) {
-    throw new Error('일정 정보가 없습니다.')
-  }
+  if (!clubId || !eventId) throw new Error('일정 정보가 없습니다.')
 
   return request(`/clubs/${clubId}/events/${eventId}/`)
 }
 
-// 현재 사용자의 일정 관리 권한 조회
 export async function fetchMyEventRole(clubId) {
-  if (!clubId) {
-    throw new Error('동아리 ID가 없습니다.')
-  }
+  if (!clubId) throw new Error('동아리 ID가 없습니다.')
 
   return request(`/clubs/${clubId}/events/my-role/`)
 }
 
-// 일정 등록
 export async function createEvent(clubId, eventData) {
-  if (!clubId) {
-    throw new Error('동아리 ID가 없습니다.')
-  }
+  if (!clubId) throw new Error('동아리 ID가 없습니다.')
 
   const csrfHeaders = await getCsrfHeaders()
 
@@ -142,11 +104,8 @@ export async function createEvent(clubId, eventData) {
   })
 }
 
-// 일정 수정
 export async function updateEvent(clubId, eventId, eventData) {
-  if (!clubId || !eventId) {
-    throw new Error('일정 정보가 없습니다.')
-  }
+  if (!clubId || !eventId) throw new Error('일정 정보가 없습니다.')
 
   const csrfHeaders = await getCsrfHeaders()
 
@@ -159,11 +118,8 @@ export async function updateEvent(clubId, eventId, eventData) {
   })
 }
 
-// 일정 삭제
 export async function deleteEvent(clubId, eventId) {
-  if (!clubId || !eventId) {
-    throw new Error('일정 정보가 없습니다.')
-  }
+  if (!clubId || !eventId) throw new Error('일정 정보가 없습니다.')
 
   const csrfHeaders = await getCsrfHeaders()
 
@@ -173,4 +129,81 @@ export async function deleteEvent(clubId, eventId) {
       ...csrfHeaders,
     },
   })
+}
+
+export async function applyEvent(clubId, eventId) {
+  if (!clubId || !eventId) throw new Error('일정 정보가 없습니다.')
+
+  const csrfHeaders = await getCsrfHeaders()
+
+  return request(`/clubs/${clubId}/events/${eventId}/apply/`, {
+    method: 'POST',
+    headers: {
+      ...csrfHeaders,
+    },
+  })
+}
+
+export async function cancelEventApplication(clubId, eventId, cancelReason = '') {
+  if (!clubId || !eventId) throw new Error('일정 정보가 없습니다.')
+
+  const csrfHeaders = await getCsrfHeaders()
+
+  return request(`/clubs/${clubId}/events/${eventId}/cancel-application/`, {
+    method: 'POST',
+    headers: {
+      ...csrfHeaders,
+    },
+    body: JSON.stringify({
+      cancel_reason: cancelReason,
+    }),
+  })
+}
+
+export async function fetchMyEventApplication(clubId, eventId) {
+  if (!clubId || !eventId) throw new Error('일정 정보가 없습니다.')
+
+  return request(`/clubs/${clubId}/events/${eventId}/my-application/`)
+}
+
+export async function fetchEventApplications(clubId, eventId) {
+  if (!clubId || !eventId) throw new Error('일정 정보가 없습니다.')
+
+  return request(`/clubs/${clubId}/events/${eventId}/applications/`)
+}
+
+export async function fetchEventAttendances(clubId, eventId) {
+  if (!clubId || !eventId) throw new Error('일정 정보가 없습니다.')
+
+  return request(`/clubs/${clubId}/events/${eventId}/attendances/`)
+}
+
+export async function checkEventAttendance(clubId, eventId, attendanceData) {
+  if (!clubId || !eventId) throw new Error('일정 정보가 없습니다.')
+
+  const csrfHeaders = await getCsrfHeaders()
+
+  return request(`/clubs/${clubId}/events/${eventId}/attendances/check/`, {
+    method: 'POST',
+    headers: {
+      ...csrfHeaders,
+    },
+    body: JSON.stringify({
+      user_id: attendanceData.userId,
+      status: attendanceData.status,
+      memo: attendanceData.memo || '',
+    }),
+  })
+}
+
+export async function fetchEventStats(clubId, eventId) {
+  if (!clubId || !eventId) throw new Error('일정 정보가 없습니다.')
+
+  return request(`/clubs/${clubId}/events/${eventId}/stats/`)
+}
+
+export async function fetchEventNoShows(clubId, eventId) {
+  if (!clubId || !eventId) throw new Error('일정 정보가 없습니다.')
+
+  return request(`/clubs/${clubId}/events/${eventId}/no-shows/`)
 }
