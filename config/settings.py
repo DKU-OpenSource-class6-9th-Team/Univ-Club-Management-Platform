@@ -54,6 +54,9 @@ INSTALLED_APPS = [
 
     #회비 관리 기능 담당하는 앱
     'fees.apps.FeesConfig',
+
+    # 일정·출석 관리 기능 담당하는 앱
+    'events.apps.EventsConfig',
 ]
 
 MIDDLEWARE = [

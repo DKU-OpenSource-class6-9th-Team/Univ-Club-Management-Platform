@@ -32,6 +32,9 @@ urlpatterns = [
     #KAN-35 fees앱 API연결
     #urls.py 에서 URL관리
     path('api/', include('fees.urls')),
+
+    # KAN-51 일정·출석 관리 API 연결
+    path('api/', include('events.urls')),
 ]
 
 # DEBUG=True인 개발 환경에서 파일을 Django 개발 서버가 제공
