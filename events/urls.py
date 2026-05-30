@@ -9,6 +9,7 @@ from .views import (
     EventDetailView,
     EventListCreateView,
     EventNoShowListView,
+    EventReportView,
     EventStatsView,
     MyEventApplicationView,
     MyEventRoleView,
@@ -70,5 +71,10 @@ urlpatterns = [
         "clubs/<int:club_id>/events/<int:event_id>/no-shows/",
         EventNoShowListView.as_view(),
         name="event-no-show-list",
+    ),
+    path(
+        "clubs/<int:club_id>/events/<int:event_id>/report/",
+        EventReportView.as_view(),
+        name="event-report",
     ),
 ]
