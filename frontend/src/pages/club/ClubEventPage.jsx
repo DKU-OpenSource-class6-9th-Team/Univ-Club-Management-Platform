@@ -32,8 +32,11 @@ import {
   fetchEventNoShows,
   fetchEventReport,
   fetchEventStats,
+  fetchLowParticipationMembers,
+  fetchMemberActivitySummary,
   fetchMyEventApplication,
   fetchMyEventRole,
+  syncMemberActivityScores,
   updateEvent,
 } from '../../api/events.js'
 
@@ -190,6 +193,14 @@ function ClubEventPage() {
   })
   const [isManagerPanelLoading, setIsManagerPanelLoading] = useState(false)
 
+    const [activityPanel, setActivityPanel] = useState({
+    summary: null,
+    members: [],
+    lowMembers: [],
+  })
+  const [isActivityPanelOpen, setIsActivityPanelOpen] = useState(false)
+  const [isActivityPanelLoading, setIsActivityPanelLoading] = useState(false)
+
   const [filters, setFilters] = useState({
     eventType: '',
     status: '',
@@ -341,6 +352,67 @@ function ClubEventPage() {
       alert(getApiErrorMessage(error))
     } finally {
       setIsManagerPanelLoading(false)
+    }
+  }
+
+  const loadActivityPanel = async () => {
+    if (!clubId) return
+
+    try {
+      setIsActivityPanelLoading(true)
+
+      const [activityData, lowParticipationData] = await Promise.all([
+        fetchMemberActivitySummary(clubId),
+        fetchLowParticipationMembers(clubId),
+      ])
+
+      setActivityPanel({
+        summary: activityData.summary,
+        members: activityData.results || [],
+        lowMembers: lowParticipationData.results || [],
+      })
+    } catch (error) {
+      console.error('회원별 활동 분석 조회 실패:', error)
+      alert(getApiErrorMessage(error))
+    } finally {
+      setIsActivityPanelLoading(false)
+    }
+  }
+
+  const handleToggleActivityPanel = async () => {
+    if (isActivityPanelOpen) {
+      setIsActivityPanelOpen(false)
+      return
+    }
+
+    setIsActivityPanelOpen(true)
+    await loadActivityPanel()
+  }
+
+  const handleSyncActivityScores = async () => {
+    const confirmed = window.confirm(
+      '계산된 활동 점수를 동아리원 관리 정보에 반영하시겠습니까?',
+    )
+
+    if (!confirmed) return
+
+    try {
+      const data = await syncMemberActivityScores(clubId)
+
+      alert(`${data.updated_count}명의 활동 점수가 반영되었습니다.`)
+
+      setActivityPanel({
+        summary: data.summary,
+        members: data.results || [],
+        lowMembers: (data.results || []).filter((member) =>
+          ['data_insufficient', 'danger', 'warning', 'watch'].includes(
+            member.risk_level,
+          ),
+        ),
+      })
+    } catch (error) {
+      console.error('활동 점수 반영 실패:', error)
+      alert(getApiErrorMessage(error))
     }
   }
 
@@ -725,16 +797,177 @@ function ClubEventPage() {
             </form>
 
             {canManageEvents && (
-              <button
-                type="button"
-                className="event-primary-button"
-                onClick={handleOpenCreateForm}
-              >
-                <Plus size={17} />
-                일정 등록
-              </button>
+              <div className="event-toolbar-actions">
+                <button
+                  type="button"
+                  className="event-secondary-button"
+                  onClick={handleToggleActivityPanel}
+                >
+                  <Users size={17} />
+                  회원 활동 분석
+                </button>
+
+                <button
+                  type="button"
+                  className="event-primary-button"
+                  onClick={handleOpenCreateForm}
+                >
+                  <Plus size={17} />
+                  일정 등록
+                </button>
+              </div>
             )}
           </section>
+
+          {canManageEvents && isActivityPanelOpen && (
+            <section className="member-activity-panel">
+              <div className="event-section-title-row">
+                <div>
+                  <p className="event-section-label">Member Activity</p>
+                  <h2>회원별 활동 기록 및 저참여 감지</h2>
+                </div>
+
+                <div className="member-activity-actions">
+                  <button
+                    type="button"
+                    className="event-secondary-button"
+                    onClick={loadActivityPanel}
+                  >
+                    새로고침
+                  </button>
+
+                  <button
+                    type="button"
+                    className="event-primary-button"
+                    onClick={handleSyncActivityScores}
+                  >
+                    활동 점수 반영
+                  </button>
+                </div>
+              </div>
+
+              {isActivityPanelLoading ? (
+                <div className="event-empty-box">
+                  회원별 활동 데이터를 불러오는 중입니다.
+                </div>
+              ) : (
+                <>
+                  <div className="member-activity-summary-grid">
+                    <article>
+                      <span>전체 회원</span>
+                      <strong>{activityPanel.summary?.total_members || 0}명</strong>
+                    </article>
+
+                    <article>
+                      <span>평균 활동 점수</span>
+                      <strong>
+                        {activityPanel.summary?.average_activity_score || 0}점
+                      </strong>
+                    </article>
+
+                    <article>
+                      <span>저참여 감지</span>
+                      <strong>
+                        {activityPanel.summary?.low_participation_count || 0}명
+                      </strong>
+                    </article>
+
+                    <article>
+                      <span>완료 일정</span>
+                      <strong>
+                        {activityPanel.summary?.total_completed_events || 0}개
+                      </strong>
+                    </article>
+                  </div>
+
+                  <div className="low-participation-box">
+                    <div className="event-section-title-row">
+                      <div>
+                        <p className="event-section-label">Low Participation</p>
+                        <h3>저참여 회원 자동 감지</h3>
+                      </div>
+                    </div>
+
+                    {activityPanel.lowMembers.length === 0 ? (
+                      <div className="event-empty-box">
+                        현재 저참여 위험 회원이 감지되지 않았습니다.
+                      </div>
+                    ) : (
+                      <div className="low-participation-list">
+                        {activityPanel.lowMembers.map((member) => (
+                          <article
+                            key={member.user}
+                            className={`low-participation-item ${member.risk_level}`}
+                          >
+                            <div>
+                              <strong>{member.user_real_name || member.username}</strong>
+                              <span>
+                                {member.role_display} · {member.risk_summary}
+                              </span>
+                              <ul>
+                                {member.risk_reasons.map((reason) => (
+                                  <li key={reason}>{reason}</li>
+                                ))}
+                              </ul>
+                            </div>
+
+                            <div className="low-participation-score">
+                              <span>{member.risk_level_display}</span>
+                              <strong>{member.activity_score}점</strong>
+                            </div>
+                          </article>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="member-activity-table-card">
+                    <h3>회원별 활동 기록 요약</h3>
+
+                    {activityPanel.members.length === 0 ? (
+                      <div className="event-empty-box">
+                        표시할 회원 활동 데이터가 없습니다.
+                      </div>
+                    ) : (
+                      <div className="member-activity-table">
+                        <div className="member-activity-row header">
+                          <span>회원</span>
+                          <span>신청</span>
+                          <span>참석</span>
+                          <span>노쇼</span>
+                          <span>참석률</span>
+                          <span>노쇼율</span>
+                          <span>점수</span>
+                          <span>상태</span>
+                        </div>
+
+                        {activityPanel.members.map((member) => (
+                          <div key={member.user} className="member-activity-row">
+                            <span>
+                              <strong>{member.user_real_name || member.username}</strong>
+                              <small>{member.role_display}</small>
+                            </span>
+
+                            <span>{member.application.applied_count}회</span>
+                            <span>{member.attendance.attended_count}회</span>
+                            <span>{member.attendance.no_show_count}회</span>
+                            <span>{member.rates.attendance_rate}%</span>
+                            <span>{member.rates.no_show_rate}%</span>
+                            <span>{member.activity_score}점</span>
+                            <span>
+                              <em className={`member-risk-badge ${member.risk_level}`}>
+                                {member.risk_level_display}
+                              </em>
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </section>
+          )}
 
           {canManageEvents && isFormOpen && (
             <section className="event-form-card">

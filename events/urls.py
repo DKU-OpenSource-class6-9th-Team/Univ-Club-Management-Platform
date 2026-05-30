@@ -8,6 +8,10 @@ from .views import (
     EventAttendanceListView,
     EventDetailView,
     EventListCreateView,
+    EventLowParticipationListView,
+    EventMemberActivityDetailView,
+    EventMemberActivitySummaryView,
+    EventMemberActivitySyncView,
     EventNoShowListView,
     EventReportView,
     EventStatsView,
@@ -26,6 +30,26 @@ urlpatterns = [
         "clubs/<int:club_id>/events/my-role/",
         MyEventRoleView.as_view(),
         name="event-my-role",
+    ),
+    path(
+        "clubs/<int:club_id>/events/member-activity/",
+        EventMemberActivitySummaryView.as_view(),
+        name="event-member-activity-summary",
+    ),
+    path(
+        "clubs/<int:club_id>/events/member-activity/sync/",
+        EventMemberActivitySyncView.as_view(),
+        name="event-member-activity-sync",
+    ),
+    path(
+        "clubs/<int:club_id>/events/member-activity/<int:user_id>/",
+        EventMemberActivityDetailView.as_view(),
+        name="event-member-activity-detail",
+    ),
+    path(
+        "clubs/<int:club_id>/events/low-participation/",
+        EventLowParticipationListView.as_view(),
+        name="event-low-participation-list",
     ),
     path(
         "clubs/<int:club_id>/events/<int:event_id>/",
