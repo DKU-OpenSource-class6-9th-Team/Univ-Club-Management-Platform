@@ -309,7 +309,7 @@ const handleChangePaymentStatus = async (member) => {
             만족도 조사
           </Link>
           
-          <Link to="/club/settings" className="sidebar-link">
+          <Link to={`/club/${clubId}/health`} className="sidebar-link">
             <Settings size={19} />
             건강도 분석
           </Link>
