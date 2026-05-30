@@ -15,6 +15,7 @@ import { //icon 삽입
   FileText,
   LayoutDashboard,
   LogOut,
+  MessageCircleHeart,
   Settings,
   Users,
 } from 'lucide-react'
@@ -303,7 +304,12 @@ const handleChangePaymentStatus = async (member) => {
             일정·출석 관리
           </Link>
 
-          <Link to="/club/settings" className="sidebar-link">
+          <Link to={`/club/${clubId}/survey`} className="sidebar-link">
+            <MessageCircleHeart size={19} />
+            만족도 조사
+          </Link>
+          
+          <Link to={`/club/${clubId}/health`} className="sidebar-link">
             <Settings size={19} />
             건강도 분석
           </Link>

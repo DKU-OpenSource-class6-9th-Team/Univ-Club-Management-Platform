@@ -24,6 +24,7 @@ import {
   HeartPulse,
   LayoutDashboard,
   LogOut,
+  MessageCircleHeart,
   RotateCcw,
   Search,
   ShieldCheck,
@@ -446,7 +447,12 @@ function ClubMemberListPage() {
               일정·출석 관리
             </Link>
 
-            <Link to="/club/settings" className="sidebar-link">
+            <Link to={`/club/${clubId}/survey`} className="sidebar-link">
+              <MessageCircleHeart size={19} />
+              만족도 조사
+            </Link>
+
+            <Link to={`/club/${clubId}/health`} className="sidebar-link">
               <HeartPulse size={19} />
               건강도 분석
             </Link>

@@ -15,6 +15,9 @@ import ClubMemberListPage from './pages/club/ClubMemberListPage.jsx';
 import ClubFeePage from './pages/club/ClubFeePage.jsx'
 import ClubMemberDetailPage from './pages/club/ClubMemberDetailPage.jsx';
 import ClubEventPage from './pages/club/ClubEventPage.jsx'
+import ClubSurveyPage from './pages/club/ClubSurveyPage.jsx';
+import ClubHealthPage from './pages/club/ClubHealthPage.jsx'
+
 
 function App() {
   return (
@@ -118,6 +121,22 @@ function App() {
         element={
           <ProtectedRoute>
             <ClubEventPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/club/:clubId/survey"
+        element={
+          <ClubSurveyPage />
+        }
+      />
+
+      <Route
+        path="/club/:clubId/health"
+        element={
+          <ProtectedRoute>
+            <ClubHealthPage />
           </ProtectedRoute>
         }
       />
