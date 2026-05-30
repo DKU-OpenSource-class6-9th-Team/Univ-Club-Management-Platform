@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Event
+from .models import Attendance, Event, EventApplication
 
 
 @admin.register(Event)
@@ -89,4 +89,59 @@ class EventAdmin(admin.ModelAdmin):
                 )
             },
         ),
+    )
+
+@admin.register(EventApplication)
+class EventApplicationAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "event",
+        "user",
+        "status",
+        "applied_at",
+        "canceled_at",
+    )
+
+    list_filter = (
+        "status",
+        "event",
+    )
+
+    search_fields = (
+        "event__title",
+        "user__username",
+    )
+
+    readonly_fields = (
+        "applied_at",
+        "created_at",
+        "updated_at",
+    )
+
+
+@admin.register(Attendance)
+class AttendanceAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "event",
+        "user",
+        "status",
+        "checked_by",
+        "checked_at",
+    )
+
+    list_filter = (
+        "status",
+        "event",
+    )
+
+    search_fields = (
+        "event__title",
+        "user__username",
+        "checked_by__username",
+    )
+
+    readonly_fields = (
+        "created_at",
+        "updated_at",
     )

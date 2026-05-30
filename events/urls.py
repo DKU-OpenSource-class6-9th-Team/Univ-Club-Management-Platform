@@ -1,8 +1,16 @@
 from django.urls import path
 
 from .views import (
+    EventApplicationCancelView,
+    EventApplicationListView,
+    EventApplyView,
+    EventAttendanceCheckView,
+    EventAttendanceListView,
     EventDetailView,
     EventListCreateView,
+    EventNoShowListView,
+    EventStatsView,
+    MyEventApplicationView,
     MyEventRoleView,
 )
 
@@ -22,5 +30,45 @@ urlpatterns = [
         "clubs/<int:club_id>/events/<int:event_id>/",
         EventDetailView.as_view(),
         name="event-detail",
+    ),
+    path(
+        "clubs/<int:club_id>/events/<int:event_id>/apply/",
+        EventApplyView.as_view(),
+        name="event-apply",
+    ),
+    path(
+        "clubs/<int:club_id>/events/<int:event_id>/cancel-application/",
+        EventApplicationCancelView.as_view(),
+        name="event-application-cancel",
+    ),
+    path(
+        "clubs/<int:club_id>/events/<int:event_id>/my-application/",
+        MyEventApplicationView.as_view(),
+        name="event-my-application",
+    ),
+    path(
+        "clubs/<int:club_id>/events/<int:event_id>/applications/",
+        EventApplicationListView.as_view(),
+        name="event-application-list",
+    ),
+    path(
+        "clubs/<int:club_id>/events/<int:event_id>/attendances/",
+        EventAttendanceListView.as_view(),
+        name="event-attendance-list",
+    ),
+    path(
+        "clubs/<int:club_id>/events/<int:event_id>/attendances/check/",
+        EventAttendanceCheckView.as_view(),
+        name="event-attendance-check",
+    ),
+    path(
+        "clubs/<int:club_id>/events/<int:event_id>/stats/",
+        EventStatsView.as_view(),
+        name="event-stats",
+    ),
+    path(
+        "clubs/<int:club_id>/events/<int:event_id>/no-shows/",
+        EventNoShowListView.as_view(),
+        name="event-no-show-list",
     ),
 ]

@@ -160,3 +160,164 @@ class Event(models.Model):
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
+
+
+class EventApplication(models.Model):
+    STATUS_APPLIED = "applied"
+    STATUS_CANCELED = "canceled"
+
+    STATUS_CHOICES = [
+        (STATUS_APPLIED, "신청"),
+        (STATUS_CANCELED, "취소"),
+    ]
+
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.CASCADE,
+        related_name="applications",
+        verbose_name="일정",
+    )
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="event_applications",
+        verbose_name="신청자",
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_APPLIED,
+        verbose_name="신청 상태",
+    )
+
+    cancel_reason = models.TextField(
+        blank=True,
+        verbose_name="신청 취소 사유",
+    )
+
+    applied_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="신청 일시",
+    )
+
+    canceled_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="취소 일시",
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="생성일",
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name="수정일",
+    )
+
+    class Meta:
+        db_table = "events_event_application"
+        ordering = ["-applied_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["event", "user"],
+                name="unique_event_application_per_user",
+            )
+        ]
+        verbose_name = "일정 참여 신청"
+        verbose_name_plural = "일정 참여 신청 목록"
+
+    def __str__(self):
+        return f"{self.event.title} - {self.user.username} ({self.get_status_display()})"
+
+
+class Attendance(models.Model):
+    STATUS_PRESENT = "present"
+    STATUS_LATE = "late"
+    STATUS_PRE_CANCELED = "pre_canceled"
+    STATUS_NO_SHOW = "no_show"
+
+    STATUS_CHOICES = [
+        (STATUS_PRESENT, "참석"),
+        (STATUS_LATE, "지각"),
+        (STATUS_PRE_CANCELED, "사전 취소"),
+        (STATUS_NO_SHOW, "무단 불참"),
+    ]
+
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.CASCADE,
+        related_name="attendances",
+        verbose_name="일정",
+    )
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="event_attendances",
+        verbose_name="회원",
+    )
+
+    application = models.OneToOneField(
+        EventApplication,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="attendance",
+        verbose_name="참여 신청 정보",
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_PRESENT,
+        verbose_name="출석 상태",
+    )
+
+    checked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="checked_attendances",
+        verbose_name="출석 체크한 운영진",
+    )
+
+    checked_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="출석 체크 일시",
+    )
+
+    memo = models.TextField(
+        blank=True,
+        verbose_name="출석 메모",
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="생성일",
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name="수정일",
+    )
+
+    class Meta:
+        db_table = "events_attendance"
+        ordering = ["event", "user"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["event", "user"],
+                name="unique_attendance_per_event_user",
+            )
+        ]
+        verbose_name = "출석"
+        verbose_name_plural = "출석 목록"
+
+    def __str__(self):
+        return f"{self.event.title} - {self.user.username} ({self.get_status_display()})"

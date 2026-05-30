@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Event
+from .models import Attendance, Event, EventApplication
 
 
 class EventSerializer(serializers.ModelSerializer):
@@ -66,7 +66,10 @@ class EventSerializer(serializers.ModelSerializer):
             getattr(self.instance, "application_end_at", None),
         )
 
-        status = attrs.get("status", getattr(self.instance, "status", Event.STATUS_SCHEDULED))
+        status = attrs.get(
+            "status",
+            getattr(self.instance, "status", Event.STATUS_SCHEDULED),
+        )
         cancel_reason = attrs.get(
             "cancel_reason",
             getattr(self.instance, "cancel_reason", ""),
@@ -97,3 +100,101 @@ class EventSerializer(serializers.ModelSerializer):
             })
 
         return attrs
+
+
+class EventApplicationSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source="user.username", read_only=True)
+    user_real_name = serializers.SerializerMethodField()
+    status_display = serializers.CharField(
+        source="get_status_display",
+        read_only=True,
+    )
+
+    class Meta:
+        model = EventApplication
+        fields = [
+            "id",
+            "event",
+            "user",
+            "username",
+            "user_real_name",
+            "status",
+            "status_display",
+            "cancel_reason",
+            "applied_at",
+            "canceled_at",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "event",
+            "user",
+            "username",
+            "user_real_name",
+            "applied_at",
+            "canceled_at",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_user_real_name(self, obj):
+        real_name = obj.user.first_name.strip()
+
+        if real_name:
+            return real_name
+
+        return obj.user.username
+
+
+class AttendanceSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source="user.username", read_only=True)
+    user_real_name = serializers.SerializerMethodField()
+    status_display = serializers.CharField(
+        source="get_status_display",
+        read_only=True,
+    )
+    checked_by_username = serializers.CharField(
+        source="checked_by.username",
+        read_only=True,
+    )
+
+    class Meta:
+        model = Attendance
+        fields = [
+            "id",
+            "event",
+            "user",
+            "username",
+            "user_real_name",
+            "application",
+            "status",
+            "status_display",
+            "checked_by",
+            "checked_by_username",
+            "checked_at",
+            "memo",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "event",
+            "user",
+            "username",
+            "user_real_name",
+            "application",
+            "checked_by",
+            "checked_by_username",
+            "checked_at",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_user_real_name(self, obj):
+        real_name = obj.user.first_name.strip()
+
+        if real_name:
+            return real_name
+
+        return obj.user.username
