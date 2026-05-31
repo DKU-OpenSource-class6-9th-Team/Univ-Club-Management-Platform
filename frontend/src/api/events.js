@@ -244,3 +244,19 @@ export async function syncMemberActivityScores(clubId) {
     },
   })
 }
+
+export async function fetchEventOperationStats(clubId, year) {
+  if (!clubId) throw new Error('동아리 ID가 없습니다.')
+
+  const queryParams = new URLSearchParams()
+
+  if (year) queryParams.set('year', year)
+
+  const queryString = queryParams.toString()
+
+  return request(
+    `/clubs/${clubId}/events/operation-stats/${
+      queryString ? `?${queryString}` : ''
+    }`,
+  )
+}
