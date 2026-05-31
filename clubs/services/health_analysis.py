@@ -15,6 +15,7 @@ from django.db.models import Avg, Sum
 from club_members.models import ClubMembership as ManagedClubMembership
 from clubs.models import BiweeklySurvey, BiweeklySurveyResponse
 from fees.models import FeeTransaction, MemberFeePayment
+from events.models import Event, EventApplication, Attendance
 
 
 #점수를 0~100 범위 안으로 제한하는 함수
@@ -68,6 +69,19 @@ def convert_five_point_to_100(score):
         return 0
 
     return round((score / 5) * 100)
+
+
+#활동/일정 운영성 점수 계산에 포함할 일정 유형
+SCHEDULE_HEALTH_EVENT_TYPES = [
+    Event.EVENT_TYPE_REGULAR,
+    Event.EVENT_TYPE_ACTIVITY,
+    Event.EVENT_TYPE_PROJECT,
+]
+
+
+#전체 활동 회원 중 80% 이상이 일정에 1회 이상 실제 참여하면 만점으로 본다.
+#80% 아래부터는 비율에 따라 점진적으로 감점한다.
+SCHEDULE_ACTIVITY_TARGET_RATE = 80
 
 
 #회원 활동성 지표 계산
@@ -322,40 +336,187 @@ def build_satisfaction_metrics(club):
     }
 
 
+#일정 및 출석 데이터를 기반으로 활동/일정 운영성의 객관 지표 계산
+def build_schedule_operation_metrics(club):
+    """
+    사용 데이터:
+    - Event: 일정 상태, 일정 유형
+    - EventApplication: 일정 참여 신청 데이터
+    - Attendance: 참석, 지각 데이터
+    - ManagedClubMembership: 전체 활동 회원 수
+
+    계산 지표:
+    - 일정 활동 인원 비율
+    - 일정 활동 인원 비율 점수
+    - 신청자 대비 실제 출석률
+    - 일정 운영 안정성
+    """
+    events = Event.objects.filter(
+        club=club,
+        event_type__in=SCHEDULE_HEALTH_EVENT_TYPES,
+    )
+
+    completed_events = events.filter(status=Event.STATUS_COMPLETED)
+    canceled_events = events.filter(status=Event.STATUS_CANCELED)
+
+    completed_count = completed_events.count()
+    canceled_count = canceled_events.count()
+
+    active_members = ManagedClubMembership.objects.filter(
+        club=club,
+        status__in=["new", "regular"],
+    )
+
+    active_member_count = active_members.count()
+
+    attendances = Attendance.objects.filter(
+        event__in=completed_events,
+    )
+
+    attended_attendances = attendances.filter(
+        status__in=[
+            Attendance.STATUS_PRESENT,
+            Attendance.STATUS_LATE,
+        ]
+    )
+
+    unique_attended_member_count = (
+        attended_attendances
+        .values("user_id")
+        .distinct()
+        .count()
+    )
+
+    # 전체 활동 회원 중 일정에 1회 이상 실제 참석한 회원 비율
+    schedule_activity_rate = clamp(
+    percent(
+        unique_attended_member_count,
+        active_member_count,
+    )
+)
+
+    # 80% 이상이면 100점, 그 아래는 점진적으로 감점
+    schedule_activity_score = 0
+
+    if active_member_count > 0:
+        schedule_activity_score = round(
+            min(
+                (schedule_activity_rate / SCHEDULE_ACTIVITY_TARGET_RATE) * 100, 100,
+            )
+        )
+
+    applications = EventApplication.objects.filter(
+        event__in=completed_events,
+        status=EventApplication.STATUS_APPLIED,
+    )
+
+    total_applied_count = applications.count()
+    total_attended_count = attended_attendances.count()
+
+    # 신청자 대비 실제 출석률
+    actual_attendance_rate = clamp(
+    percent(
+        total_attended_count,
+        total_applied_count,
+    )
+)
+
+    # 완료 및 취소 일정 중 실제 완료된 일정 비율
+    schedule_stability_rate = clamp(
+    percent(
+        completed_count,
+        completed_count + canceled_count,
+    )
+)
+
+    return {
+        "dataReady": completed_count > 0 or canceled_count > 0,
+
+        "totalEventCount": events.count(),
+        "completedEventCount": completed_count,
+        "canceledEventCount": canceled_count,
+
+        "activeMemberCount": active_member_count,
+        "uniqueAttendedMemberCount": unique_attended_member_count,
+
+        "scheduleActivityRate": schedule_activity_rate,
+        "scheduleActivityScore": schedule_activity_score,
+
+        "totalAppliedCount": total_applied_count,
+        "totalAttendedCount": total_attended_count,
+        "actualAttendanceRate": actual_attendance_rate,
+
+        "scheduleStabilityRate": schedule_stability_rate,
+    }
+
+
 #활동/일정 운영성 지표
-# 향후 확장 방향:
-# - 일정 참여율
-# - 일정 진행률
-# - 일정 취소율
-# - 일정별 참여 인원
-# - 일정별 만족도
 def build_schedule_metrics(club, satisfaction):
     """
-    현재 사용 데이터:
-    - satisfaction["scheduleAverage"]: 활동/일정 만족도 평균
+    계산 방식:
+    - 활동/일정 만족도 35%
+    - 전체 활동 회원 대비 일정 활동 인원 비율 35%
+    - 신청자 대비 실제 출석률 20%
+    - 일정 운영 안정성 10%
 
-    현재 계산 방식:
-    - 활동/일정 운영 만족도를 100점 만점으로 변환하여 사용
+    일부 데이터가 아직 없는 경우에는 준비된 데이터만 기준으로 계산.
     """
     schedule_average = satisfaction.get("scheduleAverage")
+    schedule_satisfaction_score = convert_five_point_to_100(schedule_average)
 
-    if schedule_average is None:
+    operation = build_schedule_operation_metrics(club)
+
+    has_satisfaction = schedule_average is not None
+    has_operation_data = operation["dataReady"]
+
+    weighted_items = []
+
+    if has_satisfaction:
+        weighted_items.append((
+            schedule_satisfaction_score,
+            0.35,
+        ))
+
+    if has_operation_data:
+        weighted_items.append((
+            operation["scheduleActivityScore"],
+            0.35,
+        ))
+
+        weighted_items.append((
+            operation["actualAttendanceRate"],
+            0.20,
+        ))
+
+        weighted_items.append((
+            operation["scheduleStabilityRate"],
+            0.10,
+        ))
+
+    if not weighted_items:
         return {
             "dataReady": False,
             "score": 0,
             "maxScore": 100,
             "status": "데이터 없음",
 
+            "scheduleSatisfactionReady": False,
             "scheduleSatisfactionAverage": None,
             "scheduleSatisfactionScore": 0,
 
-            "participationRate": 0,
-            "scheduleCount": 0,
+            "scheduleActivityRate": 0,
+            "scheduleActivityScore": 0,
+            "actualAttendanceRate": 0,
+            "scheduleStabilityRate": 0,
 
-            "message": "활동/일정 만족도 데이터 연동 후 계산 예정입니다.",
+            "message": "활동/일정 만족도 및 일정 운영 데이터 연동 후 계산 예정입니다.",
+            "operation": operation,
         }
 
-    schedule_score = convert_five_point_to_100(schedule_average)
+    score_sum = sum(score * weight for score, weight in weighted_items)
+    weight_sum = sum(weight for score, weight in weighted_items)
+
+    schedule_score = round(score_sum / weight_sum)
 
     return {
         "dataReady": True,
@@ -363,14 +524,22 @@ def build_schedule_metrics(club, satisfaction):
         "maxScore": 100,
         "status": get_status_label(schedule_score),
 
+        "scheduleSatisfactionReady": has_satisfaction,
         "scheduleSatisfactionAverage": schedule_average,
-        "scheduleSatisfactionScore": schedule_score,
+        "scheduleSatisfactionScore": schedule_satisfaction_score,
 
-        # 아직 실제 일정 참여 데이터는 없으므로 0으로 유지
-        "participationRate": 0,
-        "scheduleCount": 0,
+        "scheduleActivityRate": operation["scheduleActivityRate"],
+        "scheduleActivityScore": operation["scheduleActivityScore"],
 
-        "message": f"활동/일정 운영 만족도 {schedule_average} / 5.0 기반으로 산정되었습니다.",
+        "actualAttendanceRate": operation["actualAttendanceRate"],
+        "scheduleStabilityRate": operation["scheduleStabilityRate"],
+
+        "operation": operation,
+
+        "message": (
+            "활동/일정 만족도, 일정 활동 인원 비율, "
+            "신청자 대비 실제 출석률, 일정 운영 안정성을 기준으로 산정되었습니다."
+        ),
     }
 
 
@@ -575,18 +744,35 @@ def build_health_analysis_payload(club):
                 "title": "활동/일정 만족도",
                 "value": schedule["scheduleSatisfactionAverage"] or 0,
                 "unit": "/5.0",
-                "status": schedule["status"],
+                "status": get_status_label(schedule["scheduleSatisfactionScore"]),
+                "dataReady": schedule["scheduleSatisfactionReady"],
+                "description": "",
+            },
+            {
+                "key": "scheduleActivityRate",
+                "title": "일정 활동 인원 비율",
+                "value": schedule["scheduleActivityRate"],
+                "unit": "%",
+                "status": get_status_label(schedule["scheduleActivityScore"]),
                 "dataReady": schedule["dataReady"],
                 "description": "",
             },
             {
-                "key": "scheduleOperationData",
-                "title": "활동/일정 운영(추가 예정)",
-                "value": 0,
-                "unit": "",
-                "valueText": "추가 예정",
-                "status": "구현 예정",
-                "dataReady": False,
+                "key": "actualAttendanceRate",
+                "title": "신청자 대비 실제 출석률",
+                "value": schedule["actualAttendanceRate"],
+                "unit": "%",
+                "status": get_status_label(schedule["actualAttendanceRate"]),
+                "dataReady": schedule["dataReady"],
+                "description": "",
+            },
+            {
+                "key": "scheduleStabilityRate",
+                "title": "일정 운영 안정성",
+                "value": schedule["scheduleStabilityRate"],
+                "unit": "%",
+                "status": get_status_label(schedule["scheduleStabilityRate"]),
+                "dataReady": schedule["dataReady"],
                 "description": "",
             },
             {
