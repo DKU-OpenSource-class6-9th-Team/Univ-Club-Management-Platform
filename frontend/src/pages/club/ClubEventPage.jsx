@@ -9,11 +9,12 @@ import {
   CreditCard,
   Edit3,
   FileText,
+  HeartPulse,
   LayoutDashboard,
   LogOut,
+  MessageCircleHeart,
   Plus,
   Search,
-  Settings,
   Trash2,
   Users,
   UserX,
@@ -828,8 +829,13 @@ function ClubEventPage() {
               일정·출석 관리
             </Link>
 
-            <Link to="/club/settings" className="sidebar-link">
-              <Settings size={19} />
+            <Link to={`/club/${clubId}/survey`} className="sidebar-link">
+              <MessageCircleHeart size={19} />
+              만족도 조사
+            </Link>
+
+            <Link to={`/club/${clubId}/health`} className="sidebar-link">
+              <HeartPulse size={19} />
               건강도 분석
             </Link>
           </nav>

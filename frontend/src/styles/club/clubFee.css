@@ -1147,3 +1147,32 @@
   font-size: 13px;
   font-weight: 400;
 }
+.club-fee-access-denied {
+  min-height: 360px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #ffffff;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  text-align: center;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+}
+
+.club-fee-access-denied h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.club-fee-access-denied p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 700;
+}

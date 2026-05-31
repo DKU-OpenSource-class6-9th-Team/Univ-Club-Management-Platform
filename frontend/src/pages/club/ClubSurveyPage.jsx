@@ -612,8 +612,8 @@ const getParticipationBadgeClass = (item) => {
         {/* 사이드바 상단 로고 */}
         <div className="sidebar-logo">
           <Link to="/main" className="sidebar-clubflow-logo">
-            <span className="sidebar-logo-cf">CF</span>
-            <span className="sidebar-logo-text">ClubFlow</span>
+            <span className="sidebar-logo-cf">CM</span>
+            <span className="sidebar-logo-text">Club Management</span>
           </Link>
         </div>
 
@@ -655,9 +655,9 @@ const getParticipationBadgeClass = (item) => {
             회비 관리
           </Link>
 
-          <Link to={`/club/${clubId}/schedule`} className="sidebar-link">
+          <Link to={`/club/${clubId}/events`} className="sidebar-link">
             <CalendarDays size={19} />
-            일정 관리 / 공지
+            일정·출석 관리
           </Link>
 
           {/* 현재 페이지이므로 active 클래스 적용 */}

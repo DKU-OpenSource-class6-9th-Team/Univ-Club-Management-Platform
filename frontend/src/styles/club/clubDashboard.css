@@ -110,7 +110,7 @@
 
 /* 동아리 정보 상위 메뉴 */
 .sidebar-parent-link {
-  cursor: default;
+  cursor: pointer;
 }
 
 /* 동아리 정보 하위 메뉴 영역 */
@@ -137,6 +137,11 @@
 /* 하위 메뉴 hover */
 .sidebar-sub-link:hover {
   background: #f3f6ff;
+  color: #4f63e7;
+}
+
+.sidebar-sub-link.active {
+  background: #f8fbff;
   color: #4f63e7;
 }
 
