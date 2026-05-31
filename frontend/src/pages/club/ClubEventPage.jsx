@@ -18,6 +18,8 @@ import {
   Users,
   UserX,
   XCircle,
+  History,
+  Repeat,
 } from 'lucide-react'
 
 import { getClub } from '../../api/clubs.js'
@@ -40,6 +42,8 @@ import {
   fetchMyEventRole,
   syncMemberActivityScores,
   updateEvent,
+  createRecurringEvents,
+  fetchEventTimeline,
 } from '../../api/events.js'
 
 import '../../styles/club/clubDashboard.css'
@@ -80,6 +84,22 @@ const EMPTY_EVENT_FORM = {
   application_end_at: '',
   status: 'scheduled',
   cancel_reason: '',
+}
+
+const EMPTY_RECURRING_FORM = {
+  title: '',
+  event_type: 'regular',
+  description: '',
+  location: '',
+  start_at: '',
+  end_at: '',
+  allow_application: true,
+  max_participants: '',
+  application_start_at: '',
+  application_end_at: '',
+  repeat_unit: 'weekly',
+  repeat_count: 4,
+  repeat_interval: 1,
 }
 
 function formatDateTime(value) {
@@ -205,6 +225,18 @@ function ClubEventPage() {
     data: null,
     year: new Date().getFullYear(),
   })
+
+  const [timelinePanel, setTimelinePanel] = useState({
+    data: null,
+    year: new Date().getFullYear(),
+  })
+  const [isTimelineOpen, setIsTimelineOpen] = useState(false)
+  const [isTimelineLoading, setIsTimelineLoading] = useState(false)
+
+  const [recurringForm, setRecurringForm] = useState(EMPTY_RECURRING_FORM)
+  const [isRecurringFormOpen, setIsRecurringFormOpen] = useState(false)
+  const [isRecurringSubmitting, setIsRecurringSubmitting] = useState(false)
+
   const [isOperationStatsOpen, setIsOperationStatsOpen] = useState(false)
   const [isOperationStatsLoading, setIsOperationStatsLoading] = useState(false)
 
@@ -457,6 +489,97 @@ function ClubEventPage() {
     setIsOperationStatsOpen(true)
     await loadOperationStatsPanel()
   }
+
+  const loadTimelinePanel = async (year = timelinePanel.year) => {
+    if (!clubId) return
+
+    try {
+      setIsTimelineLoading(true)
+
+      const data = await fetchEventTimeline(clubId, year)
+
+      setTimelinePanel({
+        data,
+        year: data.year,
+      })
+    } catch (error) {
+      console.error('운영 타임라인 조회 실패:', error)
+      alert(getApiErrorMessage(error))
+    } finally {
+      setIsTimelineLoading(false)
+    }
+  }
+
+  const handleToggleTimelinePanel = async () => {
+    if (isTimelineOpen) {
+      setIsTimelineOpen(false)
+      return
+    }
+
+    setIsTimelineOpen(true)
+    await loadTimelinePanel()
+  }
+
+  const handleRecurringFormChange = (event) => {
+    const { name, value, type, checked } = event.target
+
+    setRecurringForm((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }))
+  }
+
+  const resetRecurringForm = () => {
+    setRecurringForm(EMPTY_RECURRING_FORM)
+    setIsRecurringFormOpen(false)
+  }
+
+  const handleSubmitRecurringEvents = async (event) => {
+    event.preventDefault()
+
+    if (!recurringForm.title.trim()) {
+      alert('반복 일정명을 입력해주세요.')
+      return
+    }
+
+    if (!recurringForm.start_at) {
+      alert('반복 일정 시작 일시를 입력해주세요.')
+      return
+    }
+
+    try {
+      setIsRecurringSubmitting(true)
+
+      const data = await createRecurringEvents(clubId, {
+        title: recurringForm.title.trim(),
+        event_type: recurringForm.event_type,
+        description: recurringForm.description.trim(),
+        location: recurringForm.location.trim(),
+        start_at: recurringForm.start_at,
+        end_at: recurringForm.end_at || null,
+        allow_application: recurringForm.allow_application,
+        max_participants: recurringForm.max_participants
+          ? Number(recurringForm.max_participants)
+          : null,
+        application_start_at: recurringForm.application_start_at || null,
+        application_end_at: recurringForm.application_end_at || null,
+        repeat_unit: recurringForm.repeat_unit,
+        repeat_count: Number(recurringForm.repeat_count),
+        repeat_interval: Number(recurringForm.repeat_interval),
+      })
+
+      alert(data.message || '반복 일정이 생성되었습니다.')
+
+      resetRecurringForm()
+      await loadEvents()
+    } catch (error) {
+      console.error('반복 일정 생성 실패:', error)
+      alert(getApiErrorMessage(error))
+    } finally {
+      setIsRecurringSubmitting(false)
+    }
+  }
+
 
   useEffect(() => {
     loadClubInfo()
@@ -843,6 +966,15 @@ function ClubEventPage() {
                 <button
                   type="button"
                   className="event-secondary-button"
+                  onClick={handleToggleTimelinePanel}
+                >
+                  <History size={17} />
+                  운영 타임라인
+                </button>
+
+                <button
+                  type="button"
+                  className="event-secondary-button"
                   onClick={handleToggleOperationStatsPanel}
                 >
                   <BarChart3 size={17} />
@@ -860,6 +992,15 @@ function ClubEventPage() {
 
                 <button
                   type="button"
+                  className="event-secondary-button"
+                  onClick={() => setIsRecurringFormOpen((prev) => !prev)}
+                >
+                  <Repeat size={17} />
+                  반복 일정
+                </button>
+
+                <button
+                  type="button"
                   className="event-primary-button"
                   onClick={handleOpenCreateForm}
                 >
@@ -869,6 +1010,325 @@ function ClubEventPage() {
               </div>
             )}
           </section>
+
+
+          {canManageEvents && isRecurringFormOpen && (
+            <section className="recurring-event-panel">
+              <div className="event-section-title-row">
+                <div>
+                  <p className="event-section-label">Recurring Event</p>
+                  <h2>반복 일정 등록</h2>
+                </div>
+
+                <button
+                  type="button"
+                  className="event-text-button"
+                  onClick={resetRecurringForm}
+                >
+                  닫기
+                </button>
+              </div>
+
+              <form className="event-form" onSubmit={handleSubmitRecurringEvents}>
+                <div className="event-form-grid">
+                  <label>
+                    <span>일정명</span>
+                    <input
+                      type="text"
+                      name="title"
+                      value={recurringForm.title}
+                      onChange={handleRecurringFormChange}
+                      placeholder="예: 매주 정기 모임"
+                    />
+                  </label>
+
+                  <label>
+                    <span>일정 유형</span>
+                    <select
+                      name="event_type"
+                      value={recurringForm.event_type}
+                      onChange={handleRecurringFormChange}
+                    >
+                      {EVENT_TYPE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>시작 일시</span>
+                    <input
+                      type="datetime-local"
+                      name="start_at"
+                      value={recurringForm.start_at}
+                      onChange={handleRecurringFormChange}
+                    />
+                  </label>
+
+                  <label>
+                    <span>종료 일시</span>
+                    <input
+                      type="datetime-local"
+                      name="end_at"
+                      value={recurringForm.end_at}
+                      onChange={handleRecurringFormChange}
+                    />
+                  </label>
+
+                  <label>
+                    <span>반복 단위</span>
+                    <select
+                      name="repeat_unit"
+                      value={recurringForm.repeat_unit}
+                      onChange={handleRecurringFormChange}
+                    >
+                      <option value="daily">매일</option>
+                      <option value="weekly">매주</option>
+                      <option value="monthly">매월</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>반복 횟수</span>
+                    <input
+                      type="number"
+                      min="2"
+                      max="30"
+                      name="repeat_count"
+                      value={recurringForm.repeat_count}
+                      onChange={handleRecurringFormChange}
+                    />
+                  </label>
+
+                  <label>
+                    <span>반복 간격</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="12"
+                      name="repeat_interval"
+                      value={recurringForm.repeat_interval}
+                      onChange={handleRecurringFormChange}
+                      placeholder="1이면 매주/매월"
+                    />
+                  </label>
+
+                  <label>
+                    <span>장소</span>
+                    <input
+                      type="text"
+                      name="location"
+                      value={recurringForm.location}
+                      onChange={handleRecurringFormChange}
+                      placeholder="예: 학생회관 302호"
+                    />
+                  </label>
+
+                  <label>
+                    <span>최대 참여 인원</span>
+                    <input
+                      type="number"
+                      min="1"
+                      name="max_participants"
+                      value={recurringForm.max_participants}
+                      onChange={handleRecurringFormChange}
+                      placeholder="제한 없으면 비워두기"
+                    />
+                  </label>
+
+                  <label>
+                    <span>신청 시작 일시</span>
+                    <input
+                      type="datetime-local"
+                      name="application_start_at"
+                      value={recurringForm.application_start_at}
+                      onChange={handleRecurringFormChange}
+                    />
+                  </label>
+
+                  <label>
+                    <span>신청 마감 일시</span>
+                    <input
+                      type="datetime-local"
+                      name="application_end_at"
+                      value={recurringForm.application_end_at}
+                      onChange={handleRecurringFormChange}
+                    />
+                  </label>
+
+                  <label className="event-checkbox-label">
+                    <input
+                      type="checkbox"
+                      name="allow_application"
+                      checked={recurringForm.allow_application}
+                      onChange={handleRecurringFormChange}
+                    />
+                    <span>참여 신청 허용</span>
+                  </label>
+                </div>
+
+                <label className="event-full-field">
+                  <span>일정 설명</span>
+                  <textarea
+                    name="description"
+                    value={recurringForm.description}
+                    onChange={handleRecurringFormChange}
+                    placeholder="반복 일정 설명을 입력하세요."
+                  />
+                </label>
+
+                <div className="recurring-event-help">
+                  예시: 반복 단위가 매주, 반복 횟수 4, 반복 간격 1이면 같은 요일에 4개의 일정이 생성됩니다.
+                </div>
+
+                <div className="event-form-actions">
+                  <button
+                    type="button"
+                    className="event-secondary-button"
+                    onClick={resetRecurringForm}
+                  >
+                    취소
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="event-primary-button"
+                    disabled={isRecurringSubmitting}
+                  >
+                    {isRecurringSubmitting ? '생성 중...' : '반복 일정 생성'}
+                  </button>
+                </div>
+              </form>
+            </section>
+          )}
+
+          {canManageEvents && isTimelineOpen && (
+            <section className="event-timeline-panel">
+              <div className="event-section-title-row">
+                <div>
+                  <p className="event-section-label">Operation Timeline</p>
+                  <h2>동아리 운영 타임라인 복기</h2>
+                </div>
+
+                <div className="event-timeline-actions">
+                  <input
+                    type="number"
+                    min="2020"
+                    max="2100"
+                    value={timelinePanel.year}
+                    onChange={(event) =>
+                      setTimelinePanel((prev) => ({
+                        ...prev,
+                        year: event.target.value,
+                      }))
+                    }
+                  />
+
+                  <button
+                    type="button"
+                    className="event-secondary-button"
+                    onClick={() => loadTimelinePanel(timelinePanel.year)}
+                  >
+                    조회
+                  </button>
+                </div>
+              </div>
+
+              {isTimelineLoading ? (
+                <div className="event-empty-box">
+                  운영 타임라인을 불러오는 중입니다.
+                </div>
+              ) : !timelinePanel.data ? (
+                <div className="event-empty-box">
+                  운영 타임라인 데이터가 없습니다.
+                </div>
+              ) : (
+                <>
+                  <div className="event-timeline-summary-grid">
+                    <article>
+                      <span>전체 일정</span>
+                      <strong>{timelinePanel.data.summary.total_count}개</strong>
+                    </article>
+
+                    <article>
+                      <span>완료 일정</span>
+                      <strong>{timelinePanel.data.summary.completed_count}개</strong>
+                    </article>
+
+                    <article>
+                      <span>취소 일정</span>
+                      <strong>{timelinePanel.data.summary.canceled_count}개</strong>
+                    </article>
+
+                    <article>
+                      <span>활동 발생 월</span>
+                      <strong>{timelinePanel.data.summary.active_month_count}개월</strong>
+                    </article>
+                  </div>
+
+                  <div className="event-timeline-highlight-box">
+                    <h3>운영 복기 요약</h3>
+                    <ul>
+                      {timelinePanel.data.highlights.map((highlight) => (
+                        <li key={highlight}>{highlight}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="event-timeline-list">
+                    {timelinePanel.data.timeline.map((month) => (
+                      <article
+                        key={month.month}
+                        className={`event-timeline-month ${
+                          month.total_count === 0 ? 'empty' : ''
+                        }`}
+                      >
+                        <div className="event-timeline-month-header">
+                          <div>
+                            <strong>{month.month}월</strong>
+                            <p>{month.summary}</p>
+                          </div>
+
+                          <span>
+                            일정 {month.total_count}개 · 완료 {month.completed_count}개 · 취소 {month.canceled_count}개
+                          </span>
+                        </div>
+
+                        {month.total_count > 0 && (
+                          <>
+                            <div className="event-timeline-month-metrics">
+                              <span>참석률 {month.attendance_rate}%</span>
+                              <span>노쇼율 {month.no_show_rate}%</span>
+                              <span>취소율 {month.cancellation_rate}%</span>
+                            </div>
+
+                            <div className="event-timeline-event-list">
+                              {month.events.map((event) => (
+                                <div key={event.id} className="event-timeline-event-item">
+                                  <div>
+                                    <strong>{event.title}</strong>
+                                    <span>
+                                      {event.event_type_display} · {event.status_display} · {formatDateTime(event.start_at)}
+                                    </span>
+                                  </div>
+
+                                  <em>
+                                    참석 {event.attended_count}명 / 노쇼 {event.no_show_count}명
+                                  </em>
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                </>
+              )}
+            </section>
+          )}
 
           {canManageEvents && isOperationStatsOpen && (
             <section className="event-operation-stats-panel">
