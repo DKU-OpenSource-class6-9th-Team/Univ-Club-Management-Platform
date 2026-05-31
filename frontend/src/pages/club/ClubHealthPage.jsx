@@ -295,9 +295,9 @@ function ClubHealthPage() {
               회비 관리
             </Link>
 
-            <Link to={`/club/${clubId}/schedule`} className="sidebar-link">
+            <Link to={`/club/${clubId}/events`} className="sidebar-link">
               <CalendarDays size={19} />
-              일정 관리 / 공지
+              일정·출석 관리
             </Link>
 
             <Link to={`/club/${clubId}/survey`} className="sidebar-link">

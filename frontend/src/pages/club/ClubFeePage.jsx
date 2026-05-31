@@ -13,10 +13,10 @@ import { //icon 삽입
   CreditCard,
   Edit3,
   FileText,
+  HeartPulse,
   LayoutDashboard,
   LogOut,
   MessageCircleHeart,
-  Settings,
   Users,
 } from 'lucide-react'
 
@@ -33,6 +33,7 @@ import { formatWon } from './fee/utils/feeFormat.js' // 입력받은 숫자 100�
 import '../../styles/club/clubDashboard.css'
 import '../../styles/club/clubFee.css'
 import { getClub } from '../../api/clubs.js'
+import { fetchMyEventRole } from '../../api/events.js'
 
 //fees.js에 만들어져있는 api 함수를 가져오는 코드
 import {
@@ -60,6 +61,8 @@ function ClubFeePage() {
 
   const [club, setClub] = useState(null)
   const [isClubLoading, setIsClubLoading] = useState(true)
+  const [clubMemberRole, setClubMemberRole] = useState(null)
+  const [isRoleLoading, setIsRoleLoading] = useState(true)
 
 
 
@@ -81,6 +84,7 @@ function ClubFeePage() {
   const [currentPage, setCurrentPage] = useState(1) //회원별 납부 현황의 페이지 번호
   const [pageSize, setPageSize] = useState(10) //한 페이지에 보여주는 인원 수
   const [transactionType, setTransactionType] = useState('수입') //수입/지출 등록 중 선택한 값
+  const canAccessFeeManagement = clubMemberRole !== null && clubMemberRole !== 'member'
 
   const filteredMembers = useMemo(() => { //프론트 회원 배열의 검색어, 필터 적용(데이터 연동 시 삭제 예정)
     const normalizedSearch = memberSearch.trim().toLowerCase()
@@ -123,7 +127,7 @@ function ClubFeePage() {
   }, [currentPage, totalPageCount])
 
   //페이지가 처음 렌더링 될 때 동아리 정보를 불러오는 역할 수행
-  useEffect(() => {
+useEffect(() => {
   const loadClubInfo = async () => {
     if (!effectiveClubId) return
 
@@ -140,6 +144,25 @@ function ClubFeePage() {
   loadClubInfo()
 }, [effectiveClubId])
 
+useEffect(() => {
+  const loadClubMemberRole = async () => {
+    if (!effectiveClubId) return
+
+    try {
+      setIsRoleLoading(true)
+      const roleData = await fetchMyEventRole(effectiveClubId)
+      setClubMemberRole(roleData.role || null)
+    } catch (error) {
+      console.error('동아리 역할을 확인하지 못했습니다.', error)
+      setClubMemberRole(null)
+    } finally {
+      setIsRoleLoading(false)
+    }
+  }
+
+  loadClubMemberRole()
+}, [effectiveClubId])
+
 
   const handleLogout = () => { //로그아웃 버튼 누르면 로그아웃, 로그인 페이지 이동
     localStorage.removeItem('loginUser')
@@ -153,6 +176,10 @@ function ClubFeePage() {
   //백엔드에서 회비 데이터 불러오는 함수 (상단 요약 카드 API, 최근 수입/지출 내역 API)
   const loadFeeData = async () => {
     if(!effectiveClubId) return
+    if(isRoleLoading || !canAccessFeeManagement) {
+      setIsLoading(false)
+      return
+    }
 
     try{
       setIsLoading(true)
@@ -186,7 +213,7 @@ function ClubFeePage() {
 //페이지가 처음 렌더링 될 때 회비 데이터를 불러오는 역할 수행
 useEffect(() => {
   loadFeeData()
-}, [effectiveClubId])
+}, [effectiveClubId, isRoleLoading, canAccessFeeManagement])
 
 
 //수입/지출 내역 등록하는 함수(FeeRegisterForm에서 호출됨)
@@ -310,7 +337,7 @@ const handleChangePaymentStatus = async (member) => {
           </Link>
           
           <Link to={`/club/${clubId}/health`} className="sidebar-link">
-            <Settings size={19} />
+            <HeartPulse size={19} />
             건강도 분석
           </Link>
         </nav>
@@ -361,6 +388,21 @@ const handleChangePaymentStatus = async (member) => {
             </div>
           </div>
           </header>
+
+          {isRoleLoading ? (
+            <section className="club-fee-access-denied">
+              <h2>회비 관리 권한을 확인하는 중입니다</h2>
+              <p>현재 동아리 내 역할 정보를 불러오고 있습니다.</p>
+            </section>
+          ) : !canAccessFeeManagement ? (
+            <section className="club-fee-access-denied">
+              <h2>해당 기능은 운영진만 접근 가능합니다</h2>
+              <p>
+                회비 납부 현황과 수입 / 지출 내역 관리는 총무 이상 역할이 필요합니다.
+              </p>
+            </section>
+          ) : (
+            <>
           
 
         {/*영수증 일괄 다운로드, 엑셀 다운로드 버튼 영역*/}
@@ -433,6 +475,8 @@ const handleChangePaymentStatus = async (member) => {
             <FeeSideCards sideStats={sideStats} />
           </div>
         </section>
+            </>
+          )}
         </main>
       </div>
     </div>

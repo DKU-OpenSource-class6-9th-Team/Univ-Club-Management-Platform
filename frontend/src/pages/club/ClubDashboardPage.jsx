@@ -264,6 +264,7 @@ function ClubDashboardPage() {
           </Link>
 
           <Link to={`/club/${clubId}/events`} className="sidebar-link">
+            <CalendarDays size={19} />
             일정·출석 관리
           </Link>
           
