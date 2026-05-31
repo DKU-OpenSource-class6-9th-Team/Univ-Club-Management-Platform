@@ -1463,3 +1463,414 @@ class EventOperationStatsView(APIView):
             build_event_operation_stats(club_id, year),
             status=status.HTTP_200_OK,
         )
+    
+import calendar
+from datetime import timedelta
+
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import transaction
+from django.utils.dateparse import parse_datetime
+
+
+def parse_event_datetime(value):
+    if not value:
+        return None
+
+    parsed_value = parse_datetime(value)
+
+    if parsed_value is None:
+        return None
+
+    if timezone.is_naive(parsed_value):
+        parsed_value = timezone.make_aware(parsed_value)
+
+    return parsed_value
+
+
+def add_months(value, month_count):
+    month = value.month - 1 + month_count
+    year = value.year + month // 12
+    month = month % 12 + 1
+
+    last_day = calendar.monthrange(year, month)[1]
+    day = min(value.day, last_day)
+
+    return value.replace(year=year, month=month, day=day)
+
+
+def shift_datetime(value, repeat_unit, repeat_index):
+    if value is None:
+        return None
+
+    if repeat_unit == "daily":
+        return value + timedelta(days=repeat_index)
+
+    if repeat_unit == "weekly":
+        return value + timedelta(weeks=repeat_index)
+
+    if repeat_unit == "monthly":
+        return add_months(value, repeat_index)
+
+    return value
+
+
+class EventRecurringCreateView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, club_id):
+        permission_error = require_event_manager(request, club_id)
+
+        if permission_error is not None:
+            return permission_error
+
+        club = get_object_or_404(Club, id=club_id)
+
+        title = request.data.get("title", "").strip()
+        event_type = request.data.get("event_type", Event.EVENT_TYPE_REGULAR)
+        description = request.data.get("description", "").strip()
+        location = request.data.get("location", "").strip()
+        allow_application = bool(request.data.get("allow_application", True))
+        max_participants = request.data.get("max_participants")
+
+        repeat_unit = request.data.get("repeat_unit", "weekly")
+        repeat_count = request.data.get("repeat_count", 4)
+        repeat_interval = request.data.get("repeat_interval", 1)
+
+        start_at = parse_event_datetime(request.data.get("start_at"))
+        end_at = parse_event_datetime(request.data.get("end_at"))
+        application_start_at = parse_event_datetime(
+            request.data.get("application_start_at")
+        )
+        application_end_at = parse_event_datetime(
+            request.data.get("application_end_at")
+        )
+
+        if not title:
+            return Response(
+                {"message": "일정명을 입력해야 합니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if start_at is None:
+            return Response(
+                {"message": "시작 일시를 올바르게 입력해야 합니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if repeat_unit not in ["daily", "weekly", "monthly"]:
+            return Response(
+                {"message": "반복 단위는 daily, weekly, monthly 중 하나여야 합니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            repeat_count = int(repeat_count)
+            repeat_interval = int(repeat_interval)
+        except (TypeError, ValueError):
+            return Response(
+                {"message": "반복 횟수와 반복 간격은 숫자여야 합니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if repeat_count < 2 or repeat_count > 30:
+            return Response(
+                {"message": "반복 횟수는 2회 이상 30회 이하로 입력해야 합니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if repeat_interval < 1 or repeat_interval > 12:
+            return Response(
+                {"message": "반복 간격은 1 이상 12 이하로 입력해야 합니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if max_participants in ["", None]:
+            max_participants = None
+        else:
+            try:
+                max_participants = int(max_participants)
+            except (TypeError, ValueError):
+                return Response(
+                    {"message": "최대 참여 인원은 숫자여야 합니다."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        created_events = []
+
+        try:
+            with transaction.atomic():
+                for index in range(repeat_count):
+                    repeat_index = index * repeat_interval
+
+                    occurrence_start_at = shift_datetime(
+                        start_at,
+                        repeat_unit,
+                        repeat_index,
+                    )
+
+                    date_offset = occurrence_start_at - start_at
+
+                    occurrence_end_at = (
+                        end_at + date_offset
+                        if end_at is not None else None
+                    )
+                    occurrence_application_start_at = (
+                        application_start_at + date_offset
+                        if application_start_at is not None else None
+                    )
+                    occurrence_application_end_at = (
+                        application_end_at + date_offset
+                        if application_end_at is not None else None
+                    )
+
+                    event = Event.objects.create(
+                        club=club,
+                        title=title,
+                        event_type=event_type,
+                        description=description,
+                        location=location,
+                        start_at=occurrence_start_at,
+                        end_at=occurrence_end_at,
+                        allow_application=allow_application,
+                        max_participants=max_participants,
+                        application_start_at=occurrence_application_start_at,
+                        application_end_at=occurrence_application_end_at,
+                        status=Event.STATUS_SCHEDULED,
+                        cancel_reason="",
+                        created_by=request.user,
+                    )
+
+                    created_events.append(event)
+
+        except DjangoValidationError as error:
+            return Response(
+                {"message": "반복 일정 생성 중 유효성 오류가 발생했습니다.", "errors": error.message_dict},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = EventSerializer(created_events, many=True)
+
+        return Response(
+            {
+                "message": f"반복 일정 {len(created_events)}개가 생성되었습니다.",
+                "repeat": {
+                    "unit": repeat_unit,
+                    "count": repeat_count,
+                    "interval": repeat_interval,
+                },
+                "results": serializer.data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+def build_month_timeline_summary(month_total_count, month_completed_count, month_canceled_count, attendance_rate, no_show_rate):
+    if month_total_count == 0:
+        return "운영 기록이 없는 달입니다."
+
+    if month_canceled_count > 0 and month_completed_count == 0:
+        return "등록된 일정이 있었지만 완료된 일정 없이 취소가 발생했습니다."
+
+    if attendance_rate >= 80 and no_show_rate <= 10:
+        return "참석률이 높고 노쇼율이 낮아 안정적으로 운영된 달입니다."
+
+    if attendance_rate < 50 and month_completed_count > 0:
+        return "완료 일정은 있었지만 참석률이 낮아 참여 유도 개선이 필요합니다."
+
+    if no_show_rate >= 30:
+        return "노쇼율이 높아 일정 전 리마인드와 참석 의사 확인이 필요합니다."
+
+    if month_completed_count >= 2:
+        return "일정 운영이 꾸준히 이루어진 달입니다."
+
+    return "일정 운영 기록이 있으나 추가적인 활동 확대 여지가 있습니다."
+
+
+def build_event_timeline(club_id, year=None):
+    get_object_or_404(Club, id=club_id)
+
+    now = timezone.localtime(timezone.now())
+
+    if year is None:
+        year = now.year
+
+    try:
+        year = int(year)
+    except (TypeError, ValueError):
+        year = now.year
+
+    events = list(
+        Event.objects
+        .filter(
+            club_id=club_id,
+            start_at__year=year,
+        )
+        .select_related("club", "created_by")
+        .order_by("start_at", "created_at")
+    )
+
+    total_count = len(events)
+    completed_count = sum(
+        1 for event in events
+        if event.status == Event.STATUS_COMPLETED
+    )
+    canceled_count = sum(
+        1 for event in events
+        if event.status == Event.STATUS_CANCELED
+    )
+    scheduled_count = sum(
+        1 for event in events
+        if event.status == Event.STATUS_SCHEDULED
+    )
+
+    timeline = []
+
+    for month in range(1, 13):
+        month_events = [
+            event for event in events
+            if timezone.localtime(event.start_at).month == month
+        ]
+
+        month_total_count = len(month_events)
+        month_completed_count = sum(
+            1 for event in month_events
+            if event.status == Event.STATUS_COMPLETED
+        )
+        month_canceled_count = sum(
+            1 for event in month_events
+            if event.status == Event.STATUS_CANCELED
+        )
+        month_scheduled_count = sum(
+            1 for event in month_events
+            if event.status == Event.STATUS_SCHEDULED
+        )
+
+        month_applied_count = 0
+        month_attended_count = 0
+        month_no_show_count = 0
+
+        event_items = []
+
+        for event in month_events:
+            stats = calculate_event_stats(event)
+
+            month_applied_count += stats["application"]["applied_count"]
+            month_attended_count += stats["attendance"]["attended_count"]
+            month_no_show_count += stats["attendance"]["no_show_count"]
+
+            event_items.append({
+                "id": event.id,
+                "title": event.title,
+                "event_type": event.event_type,
+                "event_type_display": event.get_event_type_display(),
+                "status": event.status,
+                "status_display": event.get_status_display(),
+                "start_at": event.start_at,
+                "end_at": event.end_at,
+                "location": event.location,
+                "applied_count": stats["application"]["applied_count"],
+                "attended_count": stats["attendance"]["attended_count"],
+                "no_show_count": stats["attendance"]["no_show_count"],
+                "attendance_rate": stats["rates"]["attendance_rate"],
+                "no_show_rate": stats["rates"]["no_show_rate"],
+            })
+
+        month_attendance_rate = 0
+        month_no_show_rate = 0
+        month_cancellation_rate = 0
+
+        if month_applied_count > 0:
+            month_attendance_rate = round(
+                (month_attended_count / month_applied_count) * 100,
+                1,
+            )
+            month_no_show_rate = round(
+                (month_no_show_count / month_applied_count) * 100,
+                1,
+            )
+
+        if month_total_count > 0:
+            month_cancellation_rate = round(
+                (month_canceled_count / month_total_count) * 100,
+                1,
+            )
+
+        timeline.append({
+            "month": month,
+            "total_count": month_total_count,
+            "scheduled_count": month_scheduled_count,
+            "completed_count": month_completed_count,
+            "canceled_count": month_canceled_count,
+            "applied_count": month_applied_count,
+            "attended_count": month_attended_count,
+            "no_show_count": month_no_show_count,
+            "attendance_rate": month_attendance_rate,
+            "no_show_rate": month_no_show_rate,
+            "cancellation_rate": month_cancellation_rate,
+            "summary": build_month_timeline_summary(
+                month_total_count,
+                month_completed_count,
+                month_canceled_count,
+                month_attendance_rate,
+                month_no_show_rate,
+            ),
+            "events": event_items,
+        })
+
+    active_month_count = len([
+        item for item in timeline
+        if item["total_count"] > 0
+    ])
+
+    completed_month_count = len([
+        item for item in timeline
+        if item["completed_count"] > 0
+    ])
+
+    highlights = []
+
+    if total_count == 0:
+        highlights.append("해당 연도에는 등록된 일정이 없습니다.")
+    else:
+        highlights.append(f"{year}년에 총 {total_count}개의 일정이 등록되었습니다.")
+
+    if completed_count > 0:
+        highlights.append(f"{completed_count}개의 일정이 완료되어 실제 활동 기록으로 남았습니다.")
+
+    if canceled_count > 0:
+        highlights.append(f"{canceled_count}개의 일정이 취소되었습니다. 취소 사유를 복기할 필요가 있습니다.")
+
+    if active_month_count <= 3 and total_count > 0:
+        highlights.append("활동이 특정 기간에 몰려 있습니다. 월별 운영 균형을 맞추는 것이 좋습니다.")
+
+    return {
+        "club_id": club_id,
+        "year": year,
+        "summary": {
+            "total_count": total_count,
+            "scheduled_count": scheduled_count,
+            "completed_count": completed_count,
+            "canceled_count": canceled_count,
+            "active_month_count": active_month_count,
+            "completed_month_count": completed_month_count,
+        },
+        "highlights": highlights,
+        "timeline": timeline,
+    }
+
+
+class EventTimelineView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, club_id):
+        permission_error = require_event_manager(request, club_id)
+
+        if permission_error is not None:
+            return permission_error
+
+        year = request.query_params.get("year")
+
+        return Response(
+            build_event_timeline(club_id, year),
+            status=status.HTTP_200_OK,
+        )

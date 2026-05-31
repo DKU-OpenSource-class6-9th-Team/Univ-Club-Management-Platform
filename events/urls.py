@@ -14,8 +14,10 @@ from .views import (
     EventMemberActivitySyncView,
     EventNoShowListView,
     EventOperationStatsView,
+    EventRecurringCreateView,
     EventReportView,
     EventStatsView,
+    EventTimelineView,
     MyEventApplicationView,
     MyEventRoleView,
 )
@@ -56,6 +58,16 @@ urlpatterns = [
         "clubs/<int:club_id>/events/operation-stats/",
         EventOperationStatsView.as_view(),
         name="event-operation-stats",
+    ),
+    path(
+        "clubs/<int:club_id>/events/recurring/",
+        EventRecurringCreateView.as_view(),
+        name="event-recurring-create",
+    ),
+    path(
+        "clubs/<int:club_id>/events/timeline/",
+        EventTimelineView.as_view(),
+        name="event-timeline",
     ),
     path(
         "clubs/<int:club_id>/events/<int:event_id>/",
