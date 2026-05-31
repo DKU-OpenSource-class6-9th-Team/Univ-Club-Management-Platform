@@ -1216,3 +1216,250 @@ class EventMemberActivitySyncView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+    
+def get_event_operation_level(cancellation_rate, monthly_average_completed, inactive_month_count):
+    recommendations = []
+
+    if cancellation_rate >= 40:
+        cancel_level = "위험"
+        cancel_level_code = "danger"
+        recommendations.append("일정 취소율이 높습니다. 일정 등록 전에 장소, 시간, 참여 가능 인원을 더 확실히 확인하는 것이 좋습니다.")
+    elif cancellation_rate >= 20:
+        cancel_level = "주의"
+        cancel_level_code = "warning"
+        recommendations.append("일정 취소가 다소 발생하고 있습니다. 취소 사유를 분석해 반복되는 문제를 줄이는 것이 좋습니다.")
+    else:
+        cancel_level = "양호"
+        cancel_level_code = "good"
+        recommendations.append("일정 취소율이 낮아 비교적 안정적으로 운영되고 있습니다.")
+
+    if monthly_average_completed >= 4:
+        frequency_level = "활발"
+        frequency_level_code = "excellent"
+        recommendations.append("월평균 운영 일정 수가 높아 동아리 활동이 활발한 편입니다.")
+    elif monthly_average_completed >= 2:
+        frequency_level = "보통"
+        frequency_level_code = "good"
+        recommendations.append("월평균 운영 일정 수가 적정 수준입니다.")
+    elif monthly_average_completed >= 1:
+        frequency_level = "부족"
+        frequency_level_code = "warning"
+        recommendations.append("월평균 운영 일정 수가 낮은 편입니다. 정기 모임이나 소규모 활동을 늘려볼 수 있습니다.")
+    else:
+        frequency_level = "매우 부족"
+        frequency_level_code = "danger"
+        recommendations.append("완료된 일정이 거의 없어 운영 빈도 판단이 어렵거나 활동이 부족합니다.")
+
+    if inactive_month_count >= 3:
+        recommendations.append(f"완료된 일정이 없는 달이 {inactive_month_count}개월 있습니다. 장기간 공백이 생기지 않도록 운영 계획을 세우는 것이 좋습니다.")
+
+    if cancel_level_code == "danger" or frequency_level_code == "danger":
+        overall_level = "위험"
+        overall_level_code = "danger"
+        summary = "일정 운영 빈도나 취소율에서 위험 신호가 보입니다."
+    elif cancel_level_code == "warning" or frequency_level_code == "warning":
+        overall_level = "주의"
+        overall_level_code = "warning"
+        summary = "일정 운영은 가능하지만 개선이 필요한 부분이 있습니다."
+    elif frequency_level_code == "excellent" and cancel_level_code == "good":
+        overall_level = "우수"
+        overall_level_code = "excellent"
+        summary = "일정 운영 빈도가 높고 취소율도 낮아 안정적으로 운영되고 있습니다."
+    else:
+        overall_level = "양호"
+        overall_level_code = "good"
+        summary = "전반적으로 일정 운영 상태가 양호합니다."
+
+    return {
+        "overall_level": overall_level,
+        "overall_level_code": overall_level_code,
+        "frequency_level": frequency_level,
+        "frequency_level_code": frequency_level_code,
+        "cancellation_level": cancel_level,
+        "cancellation_level_code": cancel_level_code,
+        "summary": summary,
+        "recommendations": recommendations,
+    }
+
+
+def build_event_operation_stats(club_id, year=None):
+    get_object_or_404(Club, id=club_id)
+
+    now = timezone.localtime(timezone.now())
+
+    if year is None:
+        year = now.year
+
+    try:
+        year = int(year)
+    except (TypeError, ValueError):
+        year = now.year
+
+    events = list(
+        Event.objects
+        .filter(
+            club_id=club_id,
+            start_at__year=year,
+        )
+        .order_by("start_at")
+    )
+
+    total_count = len(events)
+    scheduled_count = sum(1 for event in events if event.status == Event.STATUS_SCHEDULED)
+    completed_count = sum(1 for event in events if event.status == Event.STATUS_COMPLETED)
+    canceled_count = sum(1 for event in events if event.status == Event.STATUS_CANCELED)
+    planned_count = scheduled_count + completed_count
+
+    cancellation_rate = 0
+
+    if total_count > 0:
+        cancellation_rate = round((canceled_count / total_count) * 100, 1)
+
+    if year < now.year:
+        base_month_count = 12
+    elif year == now.year:
+        base_month_count = now.month
+    else:
+        base_month_count = 12
+
+    base_month_count = max(base_month_count, 1)
+
+    monthly_average_total = round(total_count / base_month_count, 1)
+    monthly_average_completed = round(completed_count / base_month_count, 1)
+    monthly_average_planned = round(planned_count / base_month_count, 1)
+
+    monthly_stats = []
+
+    for month in range(1, 13):
+        month_events = [
+            event for event in events
+            if timezone.localtime(event.start_at).month == month
+        ]
+
+        month_total_count = len(month_events)
+        month_scheduled_count = sum(
+            1 for event in month_events
+            if event.status == Event.STATUS_SCHEDULED
+        )
+        month_completed_count = sum(
+            1 for event in month_events
+            if event.status == Event.STATUS_COMPLETED
+        )
+        month_canceled_count = sum(
+            1 for event in month_events
+            if event.status == Event.STATUS_CANCELED
+        )
+
+        month_cancellation_rate = 0
+
+        if month_total_count > 0:
+            month_cancellation_rate = round(
+                (month_canceled_count / month_total_count) * 100,
+                1,
+            )
+
+        monthly_stats.append({
+            "month": month,
+            "total_count": month_total_count,
+            "scheduled_count": month_scheduled_count,
+            "completed_count": month_completed_count,
+            "canceled_count": month_canceled_count,
+            "cancellation_rate": month_cancellation_rate,
+        })
+
+    active_month_count = len([
+        item for item in monthly_stats
+        if item["completed_count"] > 0
+    ])
+
+    target_months = [
+        item for item in monthly_stats
+        if item["month"] <= base_month_count
+    ]
+
+    inactive_month_count = len([
+        item for item in target_months
+        if item["completed_count"] == 0
+    ])
+
+    event_type_stats = []
+
+    for event_type_value, event_type_label in Event.EVENT_TYPE_CHOICES:
+        type_events = [
+            event for event in events
+            if event.event_type == event_type_value
+        ]
+
+        type_total_count = len(type_events)
+        type_completed_count = sum(
+            1 for event in type_events
+            if event.status == Event.STATUS_COMPLETED
+        )
+        type_canceled_count = sum(
+            1 for event in type_events
+            if event.status == Event.STATUS_CANCELED
+        )
+
+        type_cancellation_rate = 0
+
+        if type_total_count > 0:
+            type_cancellation_rate = round(
+                (type_canceled_count / type_total_count) * 100,
+                1,
+            )
+
+        event_type_stats.append({
+            "event_type": event_type_value,
+            "event_type_display": event_type_label,
+            "total_count": type_total_count,
+            "completed_count": type_completed_count,
+            "canceled_count": type_canceled_count,
+            "cancellation_rate": type_cancellation_rate,
+        })
+
+    evaluation = get_event_operation_level(
+        cancellation_rate=cancellation_rate,
+        monthly_average_completed=monthly_average_completed,
+        inactive_month_count=inactive_month_count,
+    )
+
+    return {
+        "club_id": club_id,
+        "year": year,
+        "summary": {
+            "total_count": total_count,
+            "scheduled_count": scheduled_count,
+            "completed_count": completed_count,
+            "canceled_count": canceled_count,
+            "planned_count": planned_count,
+            "cancellation_rate": cancellation_rate,
+        },
+        "frequency": {
+            "base_month_count": base_month_count,
+            "active_month_count": active_month_count,
+            "inactive_month_count": inactive_month_count,
+            "monthly_average_total": monthly_average_total,
+            "monthly_average_completed": monthly_average_completed,
+            "monthly_average_planned": monthly_average_planned,
+        },
+        "monthly_stats": monthly_stats,
+        "event_type_stats": event_type_stats,
+        "evaluation": evaluation,
+    }
+
+
+class EventOperationStatsView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, club_id):
+        permission_error = require_event_manager(request, club_id)
+
+        if permission_error is not None:
+            return permission_error
+
+        year = request.query_params.get("year")
+
+        return Response(
+            build_event_operation_stats(club_id, year),
+            status=status.HTTP_200_OK,
+        )

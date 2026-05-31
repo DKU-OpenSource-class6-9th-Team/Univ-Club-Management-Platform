@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
+  BarChart3,
   Bell,
   CalendarDays,
   CheckCircle,
@@ -31,6 +32,7 @@ import {
   fetchEvents,
   fetchEventNoShows,
   fetchEventReport,
+  fetchEventOperationStats,
   fetchEventStats,
   fetchLowParticipationMembers,
   fetchMemberActivitySummary,
@@ -193,11 +195,19 @@ function ClubEventPage() {
   })
   const [isManagerPanelLoading, setIsManagerPanelLoading] = useState(false)
 
-    const [activityPanel, setActivityPanel] = useState({
+  const [activityPanel, setActivityPanel] = useState({
     summary: null,
     members: [],
     lowMembers: [],
   })
+
+  const [operationStatsPanel, setOperationStatsPanel] = useState({
+    data: null,
+    year: new Date().getFullYear(),
+  })
+  const [isOperationStatsOpen, setIsOperationStatsOpen] = useState(false)
+  const [isOperationStatsLoading, setIsOperationStatsLoading] = useState(false)
+
   const [isActivityPanelOpen, setIsActivityPanelOpen] = useState(false)
   const [isActivityPanelLoading, setIsActivityPanelLoading] = useState(false)
 
@@ -414,6 +424,38 @@ function ClubEventPage() {
       console.error('활동 점수 반영 실패:', error)
       alert(getApiErrorMessage(error))
     }
+  }
+
+  const loadOperationStatsPanel = async (
+    year = operationStatsPanel.year,
+  ) => {
+    if (!clubId) return
+
+    try {
+      setIsOperationStatsLoading(true)
+
+      const data = await fetchEventOperationStats(clubId, year)
+
+      setOperationStatsPanel({
+        data,
+        year: data.year,
+      })
+    } catch (error) {
+      console.error('일정 운영 통계 조회 실패:', error)
+      alert(getApiErrorMessage(error))
+    } finally {
+      setIsOperationStatsLoading(false)
+    }
+  }
+
+  const handleToggleOperationStatsPanel = async () => {
+    if (isOperationStatsOpen) {
+      setIsOperationStatsOpen(false)
+      return
+    }
+
+    setIsOperationStatsOpen(true)
+    await loadOperationStatsPanel()
   }
 
   useEffect(() => {
@@ -801,6 +843,15 @@ function ClubEventPage() {
                 <button
                   type="button"
                   className="event-secondary-button"
+                  onClick={handleToggleOperationStatsPanel}
+                >
+                  <BarChart3 size={17} />
+                  운영 통계
+                </button>
+
+                <button
+                  type="button"
+                  className="event-secondary-button"
                   onClick={handleToggleActivityPanel}
                 >
                   <Users size={17} />
@@ -818,6 +869,171 @@ function ClubEventPage() {
               </div>
             )}
           </section>
+
+          {canManageEvents && isOperationStatsOpen && (
+            <section className="event-operation-stats-panel">
+              <div className="event-section-title-row">
+                <div>
+                  <p className="event-section-label">Operation Stats</p>
+                  <h2>일정 운영 빈도 및 취소율</h2>
+                </div>
+
+                <div className="event-operation-stats-actions">
+                  <input
+                    type="number"
+                    min="2020"
+                    max="2100"
+                    value={operationStatsPanel.year}
+                    onChange={(event) =>
+                      setOperationStatsPanel((prev) => ({
+                        ...prev,
+                        year: event.target.value,
+                      }))
+                    }
+                  />
+
+                  <button
+                    type="button"
+                    className="event-secondary-button"
+                    onClick={() => loadOperationStatsPanel(operationStatsPanel.year)}
+                  >
+                    조회
+                  </button>
+                </div>
+              </div>
+
+              {isOperationStatsLoading ? (
+                <div className="event-empty-box">
+                  일정 운영 통계를 불러오는 중입니다.
+                </div>
+              ) : !operationStatsPanel.data ? (
+                <div className="event-empty-box">
+                  운영 통계 데이터가 없습니다.
+                </div>
+              ) : (
+                <>
+                  <div className="event-operation-evaluation-card">
+                    <div>
+                      <p className="event-section-label">Evaluation</p>
+                      <h3>{operationStatsPanel.data.evaluation.summary}</h3>
+                    </div>
+
+                    <span
+                      className={`event-operation-level ${operationStatsPanel.data.evaluation.overall_level_code}`}
+                    >
+                      {operationStatsPanel.data.evaluation.overall_level}
+                    </span>
+                  </div>
+
+                  <div className="event-operation-summary-grid">
+                    <article>
+                      <span>전체 일정</span>
+                      <strong>
+                        {operationStatsPanel.data.summary.total_count}개
+                      </strong>
+                    </article>
+
+                    <article>
+                      <span>완료 일정</span>
+                      <strong>
+                        {operationStatsPanel.data.summary.completed_count}개
+                      </strong>
+                    </article>
+
+                    <article>
+                      <span>취소 일정</span>
+                      <strong>
+                        {operationStatsPanel.data.summary.canceled_count}개
+                      </strong>
+                    </article>
+
+                    <article>
+                      <span>취소율</span>
+                      <strong>
+                        {operationStatsPanel.data.summary.cancellation_rate}%
+                      </strong>
+                    </article>
+                  </div>
+
+                  <div className="event-operation-summary-grid">
+                    <article>
+                      <span>월평균 완료 일정</span>
+                      <strong>
+                        {operationStatsPanel.data.frequency.monthly_average_completed}개
+                      </strong>
+                    </article>
+
+                    <article>
+                      <span>월평균 전체 일정</span>
+                      <strong>
+                        {operationStatsPanel.data.frequency.monthly_average_total}개
+                      </strong>
+                    </article>
+
+                    <article>
+                      <span>활동 발생 월</span>
+                      <strong>
+                        {operationStatsPanel.data.frequency.active_month_count}개월
+                      </strong>
+                    </article>
+
+                    <article>
+                      <span>활동 공백 월</span>
+                      <strong>
+                        {operationStatsPanel.data.frequency.inactive_month_count}개월
+                      </strong>
+                    </article>
+                  </div>
+
+                  <div className="event-operation-recommendation-box">
+                    <h3>운영 개선 제안</h3>
+                    <ul>
+                      {operationStatsPanel.data.evaluation.recommendations.map(
+                        (recommendation) => (
+                          <li key={recommendation}>{recommendation}</li>
+                        ),
+                      )}
+                    </ul>
+                  </div>
+
+                  <div className="event-monthly-stats-card">
+                    <h3>월별 일정 운영 현황</h3>
+
+                    <div className="event-monthly-stats-grid">
+                      {operationStatsPanel.data.monthly_stats.map((month) => (
+                        <article key={month.month}>
+                          <strong>{month.month}월</strong>
+                          <span>전체 {month.total_count}개</span>
+                          <span>완료 {month.completed_count}개</span>
+                          <span>취소 {month.canceled_count}개</span>
+                          <em>취소율 {month.cancellation_rate}%</em>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="event-type-stats-card">
+                    <h3>일정 유형별 취소율</h3>
+
+                    <div className="event-type-stats-list">
+                      {operationStatsPanel.data.event_type_stats.map((item) => (
+                        <article key={item.event_type}>
+                          <div>
+                            <strong>{item.event_type_display}</strong>
+                            <span>
+                              전체 {item.total_count}개 · 완료 {item.completed_count}개 · 취소 {item.canceled_count}개
+                            </span>
+                          </div>
+
+                          <em>{item.cancellation_rate}%</em>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </section>
+          )}
 
           {canManageEvents && isActivityPanelOpen && (
             <section className="member-activity-panel">
