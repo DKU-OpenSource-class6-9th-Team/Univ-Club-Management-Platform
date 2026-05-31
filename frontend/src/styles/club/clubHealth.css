@@ -234,6 +234,13 @@
 .finance-detail-panel {
   grid-column: 3 / 4;
   grid-row: 1 / 2;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.finance-detail-panel .health-panel-title {
+  flex-shrink: 0;
 }
 
 .ai-notice-panel {
@@ -420,9 +427,28 @@
 
 /* 재정 운영 */
 .finance-health-list {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+
   display: flex;
   flex-direction: column;
   gap: 8px;
+  scrollbar-gutter: stable;
+}
+
+.finance-health-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.finance-health-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #cbd5e1;
+}
+
+.finance-health-list::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .finance-health-list > div {
@@ -575,14 +601,35 @@
   margin-top: 12px;
 }
 
-.health-star-row span {
-  color: #dbe3ef;
-  font-size: 19px;
+.health-star {
+  position: relative;
+  display: inline-block;
+  width: 19px;
+  height: 19px;
   line-height: 1;
 }
 
-.health-star-row span.active {
+.health-star-row .health-star-base,
+.health-star-row .health-star-fill {
+  display: block;
+  line-height: 1;
+}
+
+.health-star-row .health-star-base {
+  color: #dbe3ef;
+}
+
+.health-star-row .health-star-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--star-fill);
+  overflow: hidden;
   color: #f59e0b;
+  white-space: nowrap;
+}
+
+.health-star-row .health-star-fill svg {
+  display: block;
 }
 
 .response-card {

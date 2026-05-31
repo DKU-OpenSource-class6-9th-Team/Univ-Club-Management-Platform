@@ -24,6 +24,7 @@ import {
   LogOut,
   MessageCircleHeart,
   ShieldCheck,
+  Star,
   ThumbsUp,
   Users,
   Wallet,
@@ -126,19 +127,33 @@ function ClubHealthPage() {
 
   // 만족도 평균을 별점 형태로 표시한다.
   const renderStars = (score) => {
-    const numericScore = Number(score || 0)
-    const filledCount = Math.round(numericScore)
+    const numericScore = Math.min(Math.max(Number(score) || 0, 0), 5)
 
     return (
-      <div className="health-star-row">
-        {[1, 2, 3, 4, 5].map((starNumber) => (
-          <span
-            key={starNumber}
-            className={starNumber <= filledCount ? 'active' : ''}
-          >
-            ★
-          </span>
-        ))}
+      <div className="health-star-row" aria-label={`${numericScore} / 5`}>
+        {[0, 1, 2, 3, 4].map((starIndex) => {
+          const fillPercent =
+            Math.min(Math.max(numericScore - starIndex, 0), 1) * 100
+
+          return (
+            <span
+              key={starIndex}
+              className="health-star"
+              style={{ '--star-fill': `${fillPercent}%` }}
+              aria-hidden="true"
+            >
+              <Star
+                className="health-star-base"
+                size={19}
+                strokeWidth={0}
+                fill="currentColor"
+              />
+              <span className="health-star-fill">
+                <Star size={19} strokeWidth={0} fill="currentColor" />
+              </span>
+            </span>
+          )
+        })}
       </div>
     )
   }
