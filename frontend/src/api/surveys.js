@@ -1,31 +1,32 @@
 /*
   만족도 조사 관련 API 함수 모음
 
-  현재 주소 구조:
-  GET  /api/clubs/:clubId/survey/
-  POST /api/clubs/:clubId/survey/items/
-  POST /api/clubs/:clubId/survey/draft/
-  POST /api/clubs/:clubId/survey/submit/
+  현재 백엔드 주소 구조:
+  GET  /api/clubs/:clubId/surveys/monthly/
+  POST /api/clubs/:clubId/surveys/items/
+  POST /api/clubs/:clubId/surveys/draft/
+  POST /api/clubs/:clubId/surveys/submit/
 */
 
-const API_BASE_URL = 'http://localhost:8000/api/clubs';
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/clubs'
 
 /*
   Django CSRF 토큰을 쿠키에서 꺼내는 함수
-  POST, PATCH, DELETE 요청을 보낼 때 필요함.
+  POST 요청을 보낼 때 필요함.
 */
 function getCookie(name) {
-  const cookies = document.cookie.split('; ');
+  const cookies = document.cookie ? document.cookie.split('; ') : []
 
   for (const cookie of cookies) {
-    const [key, value] = cookie.split('=');
+    const [key, ...valueParts] = cookie.split('=')
 
     if (key === name) {
-      return decodeURIComponent(value);
+      return decodeURIComponent(valueParts.join('='))
     }
   }
 
-  return null;
+  return null
 }
 
 /*
@@ -35,54 +36,50 @@ function getCookie(name) {
 async function getCsrfHeaders() {
   await fetch('http://localhost:8000/api/accounts/csrf/', {
     credentials: 'include',
-  });
+  })
 
-  const csrfToken = getCookie('csrftoken');
+  const csrfToken = getCookie('csrftoken')
 
-  return csrfToken ? { 'X-CSRFToken': csrfToken } : {};
+  return csrfToken ? { 'X-CSRFToken': csrfToken } : {}
 }
 
 /*
-  현재 2주차 만족도 조사 항목 조회
-
-  응답 예시:
-  {
-    year: 2026,
-    month: 5,
-    round_number: 2,
-    period_start_date: "2026-05-15",
-    period_end_date: "2026-05-31",
-    schedule_items: [...],
-    fee_items: [...],
-    answers: {},
-    status: null
-  }
+  응답 처리 공통 함수
 */
-export async function getMonthlySurvey(clubId) {
-  const response = await fetch(`${API_BASE_URL}/${clubId}/survey/`, {
-    credentials: 'include',
-  });
-
-  const data = await response.json();
+async function handleResponse(response) {
+  const data = await response.json().catch(() => null)
 
   if (!response.ok) {
-    throw data;
+    throw data || new Error('API 요청에 실패했습니다.')
   }
 
-  return data;
+  return data
+}
+
+/*
+  현재 만족도 조사 항목 조회
+
+  백엔드:
+  GET /api/clubs/:clubId/surveys/monthly/
+*/
+export async function getMonthlySurvey(clubId) {
+  const response = await fetch(`${API_BASE_URL}/${clubId}/surveys/monthly/`, {
+    credentials: 'include',
+  })
+
+  return handleResponse(response)
 }
 
 /*
   운영진이 선택한 조사 항목 저장
 
-  운영진이 조사 항목 관리 모달에서
-  일정 내역 또는 회비 사용 내역을 선택한 뒤
-  "선택 항목 반영하기"를 눌렀을 때 사용함.
+  백엔드:
+  POST /api/clubs/:clubId/surveys/items/
 */
 export async function saveSurveyItems(clubId, surveyItems) {
-  const csrfHeaders = await getCsrfHeaders();
+  const csrfHeaders = await getCsrfHeaders()
 
-  const response = await fetch(`${API_BASE_URL}/${clubId}/survey/items/`, {
+  const response = await fetch(`${API_BASE_URL}/${clubId}/surveys/items/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -90,26 +87,21 @@ export async function saveSurveyItems(clubId, surveyItems) {
     },
     credentials: 'include',
     body: JSON.stringify(surveyItems),
-  });
+  })
 
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw data;
-  }
-
-  return data;
+  return handleResponse(response)
 }
 
 /*
   만족도 조사 임시 저장
 
-  사용자가 선택한 별점 답변을 중간 저장할 때 사용함.
+  백엔드:
+  POST /api/clubs/:clubId/surveys/draft/
 */
 export async function saveMonthlySurveyDraft(clubId, surveyData) {
-  const csrfHeaders = await getCsrfHeaders();
+  const csrfHeaders = await getCsrfHeaders()
 
-  const response = await fetch(`${API_BASE_URL}/${clubId}/survey/draft/`, {
+  const response = await fetch(`${API_BASE_URL}/${clubId}/surveys/draft/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -117,26 +109,21 @@ export async function saveMonthlySurveyDraft(clubId, surveyData) {
     },
     credentials: 'include',
     body: JSON.stringify(surveyData),
-  });
+  })
 
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw data;
-  }
-
-  return data;
+  return handleResponse(response)
 }
 
 /*
   만족도 조사 최종 제출
 
-  사용자가 모든 항목을 평가한 뒤 제출 버튼을 눌렀을 때 사용함.
+  백엔드:
+  POST /api/clubs/:clubId/surveys/submit/
 */
 export async function submitMonthlySurvey(clubId, surveyData) {
-  const csrfHeaders = await getCsrfHeaders();
+  const csrfHeaders = await getCsrfHeaders()
 
-  const response = await fetch(`${API_BASE_URL}/${clubId}/survey/submit/`, {
+  const response = await fetch(`${API_BASE_URL}/${clubId}/surveys/submit/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -144,13 +131,16 @@ export async function submitMonthlySurvey(clubId, surveyData) {
     },
     credentials: 'include',
     body: JSON.stringify(surveyData),
+  })
+
+  return handleResponse(response)
+}
+
+/* 만족도 조사 결과 조회 API */
+export async function getSurveyResults(clubId) {
+  const response = await fetch(`${API_BASE_URL}/${clubId}/surveys/results/`, {
+    credentials: 'include',
   });
 
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw data;
-  }
-
-  return data;
+  return handleResponse(response);
 }
