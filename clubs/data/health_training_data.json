@@ -1,0 +1,33 @@
+[
+  {
+    "comment" : "합성 데이터 파일 = 실제 여러 동아리 데이터가 부족한 초기 단계에서 일반적인 동아리 운영 패턴”을 임시로 정의하는 기준 데이터"
+  },
+
+  {
+    "profileName": "전반적으로 안정적인 동아리",
+    "activeMemberRate": 86,
+    "memberActivityScoreAverage": 78,
+    "scheduleSatisfactionScore": 84,
+    "scheduleActivityRate": 72,
+    "actualAttendanceRate": 88,
+    "scheduleStabilityRate": 95,
+    "paymentRate": 91,
+    "proofAttachmentRate": 86,
+    "feeSatisfactionScore": 82,
+    "responseRate": 64
+  },
+  {
+    "profileName": "활동성은 낮지만 재정 관리는 안정적인 동아리",
+    "activeMemberRate": 55,
+    "memberActivityScoreAverage": 61,
+    "scheduleSatisfactionScore": 70,
+    "scheduleActivityRate": 43,
+    "actualAttendanceRate": 58,
+    "scheduleStabilityRate": 82,
+    "paymentRate": 90,
+    "proofAttachmentRate": 88,
+    "feeSatisfactionScore": 76,
+    "responseRate": 51
+  }
+]
+

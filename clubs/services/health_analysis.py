@@ -16,6 +16,7 @@ from club_members.models import ClubMembership as ManagedClubMembership
 from clubs.models import BiweeklySurvey, BiweeklySurveyResponse
 from fees.models import FeeTransaction, MemberFeePayment
 from events.models import Event, EventApplication, Attendance
+from clubs.services.health_ML_notice import build_ai_notice
 
 
 #점수를 0~100 범위 안으로 제한하는 함수
@@ -542,28 +543,6 @@ def build_schedule_metrics(club, satisfaction):
         ),
     }
 
-
-#AI(머신러닝) 이상 탐지
-def build_ai_notice(metrics):
-    """
-    현재 상태:
-    - 아직 AI 라이브러리를 사용하지 않음.
-    - Isolation Forest 모델도 아직 연결하지 않음.
-    - 프론트와 백엔드의 응답 구조만 먼저 만들어 둔다.
-
-    추후 구현 방향:
-    - 합성 데이터 생성
-    - Isolation Forest 학습
-    - 현재 동아리 지표를 입력값으로 변환
-    - 이상 지표를 탐지하여 Notice로 반환
-    """
-    return {
-        "enabled": False,
-        "mode": "PLANNED",
-        "model": "Isolation Forest",
-        "description": "AI 이상 탐지는 추후 Isolation Forest 모델을 연결할 예정입니다.",
-        "items": [],
-    }
 
 
 #월별 건강도 추이
