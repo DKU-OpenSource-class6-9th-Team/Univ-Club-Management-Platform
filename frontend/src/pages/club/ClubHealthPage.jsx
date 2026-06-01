@@ -246,7 +246,7 @@ function ClubHealthPage() {
 
   const aiNotice = healthData.aiNotice || {
     items: [],
-    description: 'AI 이상 탐지는 추후 Isolation Forest 모델을 연결할 예정입니다.',
+    description: 'AI 분석 데이터가 없습니다.',
   }
 
   return (
@@ -538,7 +538,9 @@ function ClubHealthPage() {
                     <div className="ai-notice-empty">
                       <Bot size={22} />
                       <div>
-                        <strong>AI 모델 연동 예정</strong>
+                        <strong>
+                          {aiNotice.enabled ? 'AI Botice가 없습니다.' : 'AI 분석 준비 중'}
+                        </strong>
                         <p>{aiNotice.description}</p>
                       </div>
                     </div>

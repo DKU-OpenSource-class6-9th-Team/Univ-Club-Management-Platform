@@ -246,6 +246,13 @@
 .ai-notice-panel {
   grid-column: 4 / 5;
   grid-row: 1 / 2;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.ai-notice-panel .health-panel-title {
+  flex-shrink: 0;
 }
 
 .satisfaction-summary-panel {
@@ -498,13 +505,33 @@
 
 /* AI Notice */
 .ai-notice-list {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+
   display: flex;
   flex-direction: column;
   gap: 12px;
+  scrollbar-gutter: stable;
+}
+
+.ai-notice-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ai-notice-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #cbd5e1;
+}
+
+.ai-notice-list::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .ai-notice-item,
 .ai-notice-empty {
+  flex-shrink: 0;
   border-radius: 13px;
   padding: 13px;
 
