@@ -16,7 +16,7 @@ from club_members.models import ClubMembership as ManagedClubMembership
 from clubs.models import BiweeklySurvey, BiweeklySurveyResponse
 from fees.models import FeeTransaction, MemberFeePayment
 from events.models import Event, EventApplication, Attendance
-from clubs.services.health_ML_notice import build_ai_notice
+from clubs.services.health_notice import build_ai_notice
 
 
 #점수를 0~100 범위 안으로 제한하는 함수
