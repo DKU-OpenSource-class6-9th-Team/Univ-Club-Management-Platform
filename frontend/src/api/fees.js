@@ -30,13 +30,26 @@ async function ensureCsrfCookie() {
 
   //API 요청에 공통부분을 줄이기 위한 함수
 async function request(path, options = {}) {
+  const method = (options.method || 'GET').toUpperCase()
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(options.headers || {}),
+  }
+
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    await ensureCsrfCookie()
+
+    const csrfToken = getCookie('csrftoken')
+
+    if (csrfToken) {
+      headers['X-CSRFToken'] = csrfToken
+    }
+  }
+
   const response = await fetch(`${API_BASE_URL}${path}`, { //브라우저에서 API요청
-    credentials: 'include',
-    headers: { //요청 데이터 형식을 알려주는 부분
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
     ...options,
+    credentials: 'include',
+    headers,
   })
 
   const data = await response.json().catch(() => null) //응답 json파일 -> 자바스크립트 객체 변환
@@ -124,4 +137,3 @@ export async function createFeeTransaction(clubId, formData) {
 
   return data
 }
-

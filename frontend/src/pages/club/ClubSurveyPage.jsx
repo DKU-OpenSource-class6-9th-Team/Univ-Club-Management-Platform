@@ -450,69 +450,69 @@ function ClubSurveyPage() {
 	};
 
 	  const getSatisfactionLevel = (score) => {
-    const numericScore = Number(score);
+	const numericScore = Number(score);
 
-    if (!numericScore) return '미응답';
-    if (numericScore >= 4.5) return '매우높음';
-    if (numericScore >= 3.5) return '높음';
-    if (numericScore >= 2.5) return '보통';
-    if (numericScore >= 1.5) return '낮음';
-    return '매우낮음';
+	if (!numericScore) return '미응답';
+	if (numericScore >= 4.5) return '매우높음';
+	if (numericScore >= 3.5) return '높음';
+	if (numericScore >= 2.5) return '보통';
+	if (numericScore >= 1.5) return '낮음';
+	return '매우낮음';
   };
 
   const getSatisfactionLevelClass = (score) => {
-    const numericScore = Number(score);
+	const numericScore = Number(score);
 
-    if (!numericScore) return 'empty';
-    if (numericScore >= 4.5) return 'very-high';
-    if (numericScore >= 3.5) return 'high';
-    if (numericScore >= 2.5) return 'normal';
-    if (numericScore >= 1.5) return 'low';
-    return 'very-low';
+	if (!numericScore) return 'empty';
+	if (numericScore >= 4.5) return 'very-high';
+	if (numericScore >= 3.5) return 'high';
+	if (numericScore >= 2.5) return 'normal';
+	if (numericScore >= 1.5) return 'low';
+	return 'very-low';
   };
 
 	// 결과 분석 버튼 실행시 만족도 조사 결과 조회 API를 호출해서 데이터를 가져오고, 결과 분석 모달을 열어줌
   const handleOpenSurveyResult = async () => {
-    setIsSurveyResultOpen(true);
-    setResultActiveTab('schedule');
-    setSurveyResultError('');
-    setIsSurveyResultLoading(true);
+	setIsSurveyResultOpen(true);
+	setResultActiveTab('schedule');
+	setSurveyResultError('');
+	setIsSurveyResultLoading(true);
 
-    try {
-      const data = await getSurveyResults(clubId);
-      setSurveyResultData(data);
-    } catch (error) {
-      console.error('만족도 조사 결과를 불러오지 못했습니다.', error);
-      setSurveyResultError(
-        error?.message || '만족도 조사 결과를 불러오지 못했습니다.'
-      );
-    } finally {
-      setIsSurveyResultLoading(false);
-    }
+	try {
+	  const data = await getSurveyResults(clubId);
+	  setSurveyResultData(data);
+	} catch (error) {
+	  console.error('만족도 조사 결과를 불러오지 못했습니다.', error);
+	  setSurveyResultError(
+		error?.message || '만족도 조사 결과를 불러오지 못했습니다.'
+	  );
+	} finally {
+	  setIsSurveyResultLoading(false);
+	}
   };
 
 	// 그래프 표시에 사용할 전체 응답 분포 계산 함수
 	const getOverallDistribution = () => {
-    const distribution = {
-      5: 0,
-      4: 0,
-      3: 0,
-      2: 0,
-      1: 0,
-    };
+	const distribution = {
+	  5: 0,
+	  4: 0,
+	  3: 0,
+	  2: 0,
+	  1: 0,
+	};
 
-    const allResults = [
-      ...(surveyResultData?.schedule_results || []),
-      ...(surveyResultData?.fee_results || []),
-    ];
+	const allResults = [
+	  ...(surveyResultData?.schedule_results || []),
+	  ...(surveyResultData?.fee_results || []),
+	];
 
-    allResults.forEach((item) => {
-      [1, 2, 3, 4, 5].forEach((score) => {
-        distribution[score] += item.distribution?.[score] || item.distribution?.[String(score)] || 0;
-      });
-    });
+	allResults.forEach((item) => {
+	  [1, 2, 3, 4, 5].forEach((score) => {
+		distribution[score] += item.distribution?.[score] || item.distribution?.[String(score)] || 0;
+	  });
+	});
 
-    return distribution;
+	return distribution;
   };
 	/*
 		일정 내역 버튼 클릭 시 실행
@@ -714,7 +714,7 @@ function ClubSurveyPage() {
 			});
 
 			setScheduleItems(nextScheduleItems);
-			setScheduleUpdatedDate(surveyData.schedule_updated_date || '');
+			setScheduleUpdatedDate(data.schedule_updated_date || '');
 			setFeeItems(nextFeeItems);
 			setFeeUpdatedDate(data.fee_updated_date || '');
 
@@ -785,18 +785,18 @@ function ClubSurveyPage() {
 		);
 	}
 
-	return (
-		<div className="club-dashboard-page">
-			<div className="dashboard-fixed-canvas">
-				{/* 왼쪽 사이드바 영역 */}
-				<aside className="dashboard-sidebar">
-					{/* 사이드바 상단 로고 */}
-					<div className="sidebar-logo">
-						<Link to="/main" className="sidebar-clubflow-logo">
-							<span className="sidebar-logo-cf">CF</span>
-							<span className="sidebar-logo-text">ClubFlow</span>
-						</Link>
-					</div>
+ return (
+  <div className="club-dashboard-page">
+	<div className="dashboard-fixed-canvas">
+	  {/* 왼쪽 사이드바 영역 */}
+	  <aside className="dashboard-sidebar">
+		{/* 사이드바 상단 로고 */}
+		<div className="sidebar-logo">
+		  <Link to="/main" className="sidebar-clubflow-logo">
+			<span className="sidebar-logo-cf">CM</span>
+			<span className="sidebar-logo-text">Club Management</span>
+		  </Link>
+		</div>
 
 					{/* 사이드바 메뉴 */}
 					<nav className="sidebar-menu">
@@ -836,10 +836,10 @@ function ClubSurveyPage() {
 							회비 관리
 						</Link>
 
-						<Link to={`/club/${clubId}/schedule`} className="sidebar-link">
-							<CalendarDays size={19} />
-							일정 관리 / 공지
-						</Link>
+		  <Link to={`/club/${clubId}/events`} className="sidebar-link">
+			<CalendarDays size={19} />
+			일정·출석 관리
+		  </Link>
 
 						{/* 현재 페이지이므로 active 클래스 적용 */}
 						<Link to={`/club/${clubId}/survey`} className="sidebar-link active">
@@ -1344,275 +1344,276 @@ function ClubSurveyPage() {
 						</section>
 					</div>
 				)}
-				        {/* 운영진용 만족도 조사 결과 분석 모달 */}
-        {isSurveyResultOpen && (
-          <div className="survey-result-modal-backdrop">
-            <section className="survey-result-modal">
-              <div className="survey-result-modal-header">
-                <div>
-                  <p>Survey Analysis</p>
-                  <h2>만족도 조사 결과 분석</h2>
-                  <span>
-                    제출된 만족도 결과를 수치화하고 항목별 통계로 확인합니다.
-                  </span>
-                </div>
+						{/* 운영진용 만족도 조사 결과 분석 모달 */}
+		{isSurveyResultOpen && (
+		  <div className="survey-result-modal-backdrop">
+			<section className="survey-result-modal">
+			  <div className="survey-result-modal-header">
+				<div>
+				  <p>Survey Analysis</p>
+				  <h2>만족도 조사 결과 분석</h2>
+				  <span>
+					제출된 만족도 결과를 수치화하고 항목별 통계로 확인합니다.
+				  </span>
+				</div>
 
-                <button
-                  type="button"
-                  className="survey-result-modal-close-button"
-                  onClick={() => setIsSurveyResultOpen(false)}
-                >
-                  <X size={20} />
-                </button>
-              </div>
+				<button
+				  type="button"
+				  className="survey-result-modal-close-button"
+				  onClick={() => setIsSurveyResultOpen(false)}
+				>
+				  <X size={20} />
+				</button>
+			  </div>
 
-              {isSurveyResultLoading ? (
-                <div className="survey-result-modal-empty">
-                  결과 데이터를 불러오는 중입니다...
-                </div>
-              ) : surveyResultError ? (
-                <div className="survey-result-modal-empty error">
-                  {surveyResultError}
-                </div>
-              ) : (
-                <>
-                  <div className="survey-result-summary-grid">
-                    <article className="survey-result-summary-card">
-                      <span>전체 평균 만족도</span>
-                      <strong>
-                        {(surveyResultData?.summary?.overall_average || 0).toFixed(1)} / 5.0
-                      </strong>
-                      <p>
-                        {getSatisfactionLevel(
-                          surveyResultData?.summary?.overall_average || 0
-                        )}
-                      </p>
-                    </article>
+			  {isSurveyResultLoading ? (
+				<div className="survey-result-modal-empty">
+				  결과 데이터를 불러오는 중입니다...
+				</div>
+			  ) : surveyResultError ? (
+				<div className="survey-result-modal-empty error">
+				  {surveyResultError}
+				</div>
+			  ) : (
+				<>
+				  <div className="survey-result-summary-grid">
+					<article className="survey-result-summary-card">
+					  <span>전체 평균 만족도</span>
+					  <strong>
+						{(surveyResultData?.summary?.overall_average || 0).toFixed(1)} / 5.0
+					  </strong>
+					  <p>
+						{getSatisfactionLevel(
+						  surveyResultData?.summary?.overall_average || 0
+						)}
+					  </p>
+					</article>
 
-                    <article className="survey-result-summary-card">
-                      <span>100점 환산 점수</span>
-                      <strong>
-                        {surveyResultData?.summary?.overall_converted_score || 0}점
-                      </strong>
-                      <p>평균 만족도를 100점 기준으로 환산</p>
-                    </article>
+					<article className="survey-result-summary-card">
+					  <span>100점 환산 점수</span>
+					  <strong>
+						{surveyResultData?.summary?.overall_converted_score || 0}점
+					  </strong>
+					  <p>평균 만족도를 100점 기준으로 환산</p>
+					</article>
 
-                    <article className="survey-result-summary-card">
-                      <span>응답 인원</span>
-                      <strong>
-                        {surveyResultData?.summary?.submitted_user_count || 0}명
-                      </strong>
-                      <p>
-                        전체 {surveyResultData?.summary?.total_member_count || 0}명 기준
-                      </p>
-                    </article>
+					<article className="survey-result-summary-card">
+					  <span>응답 인원</span>
+					  <strong>
+						{surveyResultData?.summary?.submitted_user_count || 0}명
+					  </strong>
+					  <p>
+						전체 {surveyResultData?.summary?.total_member_count || 0}명 기준
+					  </p>
+					</article>
 
-                    <article className="survey-result-summary-card danger">
-                      <span>개선 필요 항목</span>
-                      <strong>
-                        {surveyResultData?.summary?.need_improve_count || 0}개
-                      </strong>
-                      <p>평균 2.5점 미만 항목 수</p>
-                    </article>
-                  </div>
+					<article className="survey-result-summary-card danger">
+					  <span>개선 필요 항목</span>
+					  <strong>
+						{surveyResultData?.summary?.need_improve_count || 0}개
+					  </strong>
+					  <p>평균 2.5점 미만 항목 수</p>
+					</article>
+				  </div>
 
-                  <div className="survey-result-modal-body">
-                    <div className="survey-result-modal-left">
-                      <div className="survey-result-tab-row">
-                        <button
-                          type="button"
-                          className={
-                            resultActiveTab === 'schedule'
-                              ? 'survey-result-tab active'
-                              : 'survey-result-tab'
-                          }
-                          onClick={() => setResultActiveTab('schedule')}
-                        >
-                          <CalendarDays size={17} />
-                          일정 만족도
-                        </button>
+				  <div className="survey-result-modal-body">
+					<div className="survey-result-modal-left">
+					  <div className="survey-result-tab-row">
+						<button
+						  type="button"
+						  className={
+							resultActiveTab === 'schedule'
+							  ? 'survey-result-tab active'
+							  : 'survey-result-tab'
+						  }
+						  onClick={() => setResultActiveTab('schedule')}
+						>
+						  <CalendarDays size={17} />
+						  일정 만족도
+						</button>
 
-                        <button
-                          type="button"
-                          className={
-                            resultActiveTab === 'fee'
-                              ? 'survey-result-tab active'
-                              : 'survey-result-tab'
-                          }
-                          onClick={() => setResultActiveTab('fee')}
-                        >
-                          <CreditCard size={17} />
-                          회비 사용 만족도
-                        </button>
-                      </div>
+						<button
+						  type="button"
+						  className={
+							resultActiveTab === 'fee'
+							  ? 'survey-result-tab active'
+							  : 'survey-result-tab'
+						  }
+						  onClick={() => setResultActiveTab('fee')}
+						>
+						  <CreditCard size={17} />
+						  회비 사용 만족도
+						</button>
+					  </div>
 
-                      <div className="survey-result-list-box">
-                        <div className="survey-result-list-title">
-                          <BarChart3 size={20} />
-                          <div>
-                            <h3>항목별 만족도 결과</h3>
-                            <p>각 항목의 평균 점수와 점수 분포를 확인합니다.</p>
-                          </div>
-                        </div>
+					  <div className="survey-result-list-box">
+						<div className="survey-result-list-title">
+						  <BarChart3 size={20} />
+						  <div>
+							<h3>항목별 만족도 결과</h3>
+							<p>각 항목의 평균 점수와 점수 분포를 확인합니다.</p>
+						  </div>
+						</div>
 
-                        {(
-                          resultActiveTab === 'schedule'
-                            ? surveyResultData?.schedule_results || []
-                            : surveyResultData?.fee_results || []
-                        ).length === 0 ? (
-                          <div className="survey-result-modal-empty">
-                            아직 분석할 만족도 결과가 없습니다.
-                          </div>
-                        ) : (
-                          <div className="survey-result-item-list">
-                            {(
-                              resultActiveTab === 'schedule'
-                                ? surveyResultData?.schedule_results || []
-                                : surveyResultData?.fee_results || []
-                            ).map((item) => (
-                              <article className="survey-result-item-card" key={item.id}>
-                                <div className="survey-result-item-header">
-                                  <div>
-                                    <h4>{item.title}</h4>
-                                    <p>
-                                      {item.date || '-'}
-                                      {resultActiveTab === 'fee' && (
-                                        <>
-                                          {' '}· {item.type || '-'} · {item.category || '-'}
-                                        </>
-                                      )}
-                                    </p>
-                                  </div>
+						{(
+						  resultActiveTab === 'schedule'
+							? surveyResultData?.schedule_results || []
+							: surveyResultData?.fee_results || []
+						).length === 0 ? (
+						  <div className="survey-result-modal-empty">
+							아직 분석할 만족도 결과가 없습니다.
+						  </div>
+						) : (
+						  <div className="survey-result-item-list">
+							{(
+							  resultActiveTab === 'schedule'
+								? surveyResultData?.schedule_results || []
+								: surveyResultData?.fee_results || []
+							).map((item) => (
+							  <article className="survey-result-item-card" key={item.id}>
+								<div className="survey-result-item-header">
+								  <div>
+									<h4>{item.title}</h4>
+									<p>
+									  {item.date || '-'}
+									  {resultActiveTab === 'fee' && (
+										<>
+										  {' '}· {item.type || '-'} · {item.category || '-'}
+										</>
+									  )}
+									</p>
+								  </div>
 
-                                  <em
-                                    className={`survey-result-score-badge ${getSatisfactionLevelClass(
-                                      item.average_score
-                                    )}`}
-                                  >
-                                    {item.response_count > 0
-                                      ? `${Number(item.average_score).toFixed(1)}점`
-                                      : '미응답'}
-                                    <span>
-                                      {getSatisfactionLevel(item.average_score)}
-                                    </span>
-                                  </em>
-                                </div>
+								  <em
+									className={`survey-result-score-badge ${getSatisfactionLevelClass(
+									  item.average_score
+									)}`}
+								  >
+									{item.response_count > 0
+									  ? `${Number(item.average_score).toFixed(1)}점`
+									  : '미응답'}
+									<span>
+									  {getSatisfactionLevel(item.average_score)}
+									</span>
+								  </em>
+								</div>
 
-                                <div className="survey-result-distribution">
-                                  {[5, 4, 3, 2, 1].map((score) => {
-                                    const count = item.distribution?.[score] || 0;
-                                    const responseCount = item.response_count || 0;
-                                    const width = responseCount
-                                      ? Math.round((count / responseCount) * 100)
-                                      : 0;
+								<div className="survey-result-distribution">
+								  {[5, 4, 3, 2, 1].map((score) => {
+									const count = item.distribution?.[score] || 0;
+									const responseCount = item.response_count || 0;
+									const width = responseCount
+									  ? Math.round((count / responseCount) * 100)
+									  : 0;
 
-                                    return (
-                                      <div className="survey-result-distribution-row" key={score}>
-                                        <span>{score}점</span>
+									return (
+									  <div className="survey-result-distribution-row" key={score}>
+										<span>{score}점</span>
 
-                                        <div className="survey-result-bar-track">
-                                          <div
-                                            className="survey-result-bar-fill"
-                                            style={{ width: `${width}%` }}
-                                          />
-                                        </div>
+										<div className="survey-result-bar-track">
+										  <div
+											className="survey-result-bar-fill"
+											style={{ width: `${width}%` }}
+										  />
+										</div>
 
-                                        <strong>{count}명</strong>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </article>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
+										<strong>{count}명</strong>
+									  </div>
+									);
+								  })}
+								</div>
+							  </article>
+							))}
+						  </div>
+						)}
+					  </div>
+					</div>
 
-                    <aside className="survey-result-modal-right">
-                      <section className="survey-result-side-card">
-                        <h3>
-                          <TrendingDown size={18} />
-                          개선 필요 TOP 3
-                        </h3>
+					<aside className="survey-result-modal-right">
+					  <section className="survey-result-side-card">
+						<h3>
+						  <TrendingDown size={18} />
+						  개선 필요 TOP 3
+						</h3>
 
-                        {(surveyResultData?.need_improve_items || []).length === 0 ? (
-                          <p>평균 2.5점 미만의 개선 필요 항목이 없습니다.</p>
-                        ) : (
-                          <ol>
-                            {(surveyResultData?.need_improve_items || []).map((item) => (
-                              <li key={item.id}>
-                                <strong>{item.title}</strong>
-                                <span>{Number(item.average_score).toFixed(1)}점</span>
-                              </li>
-                            ))}
-                          </ol>
-                        )}
-                      </section>
+						{(surveyResultData?.need_improve_items || []).length === 0 ? (
+						  <p>평균 2.5점 미만의 개선 필요 항목이 없습니다.</p>
+						) : (
+						  <ol>
+							{(surveyResultData?.need_improve_items || []).map((item) => (
+							  <li key={item.id}>
+								<strong>{item.title}</strong>
+								<span>{Number(item.average_score).toFixed(1)}점</span>
+							  </li>
+							))}
+						  </ol>
+						)}
+					  </section>
 
-                      <section className="survey-result-side-card">
-                        <h3>
-                          <Star size={18} />
-                          자동 분석 코멘트
-                        </h3>
+					  <section className="survey-result-side-card">
+						<h3>
+						  <Star size={18} />
+						  자동 분석 코멘트
+						</h3>
 
-                        <p>
-                          전체 만족도는{' '}
-                          {(surveyResultData?.summary?.overall_average || 0).toFixed(1)}점이며,
-                          만족도 수준은{' '}
-                          {getSatisfactionLevel(
-                            surveyResultData?.summary?.overall_average || 0
-                          )}
-                          입니다.
-                        </p>
+						<p>
+						  전체 만족도는{' '}
+						  {(surveyResultData?.summary?.overall_average || 0).toFixed(1)}점이며,
+						  만족도 수준은{' '}
+						  {getSatisfactionLevel(
+							surveyResultData?.summary?.overall_average || 0
+						  )}
+						  입니다.
+						</p>
 
-                        <p>
-                          평균 점수가 낮은 항목은 다음 운영 회의에서 우선적으로
-                          검토하는 것이 좋습니다.
-                        </p>
-                      </section>
-                    </aside>
-                  </div>
-									                  <section className="survey-result-chart-section">
-                    <div className="survey-result-chart-title">
-                      <BarChart3 size={20} />
-                      <div>
-                        <h3>전체 만족도 점수 분포</h3>
-                        <p>제출된 모든 응답 건수를 1점부터 5점까지 집계한 결과입니다.</p>
-                      </div>
-                    </div>
+						<p>
+						  평균 점수가 낮은 항목은 다음 운영 회의에서 우선적으로
+						  검토하는 것이 좋습니다.
+						</p>
+					  </section>
+					</aside>
+				  </div>
+													  <section className="survey-result-chart-section">
+					<div className="survey-result-chart-title">
+					  <BarChart3 size={20} />
+					  <div>
+						<h3>전체 만족도 점수 분포</h3>
+						<p>제출된 모든 응답 건수를 1점부터 5점까지 집계한 결과입니다.</p>
+					  </div>
+					</div>
 
-                    <div className="survey-result-chart-box">
-                      {[5, 4, 3, 2, 1].map((score) => {
-                        const distribution = getOverallDistribution();
-                        const count = distribution[score] || 0;
-                        const maxCount = Math.max(...Object.values(distribution), 1);
-                        const height = Math.max((count / maxCount) * 100, count > 0 ? 12 : 0);
+					<div className="survey-result-chart-box">
+					  {[5, 4, 3, 2, 1].map((score) => {
+						const distribution = getOverallDistribution();
+						const count = distribution[score] || 0;
+						const maxCount = Math.max(...Object.values(distribution), 1);
+						const height = Math.max((count / maxCount) * 100, count > 0 ? 12 : 0);
 
-                        return (
-                          <div className="survey-result-chart-column" key={score}>
-                            <strong>{count}건</strong>
+						return (
+						  <div className="survey-result-chart-column" key={score}>
+							<strong>{count}건</strong>
 
-                            <div className="survey-result-chart-bar-wrap">
-                              <div
-                                className={`survey-result-chart-bar score-${score}`}
-                                style={{ height: `${height}%` }}
-                              />
-                            </div>
+							<div className="survey-result-chart-bar-wrap">
+							  <div
+								className={`survey-result-chart-bar score-${score}`}
+								style={{ height: `${height}%` }}
+							  />
+							</div>
 
-                            <span>{score}점</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </section>
-                </>
-              )}
-            </section>
-          </div>
-        )}
+							<span>{score}점</span>
+						  </div>
+						);
+					  })}
+					</div>
+				  </section>
+				</>
+			  )}
+			</section>
+		  </div>
+		)}
 			</div>
 		</div>
 	);
 }
+
 export default ClubSurveyPage;

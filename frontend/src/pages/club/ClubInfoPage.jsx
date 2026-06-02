@@ -188,9 +188,9 @@ function ClubInfoPage() {
               회비 관리
             </Link>
 
-            <Link to="/club/schedule" className="sidebar-link">
+            <Link to={`/club/${clubId}/events`} className="sidebar-link">
               <CalendarDays size={19} />
-              일정 관리 / 공지
+              일정·출석 관리
             </Link>
             
             <Link to={`/club/${clubId}/survey`} className="sidebar-link">
@@ -198,7 +198,7 @@ function ClubInfoPage() {
               만족도 조사
             </Link>
 
-            <Link to="/club/settings" className="sidebar-link">
+            <Link to={`/club/${clubId}/health`} className="sidebar-link">
               <HeartPulse size={19} />
               건강도 분석
             </Link>

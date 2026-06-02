@@ -12,6 +12,7 @@ from .models import (
 	SurveySubmission,
 )
 from .serializers import ClubSerializer
+from .services.health_analysis import build_health_analysis_payload
 
 from django.db import transaction
 from django.utils import timezone
@@ -415,189 +416,43 @@ class ClubViewSet(viewsets.ModelViewSet):
 			and submission.submitted_version < state.survey_version
 		)
 
-		submission.answers = answers
-		submission.has_submitted = True
-		submission.is_resubmitted = was_resubmit
-		submission.submitted_version = state.survey_version
-		submission.submitted_at = timezone.now()
-		submission.save()
-
 		if was_resubmit:
 			message = '만족도 조사가 다시 제출되었습니다.'
 		else:
 			message = '만족도 조사가 제출되었습니다.'
 
+		submission.answers = answers
+		submission.has_submitted = True
+		submission.submitted_at = timezone.now()
+		submission.submitted_version = state.survey_version
+		submission.save()
+
+		SurveyItem.objects.filter(
+			club=club,
+			item_type__in=[SurveyItem.TYPE_SCHEDULE, SurveyItem.TYPE_FEE],
+		).update(is_new=False)
+
 		return Response({
 			'message': message,
-			'already_submitted': False,
 			'has_submitted': True,
 			'needs_resubmit': False,
-			'is_resubmitted': was_resubmit,
+			'answers': submission.answers,
 		})
 	
 
-	@action(detail=True, methods=['get'], url_path='surveys/results')
-	def survey_results(self, request, pk=None):
-		if not request.user.is_authenticated:
-			return Response(
-				{'message': '로그인이 필요합니다.'},
-				status=status.HTTP_401_UNAUTHORIZED
-			)
+	#동아리 운영 건강도 분석 API,   요청 주소: GET /api/clubs/{club_id}/health/
+	#역할:
+	#1. 현재 동아리의 회원, 회비, 만족도 데이터를 조회한다.
+	#2. health_analysis.py의 계산 함수를 호출한다.
+	#3. 프론트 건강도 분석 페이지에서 사용할 JSON 데이터를 반환한다.
+	#4. AI 기능은 아직 직접 실행하지 않고, 연동 예정 구조만 반환한다.
+	@action(detail=True, methods=['get'], url_path='health')
+	def get_health_analysis(self, request, pk=None):
 
+		# URL의 club_id에 해당하는 Club 객체를 가져옴
 		club = self.get_object()
 
-		state = self.get_or_create_survey_state(club)
+		# 실제 건강도 계산은 services/health_analysis.py에 분리
+		payload = build_health_analysis_payload(club)
 
-		# 점수 계산용: 제출 완료한 응답 전체
-		# 각 항목에 답변이 있는 경우에만 점수에 반영됨
-		submissions = SurveySubmission.objects.filter(
-			club=club,
-			has_submitted=True,
-		)
-
-		# 제출 인원 표시용: 현재 조사 버전까지 제출 완료한 사람만 계산
-		current_version_submissions = SurveySubmission.objects.filter(
-			club=club,
-			has_submitted=True,
-			submitted_version=state.survey_version,
-		)
-
-		schedule_items = SurveyItem.objects.filter(
-			club=club,
-			item_type=SurveyItem.TYPE_SCHEDULE
-		).order_by('-is_new', 'display_order', '-created_at')
-
-		fee_items = SurveyItem.objects.filter(
-			club=club,
-			item_type=SurveyItem.TYPE_FEE
-		).order_by('-is_new', 'display_order', '-created_at')
-
-		all_items = list(schedule_items) + list(fee_items)
-
-		def build_item_result(item):
-			item_id = f'{item.item_type}-{item.original_id}'
-
-			scores = []
-
-			for submission in submissions:
-				answers = submission.answers or {}
-
-				if item_id in answers:
-					try:
-						score = int(answers[item_id])
-						scores.append(score)
-					except (TypeError, ValueError):
-						pass
-
-			response_count = len(scores)
-			score_sum = sum(scores)
-
-			average_score = 0
-			if response_count > 0:
-				average_score = round(score_sum / response_count, 1)
-
-			converted_score = 0
-			if average_score > 0:
-				converted_score = round((average_score / 5) * 100)
-
-			distribution = {
-				'1': scores.count(1),
-				'2': scores.count(2),
-				'3': scores.count(3),
-				'4': scores.count(4),
-				'5': scores.count(5),
-			}
-
-			if average_score >= 4:
-				level = '만족'
-			elif average_score >= 3:
-				level = '보통'
-			elif average_score > 0:
-				level = '개선 필요'
-			else:
-				level = '미응답'
-
-			return {
-				'id': item_id,
-				'item_type': item.item_type,
-				'originalId': item.original_id,
-				'title': item.title,
-				'date': item.date,
-				'type': item.fee_type,
-				'category': item.category,
-				'amount': item.amount,
-				'response_count': response_count,
-				'average_score': average_score,
-				'converted_score': converted_score,
-				'distribution': distribution,
-				'level': level,
-				'participants': item.participants,
-				'totalMembers': item.total_members,
-			}
-
-		item_results = [build_item_result(item) for item in all_items]
-
-		answered_item_results = [
-			item for item in item_results
-			if item['response_count'] > 0
-		]
-
-		total_score_sum = sum(
-			item['average_score'] * item['response_count']
-			for item in answered_item_results
-		)
-
-		total_answer_count = sum(
-			item['response_count']
-			for item in answered_item_results
-		)
-
-		overall_average = 0
-		if total_answer_count > 0:
-			overall_average = round(total_score_sum / total_answer_count, 1)
-
-		overall_converted_score = 0
-		if overall_average > 0:
-			overall_converted_score = round((overall_average / 5) * 100)
-
-		need_improve_items = sorted(
-			[
-				item for item in item_results
-				if item['response_count'] > 0 and item['average_score'] < 3
-			],
-			key=lambda item: item['average_score']
-		)
-
-		total_member_count = ManagedClubMembership.objects.filter(
-			club=club
-		).count()
-
-		submitted_user_count = current_version_submissions.values('user').distinct().count()
-
-		response_rate = 0
-		if total_member_count > 0:
-			response_rate = round((submitted_user_count / total_member_count) * 100)
-
-		return Response({
-			'summary': {
-				'overall_average': overall_average,
-				'overall_converted_score': overall_converted_score,
-				'submitted_user_count': submitted_user_count,
-				'total_member_count': total_member_count,
-				'response_rate': response_rate,
-				'total_item_count': len(all_items),
-				'answered_item_count': len(answered_item_results),
-				'need_improve_count': len(need_improve_items),
-				'survey_version': state.survey_version,
-			},
-			'schedule_results': [
-				item for item in item_results
-				if item['item_type'] == SurveyItem.TYPE_SCHEDULE
-			],
-			'fee_results': [
-				item for item in item_results
-				if item['item_type'] == SurveyItem.TYPE_FEE
-			],
-			'need_improve_items': need_improve_items[:3],
-			'user_average_distribution': user_average_distribution,
-		})
+		return Response(payload)

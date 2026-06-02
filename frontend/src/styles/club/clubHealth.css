@@ -1,0 +1,749 @@
+.club-health-frame {
+  grid-template-rows: 22px 68px 42px 146px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.club-health-main {
+  padding: 18px 24px 20px 18px;
+}
+
+/* 상단 날짜/다운로드 버튼 */
+.health-toolbar-row {
+  min-width: 0;
+  min-height: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.health-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.health-toolbar-button {
+  height: 36px;
+  padding: 0 16px;
+
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  background: #ffffff;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  color: #111827;
+  font-size: 13px;
+  font-weight: 800;
+
+  cursor: pointer;
+}
+
+/* 상단 요약 카드 */
+.health-summary-grid {
+  min-width: 0;
+  min-height: 0;
+
+  display: grid;
+
+  /* 전체 건강도 / 회원 활동성 / 활동·일정 운영성 / 재정 운영 투명성 */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+
+  gap: 12px;
+}
+
+.health-summary-card {
+  min-width: 0;
+  height: 100%;
+
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 18px 18px;
+
+  display: flex;
+  align-items: center;
+  gap: 15px;
+
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.health-summary-icon {
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  border-radius: 15px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.health-summary-icon.total {
+  background: #eef2ff;
+  color: #2563eb;
+}
+
+.health-summary-icon.member {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.health-summary-icon.schedule {
+  background: #f3e8ff;
+  color: #9333ea;
+}
+
+.health-summary-icon.satisfaction {
+  background: #fff7ed;
+  color: #f59e0b;
+}
+
+.health-summary-icon.finance {
+  background: #ecfdf5;
+  color: #16a34a;
+}
+
+.health-summary-content {
+  min-width: 0;
+}
+
+.health-summary-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.health-summary-title span,
+.health-summary-content > span {
+  color: #111827;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.health-summary-card strong {
+  display: block;
+  margin-top: 10px;
+
+  color: #111827;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+
+.health-summary-card strong small {
+  color: #111827;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+/* 상태 배지 */
+.health-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 50px;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 999px;
+
+  margin-top: 8px;
+
+  font-size: 11px;
+  font-weight: 900;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.health-badge.good {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.health-badge.normal {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.health-badge.warning {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* 본문 */
+.health-content-grid {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+
+  display: grid;
+  grid-template-columns: 0.9fr 1.15fr 1.15fr 1.05fr;
+  grid-template-rows: minmax(390px, 1fr) minmax(190px, 0.5fr);
+
+  gap: 12px;
+  align-content: start;
+}
+
+.health-panel {
+  min-width: 0;
+  min-height: 0;
+
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 16px;
+
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.health-panel-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+
+  margin-bottom: 14px;
+}
+
+.health-panel-title h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.total-health-panel {
+  grid-column: 1 / 2;
+  grid-row: 1 / 2;
+}
+
+.domain-score-panel {
+  grid-column: 2 / 3;
+  grid-row: 1 / 2;
+}
+
+.finance-detail-panel {
+  grid-column: 3 / 4;
+  grid-row: 1 / 2;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.finance-detail-panel .health-panel-title {
+  flex-shrink: 0;
+}
+
+.ai-notice-panel {
+  grid-column: 4 / 5;
+  grid-row: 1 / 2;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.ai-notice-panel .health-panel-title {
+  flex-shrink: 0;
+}
+
+.satisfaction-summary-panel {
+  grid-column: 1 / 3;
+  grid-row: 2 / 3;
+}
+
+.monthly-trend-panel {
+  grid-column: 3 / 5;
+  grid-row: 2 / 3;
+}
+
+/* 전체 건강도 */
+.health-total-circle-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.health-total-circle {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.health-total-circle-inner {
+  width: 116px;
+  height: 116px;
+  border-radius: 50%;
+  background: #ffffff;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.health-total-circle-inner strong {
+  color: #111827;
+  font-size: 38px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.health-total-circle-inner span {
+  margin-top: 5px;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.health-score-guide {
+  margin-top: 18px;
+}
+
+.health-score-guide h3 {
+  margin: 0 0 10px;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.health-score-guide p {
+  margin: 6px 0;
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.health-score-guide p strong {
+  display: inline-block;
+  width: 68px;
+  color: #111827;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.guide-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 8px;
+  border-radius: 50%;
+}
+
+.guide-dot.excellent {
+  background: #2563eb;
+}
+
+.guide-dot.good {
+  background: #22c55e;
+}
+
+.guide-dot.normal {
+  background: #f59e0b;
+}
+
+.guide-dot.warning {
+  background: #ef4444;
+}
+
+/* 영역별 점수 */
+.domain-score-list {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.domain-score-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.domain-score-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.domain-score-top span {
+  color: #374151;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.domain-score-top strong {
+  color: #111827;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.domain-score-top small {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.domain-score-bar {
+  height: 7px;
+  margin-top: 8px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  overflow: hidden;
+}
+
+.domain-score-bar div {
+  height: 100%;
+  border-radius: 999px;
+  background: #2563eb;
+}
+
+.domain-score-item.schedule .domain-score-bar div {
+  background: #9333ea;
+}
+
+.domain-score-item.satisfaction .domain-score-bar div {
+  background: #f59e0b;
+}
+
+.domain-score-item.finance .domain-score-bar div {
+  background: #16a34a;
+}
+
+.health-info-box {
+  margin-top: 18px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  background: #eef2ff;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+/* 재정 운영 */
+.finance-health-list {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  scrollbar-gutter: stable;
+}
+
+.finance-health-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.finance-health-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #cbd5e1;
+}
+
+.finance-health-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.finance-health-list > div {
+  min-height: 42px;
+  border: 1px solid #eef2f7;
+  border-radius: 12px;
+  padding: 7px 10px;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.health-detail-label {
+  min-width: 0;
+}
+
+.health-detail-label span {
+  display: block;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.health-detail-label p {
+  margin: 3px 0 0;
+  color: #6b7280;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  word-break: keep-all;
+}
+
+.finance-health-list strong {
+  color: #111827;
+  font-size: 14px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.finance-health-list .health-badge {
+  min-width: 54px;
+  margin-top: 0;
+  padding: 0 8px;
+}
+
+/* AI Notice */
+.ai-notice-list {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  scrollbar-gutter: stable;
+}
+
+.ai-notice-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ai-notice-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #cbd5e1;
+}
+
+.ai-notice-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ai-notice-item,
+.ai-notice-empty {
+  flex-shrink: 0;
+  border-radius: 13px;
+  padding: 13px;
+
+  border: 1px solid #f2c98a;
+  background: #fff8ec;
+}
+
+.ai-notice-empty {
+  display: flex;
+  gap: 12px;
+}
+
+.ai-notice-item {
+  display: flex;
+  gap: 12px;
+}
+
+.ai-notice-item.danger {
+  border-color: #e7b6be;
+  background: #fdf3f4;
+}
+
+.ai-notice-item.excellent {
+  border-color: #a7d9b5;
+  background: #f1faf4;
+}
+
+.ai-notice-item.warning {
+  border-color: #e7b6be;
+  background: #fdf3f4;
+}
+
+.ai-notice-item strong,
+.ai-notice-empty strong {
+  color: #7a4e12;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.ai-notice-item.excellent strong {
+  color: #256c3d;
+}
+
+.ai-notice-item.warning strong,
+.ai-notice-item.danger strong {
+  color: #9a3e4d;
+}
+
+.ai-notice-item p,
+.ai-notice-empty p {
+  margin: 6px 0 0;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+  white-space: pre-line;
+}
+
+.ai-notice-item.excellent p {
+  color: #5f6b63;
+}
+
+.ai-notice-item.warning p,
+.ai-notice-item.danger p {
+  color: #6f6466;
+}
+
+/* 만족도 요약 */
+.satisfaction-summary-grid {
+  height: calc(100% - 38px);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.satisfaction-mini-card {
+  min-height: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 13px;
+  padding: 14px 12px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.satisfaction-mini-card span {
+  color: #374151;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.satisfaction-mini-card strong {
+  margin-top: 20px;
+  color: #111827;
+  font-size: 25px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.satisfaction-mini-card small {
+  color: #6b7280;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.health-star-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+
+  margin-top: 12px;
+}
+
+.health-star {
+  position: relative;
+  display: inline-block;
+  width: 19px;
+  height: 19px;
+  line-height: 1;
+}
+
+.health-star-row .health-star-base,
+.health-star-row .health-star-fill {
+  display: block;
+  line-height: 1;
+}
+
+.health-star-row .health-star-base {
+  color: #dbe3ef;
+}
+
+.health-star-row .health-star-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--star-fill);
+  overflow: hidden;
+  color: #f59e0b;
+  white-space: nowrap;
+}
+
+.health-star-row .health-star-fill svg {
+  display: block;
+}
+
+.response-card {
+  position: static;
+}
+
+.response-rate-row {
+  width: 100%;
+  margin-top: 26px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+}
+
+.response-rate-row strong {
+  margin-top: 0;
+}
+
+.mini-response-ring {
+  position: static;
+
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  border-radius: 50%;
+}
+
+/* 월별 건강도 추이 */
+/* 월별 건강도 추이 */
+.monthly-trend-empty {
+  height: calc(100% - 38px);
+  min-height: 116px;
+
+  border-radius: 13px;
+  border: 1px dashed #dbe3ef;
+  background: #f8fafc;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.monthly-trend-empty svg {
+  color: #6b7280;
+}
+
+.monthly-trend-empty strong {
+  color: #111827;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.monthly-trend-empty p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+}

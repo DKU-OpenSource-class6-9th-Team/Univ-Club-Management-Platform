@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { getClub } from '../../api/clubs.js';
 import '../../styles/club/clubDashboard.css';
 import { getFeeTransactions, getFeeSummary, getFeePayments } from '../../api/fees.js';
+import { getClubHealthAnalysis } from '../../api/health.js';
 
 import {
   Bell,
@@ -72,6 +73,10 @@ function ClubDashboardPage() {
   // getFeePayments API의 summary 값을 저장한다.
   const [feePaymentSummary, setFeePaymentSummary] = useState(null);
 
+  // 건강도 분석 API의 전체 건강도 점수를 저장한다.
+  const [healthSummary, setHealthSummary] = useState(null);
+  const [isHealthLoading, setIsHealthLoading] = useState(false);
+
 
 
   // 4. 동아리 정보 가져오기
@@ -126,6 +131,28 @@ function ClubDashboardPage() {
     };
 
     loadDashboardFeeData();
+  }, [clubId]);
+
+  // 대시보드 상단 건강도 점수 카드에 사용할 전체 건강도 데이터를 불러온다.
+  useEffect(() => {
+    const loadDashboardHealthData = async () => {
+      if (!clubId) return;
+
+      try {
+        setIsHealthLoading(true);
+
+        const healthData = await getClubHealthAnalysis(clubId);
+
+        setHealthSummary(healthData?.totalHealth || null);
+      } catch (error) {
+        console.error('대시보드 건강도 데이터 조회 실패:', error);
+        setHealthSummary(null);
+      } finally {
+        setIsHealthLoading(false);
+      }
+    };
+
+    loadDashboardHealthData();
   }, [clubId]);
 
 
@@ -263,9 +290,9 @@ function ClubDashboardPage() {
             회비 관리
           </Link>
 
-          <Link to="/club/schedule" className="sidebar-link">
+          <Link to={`/club/${clubId}/events`} className="sidebar-link">
             <CalendarDays size={19} />
-            일정 관리 / 공지
+            일정·출석 관리
           </Link>
           
           <Link to={`/club/${clubId}/survey`} className="sidebar-link">
@@ -273,7 +300,7 @@ function ClubDashboardPage() {
             만족도 조사
           </Link>
 
-          <Link to="/club/settings" className="sidebar-link">
+          <Link to={`/club/${clubId}/health`} className="sidebar-link">
             <HeartPulse size={19} />
             건강도 분석
           </Link>
@@ -352,8 +379,20 @@ function ClubDashboardPage() {
 
                 <div>
                   <span>동아리 건강도 점수</span>
-                  <strong>-</strong>
-                  <p>데이터 연동 전입니다.</p>
+                  <strong>
+                    {isHealthLoading
+                      ? '-'
+                      : healthSummary
+                        ? `${healthSummary.score}점`
+                        : '-'}
+                  </strong>
+                  <p>
+                    {isHealthLoading
+                      ? '불러오는 중입니다.'
+                      : healthSummary
+                        ? `${healthSummary.status} / ${healthSummary.maxScore}점 만점`
+                        : '건강도 데이터가 없습니다.'}
+                  </p>
                 </div>
               </article>
 
