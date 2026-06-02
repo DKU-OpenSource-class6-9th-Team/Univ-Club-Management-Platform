@@ -246,6 +246,13 @@
 .ai-notice-panel {
   grid-column: 4 / 5;
   grid-row: 1 / 2;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.ai-notice-panel .health-panel-title {
+  flex-shrink: 0;
 }
 
 .satisfaction-summary-panel {
@@ -498,18 +505,38 @@
 
 /* AI Notice */
 .ai-notice-list {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+
   display: flex;
   flex-direction: column;
   gap: 12px;
+  scrollbar-gutter: stable;
+}
+
+.ai-notice-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ai-notice-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #cbd5e1;
+}
+
+.ai-notice-list::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .ai-notice-item,
 .ai-notice-empty {
+  flex-shrink: 0;
   border-radius: 13px;
   padding: 13px;
 
-  border: 1px solid #fed7aa;
-  background: #fff7ed;
+  border: 1px solid #f2c98a;
+  background: #fff8ec;
 }
 
 .ai-notice-empty {
@@ -523,20 +550,34 @@
 }
 
 .ai-notice-item.danger {
-  border-color: #fecaca;
-  background: #fff1f2;
+  border-color: #e7b6be;
+  background: #fdf3f4;
+}
+
+.ai-notice-item.excellent {
+  border-color: #a7d9b5;
+  background: #f1faf4;
 }
 
 .ai-notice-item.warning {
-  border-color: #fed7aa;
-  background: #fff7ed;
+  border-color: #e7b6be;
+  background: #fdf3f4;
 }
 
 .ai-notice-item strong,
 .ai-notice-empty strong {
-  color: #111827;
+  color: #7a4e12;
   font-size: 14px;
   font-weight: 900;
+}
+
+.ai-notice-item.excellent strong {
+  color: #256c3d;
+}
+
+.ai-notice-item.warning strong,
+.ai-notice-item.danger strong {
+  color: #9a3e4d;
 }
 
 .ai-notice-item p,
@@ -546,6 +587,16 @@
   font-size: 12px;
   font-weight: 700;
   line-height: 1.45;
+  white-space: pre-line;
+}
+
+.ai-notice-item.excellent p {
+  color: #5f6b63;
+}
+
+.ai-notice-item.warning p,
+.ai-notice-item.danger p {
+  color: #6f6466;
 }
 
 /* 만족도 요약 */

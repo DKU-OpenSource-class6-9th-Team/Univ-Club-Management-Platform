@@ -245,8 +245,9 @@ function ClubHealthPage() {
   const responseRate = getResponseRate(satisfactionSummary.responseRate)
 
   const aiNotice = healthData.aiNotice || {
+    enabled: false,
     items: [],
-    description: 'AI 이상 탐지는 추후 Isolation Forest 모델을 연결할 예정입니다.',
+    description: '동아리별 지표 비교 데이터가 없습니다.',
   }
 
   return (
@@ -529,7 +530,7 @@ function ClubHealthPage() {
 
               <article className="health-panel ai-notice-panel">
                 <div className="health-panel-title">
-                  <h2>AI 이상 탐지 Notice</h2>
+                  <h2>동아리별 지표 비교 notice</h2>
                   <Bot size={16} />
                 </div>
 
@@ -538,7 +539,11 @@ function ClubHealthPage() {
                     <div className="ai-notice-empty">
                       <Bot size={22} />
                       <div>
-                        <strong>AI 모델 연동 예정</strong>
+                        <strong>
+                          {aiNotice.enabled
+                            ? '표시할 비교 Notice가 없습니다.'
+                            : '지표 비교 분석 준비 중'}
+                        </strong>
                         <p>{aiNotice.description}</p>
                       </div>
                     </div>

@@ -34,6 +34,7 @@ import '../../styles/club/clubDashboard.css'
 import '../../styles/club/clubFee.css'
 import { getClub } from '../../api/clubs.js'
 import { fetchMyEventRole } from '../../api/events.js'
+import { getClubHealthAnalysis } from '../../api/health.js'
 
 //fees.js에 만들어져있는 api 함수를 가져오는 코드
 import {
@@ -116,6 +117,59 @@ function ClubFeePage() {
     ? Math.round((paidMemberCount / totalMemberCount) * 100)
     : 0
 
+  const isCurrentMonthTransaction = (transaction) => {
+    const transactionDate = parseTransactionDate(transaction.date)
+
+    if (!transactionDate) {
+      return false
+    }
+
+    const now = new Date()
+
+    return (
+      transactionDate.getFullYear() === now.getFullYear() &&
+      transactionDate.getMonth() === now.getMonth()
+    )
+  }
+
+  const parseTransactionDate = (dateText) => {
+    if (!dateText) {
+      return null
+    }
+
+    const [year, month, day] = String(dateText).split('-').map(Number)
+
+    if (!year || !month || !day) {
+      return null
+    }
+
+    return new Date(year, month - 1, day)
+  }
+
+  const hasReceiptProof = (transaction) => {
+    return Array.isArray(transaction.receipts) && transaction.receipts.length > 0
+  }
+
+  const buildSideStats = (transactionList, healthAnalysisData) => {
+    const monthlyUsageTransactions = transactionList.filter(
+      (transaction) => isCurrentMonthTransaction(transaction),
+    )
+    const receiptAttachedCount =
+      monthlyUsageTransactions.filter(hasReceiptProof).length
+    const receiptTargetCount = monthlyUsageTransactions.length
+
+    return {
+      monthlyUsageCount: monthlyUsageTransactions.length,
+      receiptAttachedCount,
+      receiptTargetCount,
+      receiptProofRate: receiptTargetCount
+        ? Math.round((receiptAttachedCount / receiptTargetCount) * 100)
+        : 0,
+      feeSatisfactionAverage:
+        healthAnalysisData?.satisfactionSummary?.feeAverage ?? null,
+    }
+  }
+
   useEffect(() => { //필터 및 검색어의 표시되는 개수 변경 시 1페이지로 이동
     setCurrentPage(1)
   }, [memberFilter, memberSearch, pageSize])
@@ -185,20 +239,41 @@ useEffect(() => {
       setIsLoading(true)
 
       //요약카드, 수입/지출내역 동시에 요청하는 코드
-      const [summaryData, transactionData, paymentData] = await Promise.all([
+      const healthAnalysisRequest = getClubHealthAnalysis(effectiveClubId).catch(
+        (error) => {
+          console.warn('회비 만족도 평균을 불러오지 못했습니다.', error)
+          return null
+        },
+      )
+
+      const [
+        summaryData,
+        transactionData,
+        allTransactionData,
+        paymentData,
+        healthAnalysisData,
+      ] = await Promise.all([
         getFeeSummary(effectiveClubId),
         getFeeTransactions(effectiveClubId),
+        getFeeTransactions(effectiveClubId, { limit: 'all' }),
         getFeePayments(effectiveClubId, { 
           status: memberFilter,
           search: memberSearch,
           page: currentPage,
           pageSize,
         }),
+        healthAnalysisRequest,
       ])
+      const allTransactionList = Array.isArray(allTransactionData)
+        ? allTransactionData
+        : allTransactionData.results || []
 
       setSummary(summaryData) //불러온 값 summary 상태에 저장
       setTransactions(transactionData.results || []) //내역 배열을 transaction 상태에 저장
       setMembers(paymentData.results || [])
+      setSideStats(
+        buildSideStats(allTransactionList, healthAnalysisData),
+      )
     } catch (error){
       console.error('회비 데이터 조회 실패:', error)
       alert('회비 데이터를 불러오지 못했습니다.')
