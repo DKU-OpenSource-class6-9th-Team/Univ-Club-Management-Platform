@@ -1739,3 +1739,39 @@
 .survey-result-chart-bar.score-1 {
   background: #ef4444;
 }
+
+/* ==============================
+   일정 항목을 회비 항목 행과 같은 스타일로 표시
+   - survey-manage-check-row fee 레이아웃을 그대로 사용
+================================= */
+
+.schedule-like-fee .survey-manage-schedule-badge {
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+
+  background: #eef2ff;
+  color: #4f63e7;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.schedule-like-fee .survey-manage-schedule-summary {
+  min-width: 0;
+
+  color: #111827;
+  font-size: 13px;
+  font-weight: 900;
+  text-align: right;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

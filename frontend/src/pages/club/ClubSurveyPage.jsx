@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { getClub } from '../../api/clubs.js';
 import { getFeeTransactions } from '../../api/fees.js';
+import { fetchEvents, fetchMyEventRole } from '../../api/events.js';
 
 import {
 	getMonthlySurvey,
@@ -116,10 +117,26 @@ function ClubSurveyPage() {
 	// 사이드바 권한 처리, 상단 사용자 정보 표시에 사용함.
 	const loginUser = JSON.parse(localStorage.getItem('loginUser')) || {};
 
-	// 동아리 운영진 여부 확인.
-	// 운영진일 때만 동아리 정보 수정 메뉴를 보여줌.
-	const isClubManager = loginUser.role === 'CLUB_MANAGER';
+	const [surveyRole, setSurveyRole] = useState(null);
+	const [canManageSurvey, setCanManageSurvey] = useState(false);
 
+	useEffect(() => {
+		const loadSurveyRole = async () => {
+			if (!clubId) return;
+
+			try {
+				const roleData = await fetchMyEventRole(clubId);
+
+				setCanManageSurvey(Boolean(roleData.can_manage_events));
+			} catch (error) {
+				console.error('만족도 조사 관리 권한을 확인하지 못했습니다.', error);
+				setCanManageSurvey(false);
+			}
+		};
+
+		loadSurveyRole();
+	}, [clubId]);
+	
 	// 현재 동아리 정보
 	const [club, setClub] = useState(null);
 
@@ -162,11 +179,11 @@ function ClubSurveyPage() {
 	const [isSurveyManageOpen, setIsSurveyManageOpen] = useState(false);
 
 	// 운영진용 결과 분석 모달 상태
-  const [isSurveyResultOpen, setIsSurveyResultOpen] = useState(false);
-  const [surveyResultData, setSurveyResultData] = useState(null);
-  const [isSurveyResultLoading, setIsSurveyResultLoading] = useState(false);
-  const [surveyResultError, setSurveyResultError] = useState('');
-  const [resultActiveTab, setResultActiveTab] = useState('schedule');
+	const [isSurveyResultOpen, setIsSurveyResultOpen] = useState(false);
+	const [surveyResultData, setSurveyResultData] = useState(null);
+	const [isSurveyResultLoading, setIsSurveyResultLoading] = useState(false);
+	const [surveyResultError, setSurveyResultError] = useState('');
+	const [resultActiveTab, setResultActiveTab] = useState('schedule');
 
 	// 관리 모달 안에서 현재 선택한 내역 종류 (schedule: 일정 내역, fee: 회비 사용 내역)
 	const [manageType, setManageType] = useState(null);
@@ -190,6 +207,54 @@ function ClubSurveyPage() {
 	// 현재 월의 만족도 조사 기간 계산 (화면 상단 조사 기간 카드에서 사용)
 	const surveyPeriod = getCurrentBiweeklySurveyPeriod();
 
+	const mergeParticipationData = async (baseScheduleItems, baseFeeItems) => {
+		try {
+			const resultData = await getSurveyResults(clubId);
+
+			const totalMemberCount = resultData?.summary?.total_member_count ?? 0;
+
+			const scheduleResultMap = new Map(
+				(resultData?.schedule_results || []).map((item) => [item.id, item])
+			);
+
+			const feeResultMap = new Map(
+				(resultData?.fee_results || []).map((item) => [item.id, item])
+			);
+
+			const mergedScheduleItems = (baseScheduleItems || []).map((item) => {
+				const resultItem = scheduleResultMap.get(item.id);
+
+				return {
+					...item,
+					participants: resultItem?.response_count ?? item.participants ?? 0,
+					totalMembers: totalMemberCount,
+				};
+			});
+
+			const mergedFeeItems = (baseFeeItems || []).map((item) => {
+				const resultItem = feeResultMap.get(item.id);
+
+				return {
+					...item,
+					participants: resultItem?.response_count ?? item.participants ?? 0,
+					totalMembers: totalMemberCount,
+				};
+			});
+
+			return {
+				scheduleItems: mergedScheduleItems,
+				feeItems: mergedFeeItems,
+			};
+		} catch (error) {
+			console.error('참여율 데이터를 합치는 중 오류가 발생했습니다.', error);
+
+			return {
+				scheduleItems: baseScheduleItems || [],
+				feeItems: baseFeeItems || [],
+			};
+		}
+	};
+
 	/*
 		페이지가 처음 열릴 때 실행됨.
 		1. 동아리 기본 정보 조회
@@ -206,25 +271,25 @@ function ClubSurveyPage() {
 				try {
 					const surveyData = await getMonthlySurvey(clubId);
 
-					if (surveyData.schedule_items) {
-						setScheduleItems(surveyData.schedule_items);
+					const mergedData = await mergeParticipationData(
+						surveyData.schedule_items || [],
+						surveyData.fee_items || []
+					);
 
-						setSelectedScheduleIds(
-							surveyData.schedule_items
-								.map((item) => item.originalId || item.original_id)
-								.filter(Boolean)
-						);
-					}
+					setScheduleItems(mergedData.scheduleItems);
+					setFeeItems(mergedData.feeItems);
 
-					if (surveyData.fee_items) {
-						setFeeItems(surveyData.fee_items);
+					setSelectedScheduleIds(
+						mergedData.scheduleItems
+							.map((item) => item.originalId || item.original_id)
+							.filter(Boolean)
+					);
 
-						setSelectedFeeIds(
-							surveyData.fee_items
-								.map((item) => item.originalId || item.original_id)
-								.filter(Boolean)
-						);
-					}
+					setSelectedFeeIds(
+						mergedData.feeItems
+							.map((item) => item.originalId || item.original_id)
+							.filter(Boolean)
+					);
 
 					if (surveyData.answers) {
 						setAnswers(surveyData.answers);
@@ -342,6 +407,20 @@ function ClubSurveyPage() {
 			setHasSubmitted(data.has_submitted || true);
 			setNeedsResubmit(data.needs_resubmit || false);
 			setMessage(data.message || '만족도 조사가 제출되었습니다.');
+
+			const refreshedSurveyData = await getMonthlySurvey(clubId);
+
+			const mergedData = await mergeParticipationData(
+				refreshedSurveyData.schedule_items || [],
+				refreshedSurveyData.fee_items || []
+			);
+
+			setScheduleItems(mergedData.scheduleItems);
+			setFeeItems(mergedData.feeItems);
+			setAnswers(refreshedSurveyData.answers || {});
+			setHasSubmitted(refreshedSurveyData.has_submitted || false);
+			setNeedsResubmit(refreshedSurveyData.needs_resubmit || false);
+
 		} catch (error) {
 			console.error(error);
 			setMessage(error?.message || '만족도 조사 제출에 실패했습니다.');
@@ -368,9 +447,126 @@ function ClubSurveyPage() {
 		return Number.isNaN(time) ? 0 : time;
 	};
 
-	/*
-		회비 내역의 날짜를 화면에 보여줄 문자열로 변환
-	*/
+	// 일정 날짜를 YYYY-MM-DD 형식으로 바꾸는 함수
+	const getScheduleDateText = (dateValue) => {
+		if (!dateValue) return '-';
+
+		const date = new Date(dateValue);
+
+		if (Number.isNaN(date.getTime())) {
+			return String(dateValue).slice(0, 10);
+		}
+
+		const year = date.getFullYear();
+		const month = String(date.getMonth() + 1).padStart(2, '0');
+		const day = String(date.getDate()).padStart(2, '0');
+
+		return `${year}-${month}-${day}`;
+	};
+
+	// 일정 시작일과 종료일을 "시작일 ~ 종료일" 형태로 만드는 함수
+	const getSchedulePeriodText = (item) => {
+		const startDate = getScheduleDateText(
+			item.start_at ||
+			item.startAt ||
+			item.start_date ||
+			item.startDate ||
+			item.date
+		);
+
+		const endDate = getScheduleDateText(
+			item.end_at ||
+			item.endAt ||
+			item.end_date ||
+			item.endDate
+		);
+
+		if (!endDate || endDate === '-') {
+			return startDate;
+		}
+
+		return `${startDate} ~ ${endDate}`;
+	};
+
+	// 이미 조사 항목으로 저장된 일정의 날짜를 화면 표시용으로 정리하는 함수
+	const getSurveyScheduleDateText = (item) => {
+		if (!item) return '-';
+
+		if (item.startDate || item.endDate) {
+			if (item.endDate && item.endDate !== '-') {
+				return `${item.startDate} ~ ${item.endDate}`;
+			}
+
+			return item.startDate || '-';
+		}
+
+		if (item.date && String(item.date).includes('~')) {
+			return item.date;
+		}
+
+		if (item.date) {
+			return getScheduleDateText(item.date);
+		}
+
+		return getSchedulePeriodText(item);
+	};
+
+	const getScheduleTypeText = (item) => {
+		const typeValue =
+			item.event_type_display ||
+			item.eventTypeDisplay ||
+			item.event_type ||
+			item.type;
+
+		if (typeValue === 'regular') return '정기 모임';
+		if (typeValue === 'activity') return '행사';
+		if (typeValue === 'recruitment') return '모집';
+		if (typeValue === 'interview') return '면접';
+		if (typeValue === 'project') return '프로젝트';
+		if (typeValue === 'etc') return '기타';
+
+		return typeValue || '일정';
+	};
+
+	const getScheduleStatusText = (item) => {
+		const statusValue =
+			item.status_display ||
+			item.statusDisplay ||
+			item.status;
+
+		if (statusValue === 'scheduled') return '예정';
+		if (statusValue === 'completed') return '완료';
+		if (statusValue === 'canceled') return '취소';
+
+		return statusValue || '-';
+	};
+
+	// 전체 인원 가져오는 함수
+	const getTotalMemberCount = () => {
+		return (
+			club?.member_count ??
+			club?.memberCount ??
+			club?.current_members ??
+			club?.currentMembers ??
+			club?.members_count ??
+			0
+		);
+	};
+
+	const getScheduleMemberCountText = (item) => {
+		const maxCount =
+			item.max_participants ??
+			item.maxParticipants ??
+			null;
+
+		if (maxCount) {
+			return `${maxCount}명`;
+		}
+
+		return '-';
+	};
+
+	// 회비 내역의 날짜를 화면에 보여줄 문자열로 변환
 	const getFeeDateText = (item) => {
 		return (
 			item.date ||
@@ -382,9 +578,7 @@ function ClubSurveyPage() {
 		);
 	};
 
-	/*
-		회비 내역의 제목을 화면에 보여줄 문자열로 변환
-	*/
+	// 회비 내역의 제목을 화면에 보여줄 문자열로 변환
 	const getFeeTitleText = (item) => {
 		return (
 			item.title ||
@@ -396,9 +590,7 @@ function ClubSurveyPage() {
 		);
 	};
 
-	/*
-		회비 내역의 금액을 숫자로 변환
-	*/
+	// 회비 내역의 금액을 숫자로 변환
 	const getFeeAmountValue = (item) => {
 		return Number(item.amount || item.price || item.cost || 0);
 	};
@@ -433,6 +625,7 @@ function ClubSurveyPage() {
 		return `${amount}원`;
 	};
 
+	
 	// 수입/지출에 따라 금액 색상 클래스 구분
 	const getFeeAmountClassName = (item) => {
 		const typeText = getFeeTypeText(item);
@@ -514,22 +707,47 @@ function ClubSurveyPage() {
 
 	return distribution;
   };
-	/*
-		일정 내역 버튼 클릭 시 실행
-		지금은 일정 API가 없으므로 안내만 표시
-	*/
-	const handleOpenScheduleSelect = () => {
+	/*	일정 내역 버튼 클릭 시 실행 */
+	const handleOpenScheduleSelect = async () => {
 		setManageType('schedule');
 
 		setSelectedScheduleIds(
 			scheduleItems
-				.map((item) => String(item.originalId || item.original_id || item.id).replace('schedule-', ''))
+				.map((item) =>
+					String(item.originalId || item.original_id || item.id).replace(
+						'schedule-',
+						''
+					)
+				)
 				.filter(Boolean)
 		);
 
-		setSelectableScheduleItems([]);
-	};
+		setIsManageLoading(true);
 
+		try {
+			const data = await fetchEvents(clubId, {
+				status: '',
+				eventType: '',
+				search: '',
+			});
+
+			const eventList = Array.isArray(data)
+				? data
+				: data.results || [];
+
+			const sortedEventList = eventList.sort(
+				(a, b) => getTimeValue(b) - getTimeValue(a)
+			);
+
+			setSelectableScheduleItems(sortedEventList);
+		} catch (error) {
+			console.error('일정 내역을 불러오지 못했습니다.', error);
+			alert('일정 내역을 불러오지 못했습니다.');
+		} finally {
+			setIsManageLoading(false);
+		}
+	};
+	
 	/*
 		 회비 사용 내역 버튼 클릭 시 실행
 		전체 회비 내역 중 지출 내역만 최근 등록순으로 가져옴
@@ -608,16 +826,29 @@ function ClubSurveyPage() {
 					const isNewItem = !previousItem;
 
 					if (isNewItem) {
-  					newlyAddedItemIds.push(surveyItemId);
+					newlyAddedItemIds.push(surveyItemId);
 					}
 
 					return {
 						id: surveyItemId,
 						originalId: String(item.id),
 						title: item.title || item.name,
-						date: item.date || item.start_at || '-',
+						date: getSchedulePeriodText(item),
+						startDate: getScheduleDateText(
+							item.start_at ||
+							item.startAt ||
+							item.start_date ||
+							item.startDate ||
+							item.date
+						),
+						endDate: getScheduleDateText(
+							item.end_at ||
+							item.endAt ||
+							item.end_date ||
+							item.endDate
+						),
 
-						participants:
+						participants: 
 							item.participants ??
 							item.response_count ??
 							item.responseCount ??
@@ -631,7 +862,7 @@ function ClubSurveyPage() {
 							item.totalMemberCount ??
 							item.member_count ??
 							item.memberCount ??
-							0,
+							getTotalMemberCount(),
 
 						isNew: isNewItem,
 						is_new: isNewItem,
@@ -685,7 +916,7 @@ function ClubSurveyPage() {
 							item.totalMemberCount ??
 							item.member_count ??
 							item.memberCount ??
-							0,
+							getTotalMemberCount(),
 
 						isNew: isNewItem,
 						is_new: isNewItem,
@@ -713,11 +944,17 @@ function ClubSurveyPage() {
 				fee_items: nextFeeItems,
 			});
 
-			setScheduleItems(nextScheduleItems);
-			setScheduleUpdatedDate(data.schedule_updated_date || '');
-			setFeeItems(nextFeeItems);
-			setFeeUpdatedDate(data.fee_updated_date || '');
+			const mergedData = await mergeParticipationData(
+				data.schedule_items || nextScheduleItems,
+				data.fee_items || nextFeeItems
+			);
 
+			setScheduleItems(mergedData.scheduleItems);
+			setScheduleUpdatedDate(data.schedule_updated_date || '');
+
+			setFeeItems(mergedData.feeItems);
+			setFeeUpdatedDate(data.fee_updated_date || '');
+			
 			if (data.schedule_items) {
 				setSelectedScheduleIds(
 					data.schedule_items
@@ -744,9 +981,12 @@ function ClubSurveyPage() {
 
 	// 일정별 참여율 계산 함수 : articipants / totalMembers * 100
 	const getParticipationRate = (item) => {
-		if (!item.totalMembers) return '-';
+		const participants = Number(item.participants ?? 0);
+		const totalMembers = Number(item.totalMembers ?? item.total_members ?? 0);
 
-		return `${Math.round((item.participants / item.totalMembers) * 100)}%`;
+		if (!totalMembers) return '0%';
+
+		return `${Math.round((participants / totalMembers) * 100)}%`;
 	};
 
 	/*
@@ -757,11 +997,14 @@ function ClubSurveyPage() {
 	40% 미만: 빨간색
 */
 	const getParticipationBadgeClass = (item) => {
-		if (!item.totalMembers) {
-			return 'survey-participation-badge';
+		const participants = Number(item.participants ?? 0);
+		const totalMembers = Number(item.totalMembers ?? item.total_members ?? 0);
+		
+		if (!totalMembers) {
+			return 'survey-participation-badge low';
 		}
 
-		const rate = Math.round((item.participants / item.totalMembers) * 100);
+		const rate = Math.round((participants / totalMembers) * 100);
 
 		if (rate >= 60) {
 			return 'survey-participation-badge high';
@@ -816,7 +1059,7 @@ function ClubSurveyPage() {
 							</Link>
 
 							{/* 운영진에게만 동아리 정보 수정 메뉴 표시 */}
-							{isClubManager && (
+							{canManageSurvey && (
 								<div className="sidebar-submenu">
 									<Link to={`/club/${clubId}/edit`} className="sidebar-sub-link">
 										<Edit3 size={16} />
@@ -887,7 +1130,7 @@ function ClubSurveyPage() {
 							{/* 오른쪽 사용자 정보 영역 */}
 							<div className="dashboard-user-box survey-header-actions">
 								{/* 운영진에게만 보이는 조사 항목 관리 버튼 */}
-								{isClubManager && (
+								{canManageSurvey && (
 									<>
 										<button
 											type="button"
@@ -1039,9 +1282,6 @@ function ClubSurveyPage() {
 															{activeTab === 'schedule' ? (
 																<>
 																	<p>{item.date}</p>
-																	<span>
-																		참여 {item.participants}명 / 전체 {item.totalMembers}명
-																	</span>
 																</>
 															) : (
 																<>
@@ -1057,10 +1297,9 @@ function ClubSurveyPage() {
 															)}
 														</div>
 
-														{/* 오른쪽 참여율 배지 */}
-														<em className={getParticipationBadgeClass(item)}>
-															참여율 {getParticipationRate(item)}
-														</em>
+															<em className={getParticipationBadgeClass(item)}>
+																참여율 {getParticipationRate(item)}
+															</em>
 													</div>
 
 													{/* 만족도 평가 영역 */}
@@ -1242,24 +1481,50 @@ function ClubSurveyPage() {
 									{selectableScheduleItems.length === 0 ? (
 										<div className="survey-manage-empty-box">
 											<p>
-												아직 일정 관리 페이지/API가 없어서 불러올 일정 내역이 없습니다.
+												등록된 일정 내역이 없습니다.
 												<br />
-												나중에 일정 API가 완성되면 이 영역에 최근 등록순으로 표시하면 됩니다.
+												일정·출석 관리 페이지에서 일정을 먼저 등록해주세요.
 											</p>
 										</div>
 									) : (
 										selectableScheduleItems.map((item) => (
-											<label className="survey-manage-check-row" key={item.id}>
+											<label className="survey-manage-check-row fee schedule-like-fee" key={item.id}>
 												<input
 													type="checkbox"
 													checked={selectedScheduleIds.includes(String(item.id))}
 													onChange={() => handleToggleScheduleItem(String(item.id))}
 												/>
 
-												<div>
-													<strong>{item.title || item.name}</strong>
-													<p>{item.date || item.start_at || '-'}</p>
-												</div>
+												{/* 이름 */}
+												<strong className="survey-manage-fee-title">
+													{item.title || item.name || '일정명 없음'}
+												</strong>
+
+												{/* 유형: 정기 모임 / 행사 / 모집 등 */}
+												<em className="survey-manage-schedule-badge">
+													{getScheduleTypeText(item)}
+												</em>												
+
+												{/* 기간: 시작일 ~ 종료일 */}
+												<span className="survey-manage-fee-date">
+													{getSchedulePeriodText(item)}
+												</span>
+
+												{/* 장소 */}
+												<span className="survey-manage-fee-category">
+													{item.location || '장소 정보 없음'}
+												</span>
+
+												{/* 상태 */}
+												<span
+												 	className={
+														getScheduleStatusText(item) === '취소'
+															? 'survey-manage-schedule-summary canceled'
+															: 'survey-manage-schedule-summary'
+													}
+												>
+													{getScheduleStatusText(item)}
+												</span>
 											</label>
 										))
 									)}

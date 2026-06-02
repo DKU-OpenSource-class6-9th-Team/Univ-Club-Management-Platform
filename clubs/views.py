@@ -439,13 +439,148 @@ class ClubViewSet(viewsets.ModelViewSet):
 			'answers': submission.answers,
 		})
 	
+	# 만족도 조사 결과 분석 API
+	# 요청 주소: GET /api/clubs/{club_id}/surveys/results/
+	@action(detail=True, methods=['get'], url_path='surveys/results')
+	def survey_results(self, request, pk=None):
+		if not request.user.is_authenticated:
+			return Response(
+				{'message': '로그인이 필요합니다.'},
+				status=status.HTTP_401_UNAUTHORIZED
+			)
 
-	#동아리 운영 건강도 분석 API,   요청 주소: GET /api/clubs/{club_id}/health/
-	#역할:
-	#1. 현재 동아리의 회원, 회비, 만족도 데이터를 조회한다.
-	#2. health_analysis.py의 계산 함수를 호출한다.
-	#3. 프론트 건강도 분석 페이지에서 사용할 JSON 데이터를 반환한다.
-	#4. AI 기능은 아직 직접 실행하지 않고, 연동 예정 구조만 반환한다.
+		club = self.get_object()
+
+		schedule_items = SurveyItem.objects.filter(
+			club=club,
+			item_type=SurveyItem.TYPE_SCHEDULE
+		).order_by('display_order', '-created_at')
+
+		fee_items = SurveyItem.objects.filter(
+			club=club,
+			item_type=SurveyItem.TYPE_FEE
+		).order_by('display_order', '-created_at')
+
+		submissions = SurveySubmission.objects.filter(
+			club=club,
+			has_submitted=True
+		)
+
+		total_member_count = 0
+
+		# 동아리원 관리용 membership 기준으로 전체 회원 수 계산
+		try:
+			from club_members.models import ClubMembership as ManagedClubMembership
+
+			total_member_count = ManagedClubMembership.objects.filter(
+				club=club
+			).exclude(
+				status='withdrawn'
+			).count()
+		except Exception:
+			total_member_count = submissions.count()
+
+		submitted_user_count = submissions.count()
+
+		def build_item_result(item):
+			item_id = f'{item.item_type}-{item.original_id}'
+
+			scores = []
+
+			for submission in submissions:
+				answers = submission.answers or {}
+				score = answers.get(item_id) or answers.get(str(item_id))
+
+				if score:
+					try:
+						scores.append(int(score))
+					except (TypeError, ValueError):
+						pass
+
+			response_count = len(scores)
+
+			if response_count > 0:
+				average_score = round(sum(scores) / response_count, 2)
+			else:
+				average_score = 0
+
+			distribution = {
+				1: scores.count(1),
+				2: scores.count(2),
+				3: scores.count(3),
+				4: scores.count(4),
+				5: scores.count(5),
+			}
+
+			return {
+				'id': item_id,
+				'originalId': item.original_id,
+				'title': item.title,
+				'date': item.date,
+				'type': item.fee_type,
+				'category': item.category,
+				'amount': item.amount,
+				'response_count': response_count,
+				'average_score': average_score,
+				'converted_score': round(average_score * 20, 1),
+				'distribution': distribution,
+			}
+
+		schedule_results = [
+			build_item_result(item)
+			for item in schedule_items
+		]
+
+		fee_results = [
+			build_item_result(item)
+			for item in fee_items
+		]
+
+		all_results = schedule_results + fee_results
+
+		responded_results = [
+			item for item in all_results
+			if item['response_count'] > 0
+		]
+
+		if responded_results:
+			overall_average = round(
+				sum(item['average_score'] for item in responded_results)
+				/ len(responded_results),
+				2
+			)
+		else:
+			overall_average = 0
+
+		need_improve_items = [
+			item for item in responded_results
+			if item['average_score'] < 2.5
+		]
+
+		need_improve_items = sorted(
+			need_improve_items,
+			key=lambda item: item['average_score']
+		)[:3]
+
+		return Response({
+			'summary': {
+				'overall_average': overall_average,
+				'overall_converted_score': round(overall_average * 20, 1),
+				'submitted_user_count': submitted_user_count,
+				'total_member_count': total_member_count,
+				'need_improve_count': len([
+					item for item in responded_results
+					if item['average_score'] < 2.5
+				]),
+				'schedule_item_count': len(schedule_results),
+				'fee_item_count': len(fee_results),
+			},
+			'schedule_results': schedule_results,
+			'fee_results': fee_results,
+			'need_improve_items': need_improve_items,
+		}, status=status.HTTP_200_OK)
+
+	#동아리 운영 건강도 분석 API(회비),   요청 주소: GET /api/clubs/{club_id}/health/
 	@action(detail=True, methods=['get'], url_path='health')
 	def get_health_analysis(self, request, pk=None):
 

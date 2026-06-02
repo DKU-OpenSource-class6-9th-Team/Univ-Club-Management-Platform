@@ -9,7 +9,7 @@
 */
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/clubs'
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
 
 /*
   Django CSRF 토큰을 쿠키에서 꺼내는 함수
@@ -34,7 +34,7 @@ function getCookie(name) {
   요청 헤더에 넣을 X-CSRFToken 값을 만들어주는 함수
 */
 async function getCsrfHeaders() {
-  await fetch('http://localhost:8000/api/accounts/csrf/', {
+  await fetch(`${API_BASE_URL}/accounts/csrf/`, {
     credentials: 'include',
   })
 
@@ -63,7 +63,7 @@ async function handleResponse(response) {
   GET /api/clubs/:clubId/surveys/monthly/
 */
 export async function getMonthlySurvey(clubId) {
-  const response = await fetch(`${API_BASE_URL}/${clubId}/surveys/monthly/`, {
+  const response = await fetch(`${API_BASE_URL}/clubs/${clubId}/surveys/monthly/`, {
     credentials: 'include',
   })
 
@@ -79,7 +79,7 @@ export async function getMonthlySurvey(clubId) {
 export async function saveSurveyItems(clubId, surveyItems) {
   const csrfHeaders = await getCsrfHeaders()
 
-  const response = await fetch(`${API_BASE_URL}/${clubId}/surveys/items/`, {
+  const response = await fetch(`${API_BASE_URL}/clubs/${clubId}/surveys/items/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -101,7 +101,7 @@ export async function saveSurveyItems(clubId, surveyItems) {
 export async function saveMonthlySurveyDraft(clubId, surveyData) {
   const csrfHeaders = await getCsrfHeaders()
 
-  const response = await fetch(`${API_BASE_URL}/${clubId}/surveys/draft/`, {
+  const response = await fetch(`${API_BASE_URL}/clubs/${clubId}/surveys/draft/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -123,7 +123,7 @@ export async function saveMonthlySurveyDraft(clubId, surveyData) {
 export async function submitMonthlySurvey(clubId, surveyData) {
   const csrfHeaders = await getCsrfHeaders()
 
-  const response = await fetch(`${API_BASE_URL}/${clubId}/surveys/submit/`, {
+  const response = await fetch(`${API_BASE_URL}/clubs/${clubId}/surveys/submit/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -138,7 +138,7 @@ export async function submitMonthlySurvey(clubId, surveyData) {
 
 /* 만족도 조사 결과 조회 API */
 export async function getSurveyResults(clubId) {
-  const response = await fetch(`${API_BASE_URL}/${clubId}/surveys/results/`, {
+  const response = await fetch(`${API_BASE_URL}/clubs/${clubId}/surveys/results/`, {
     credentials: 'include',
   });
 
