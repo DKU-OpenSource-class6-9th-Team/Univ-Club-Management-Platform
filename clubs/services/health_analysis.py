@@ -560,6 +560,200 @@ def build_monthly_trend(club):
     return []
 
 
+# 최종 평가 코멘트에서 영역 key를 사용자에게 보여줄 이름으로 변환
+DOMAIN_LABELS = {
+    "member": "회원 활동성",
+    "schedule": "활동/일정 운영성",
+    "finance": "재정 운영 투명성",
+}
+
+# 동아리별 지표 비교 Notice 결과에서 high / low 분리
+def extract_notice_features(ai_notice):
+    """
+    역할:
+    - aiNotice는 세부 지표별 비교 결과
+    - finalComment는 이 중 핵심 high / low 지표만 요약해서 사용
+    - Notice 문장을 그대로 반복하지 않음, 최종 해석에 필요한 지표 이름만 추출
+    """
+    deviations = ai_notice.get("deviations", [])
+
+    high_features = [
+        item for item in deviations
+        if item.get("direction") == "high"
+    ]
+
+    low_features = [
+        item for item in deviations
+        if item.get("direction") == "low"
+    ]
+
+    # z-score 절댓값이 큰 지표를 우선 언급한다.
+    high_features = sorted(
+        high_features,
+        key=lambda item: abs(item.get("zScore", 0)),
+        reverse=True,
+    )
+
+    low_features = sorted(
+        low_features,
+        key=lambda item: abs(item.get("zScore", 0)),
+        reverse=True,
+    )
+
+    return high_features, low_features
+
+
+#최종 평가 코멘트 생성 함수
+def build_final_comment(metrics, total_score, total_status, ai_notice):
+    """
+    전체 건강도, 영역별 점수, 동아리별 지표 비교 Notice를 종합,
+    바로 읽을 수 있는 문장형 최종 평가 코멘트를 만듬
+    - 건강도 점수를 새로 계산하지 않음
+    - 기존 total_score를 그대로 사용
+    - aiNotice 결과를 점수에 반영하지 않음
+    """
+    domain_items = []
+
+    for key in ["member", "schedule", "finance"]:
+        metric = metrics[key]
+
+        if not metric.get("dataReady"):
+            continue
+
+        domain_items.append({
+            "key": key,
+            "label": DOMAIN_LABELS[key],
+            "score": metric["score"],
+            "status": metric["status"],
+        })
+
+    if not domain_items:
+        return {
+            "enabled": False,
+            "title": "최종 평가 코멘트",
+            "summary": "최종 평가를 위한 데이터가 부족합니다.",
+            "description": (
+                "현재 동아리는 건강도 분석에 필요한 회원, 일정, 회비, 만족도 데이터가 "
+                "충분히 준비되지 않았습니다. 데이터를 먼저 누적한 뒤 다시 건강도 분석을 "
+                "확인해야 합니다."
+            ),
+            "priority": (
+                "회원 정보, 일정 출석 데이터, 회비 납부 및 증빙자료, 만족도 조사 응답을 "
+                "우선적으로 등록하십시오."
+            ),
+            "highestDomain": None,
+            "lowestDomain": None,
+            "strengths": [],
+            "improvements": [],
+        }
+
+    highest_domain = max(domain_items, key=lambda item: item["score"])
+    lowest_domain = min(domain_items, key=lambda item: item["score"])
+    domain_gap = highest_domain["score"] - lowest_domain["score"]
+
+    high_features, low_features = extract_notice_features(ai_notice)
+
+    strength_labels = [item["label"] for item in high_features[:2]]
+    improvement_labels = [item["label"] for item in low_features[:2]]
+
+    # 전체 건강도 점수 기준 summary.
+    if total_score >= 90:
+        if low_features:
+            summary = "전반적으로 우수하지만 일부 지표 점검이 필요합니다."
+        else:
+            summary = "전반적으로 매우 안정적인 운영 상태입니다."
+    elif total_score >= 70:
+        if high_features and low_features:
+            summary = "강점과 보완점이 함께 확인되는 운영 상태입니다."
+        elif high_features:
+            summary = "전반적으로 양호하며 일부 강점 지표가 확인됩니다."
+        elif low_features:
+            summary = "전반적으로 양호하지만 일부 지표 보완이 필요합니다."
+        else:
+            summary = "전반적으로 양호한 운영 상태입니다."
+    elif total_score >= 50:
+        summary = "일부 운영 지표에 대한 점검이 필요한 상태입니다."
+    else:
+        summary = "운영 전반에 대한 집중적인 개선이 필요한 상태입니다."
+
+    # 본문은 카드 안에서 바로 읽히도록 핵심 근거만 압축한다.
+    description_parts = [
+        f"현재 동아리의 전체 건강도는 {total_score}점으로 '{total_status}' 수준입니다."
+    ]
+
+    if domain_gap >= 15:
+        description_parts.append(
+            f"{highest_domain['label']}은 강점으로 확인되지만, "
+            f"{lowest_domain['label']}은 우선 점검이 필요합니다."
+        )
+    else:
+        description_parts.append(
+            "영역별 점수 차이가 크지 않아 전반적으로 균형 있는 운영 흐름을 보입니다."
+        )
+
+    representative_strength = strength_labels[0] if strength_labels else None
+    representative_improvement = (
+        improvement_labels[0] if improvement_labels else None
+    )
+
+    if representative_strength and representative_improvement:
+        description_parts.append(
+            f"비교 지표에서는 {representative_strength}이 강점으로, "
+            f"{representative_improvement}이 보완 항목으로 확인됩니다."
+        )
+    elif representative_strength:
+        description_parts.append(
+            f"비교 지표에서는 {representative_strength}이 대표 강점으로 확인됩니다."
+        )
+    elif representative_improvement:
+        description_parts.append(
+            f"비교 지표에서는 {representative_improvement}이 대표 보완 항목으로 확인됩니다."
+        )
+
+    # priority 문장 생성
+    if improvement_labels:
+        priority = (
+            f"우선적으로 {', '.join(improvement_labels)} 항목을 점검하고, "
+            "관련 운영 데이터를 꾸준히 누적해 주십시오."
+        )
+    elif domain_gap >= 15:
+        priority = (
+            f"{lowest_domain['label']} 영역이 다른 영역보다 낮게 나타나므로, "
+            "해당 영역의 세부 지표를 우선 확인하는 것을 추천합니다."
+        )
+    elif total_score >= 90:
+        priority = (
+            "현재의 안정적인 운영 흐름을 유지하면서, 참여도와 회비 관리 수준이 "
+            "지속될 수 있도록 정기적으로 점검하는 것을 추천합니다."
+        )
+    elif total_score < 50:
+        priority = (
+            "전체 건강도 점수가 낮은 상태이므로 회원 활동, 일정 운영, 회비 관리 전반을 "
+            "함께 점검하고 개선 계획을 우선 수립하는 것을 추천합니다."
+        )
+    elif total_score < 70:
+        priority = (
+            "일부 운영 지표가 보통 수준에 머물러 있으므로, 점수가 낮은 세부 지표부터 "
+            "원인을 확인하고 단계적으로 개선하는 것을 추천합니다."
+        )
+    else:
+        priority = (
+            "현재의 운영 흐름을 유지하면서, 상대적으로 낮은 세부 지표를 중심으로 "
+            "점진적인 개선 계획을 세우는 것을 추천합니다."
+        )
+
+    return {
+        "enabled": True,
+        "title": "최종 평가 코멘트",
+        "summary": summary,
+        "description": " ".join(description_parts),
+        "priority": priority,
+        "highestDomain": highest_domain,
+        "lowestDomain": lowest_domain,
+        "strengths": strength_labels,
+        "improvements": improvement_labels,
+    }
+
 #전체 건강도 점수 계산
 def calculate_total_score(metrics):
     """
@@ -622,6 +816,15 @@ def build_health_analysis_payload(club):
 
     total_score = calculate_total_score(metrics)
     total_status = get_status_label(total_score)
+
+
+    ai_notice = build_ai_notice(metrics)
+    final_comment = build_final_comment(
+        metrics,
+        total_score,
+        total_status,
+        ai_notice,
+    )
 
     return {
         "totalHealth": {
@@ -808,7 +1011,8 @@ def build_health_analysis_payload(club):
             "dataReady": finance["dataReady"],
         },
 
-        "aiNotice": build_ai_notice(metrics),
+        "aiNotice": ai_notice,
 
+        "finalComment": final_comment,
         "monthlyTrend": build_monthly_trend(club),
     }
