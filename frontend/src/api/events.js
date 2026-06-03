@@ -232,18 +232,6 @@ export async function fetchLowParticipationMembers(clubId) {
   return request(`/clubs/${clubId}/events/low-participation/`)
 }
 
-export async function syncMemberActivityScores(clubId) {
-  if (!clubId) throw new Error('동아리 ID가 없습니다.')
-
-  const csrfHeaders = await getCsrfHeaders()
-
-  return request(`/clubs/${clubId}/events/member-activity/sync/`, {
-    method: 'POST',
-    headers: {
-      ...csrfHeaders,
-    },
-  })
-}
 
 export async function fetchEventOperationStats(clubId, year) {
   if (!clubId) throw new Error('동아리 ID가 없습니다.')

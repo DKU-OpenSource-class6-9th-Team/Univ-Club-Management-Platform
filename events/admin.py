@@ -14,6 +14,7 @@ class EventAdmin(admin.ModelAdmin):
         "start_at",
         "end_at",
         "allow_application",
+        "activity_score_enabled",
         "max_participants",
         "created_by",
     )
@@ -22,6 +23,7 @@ class EventAdmin(admin.ModelAdmin):
         "event_type",
         "status",
         "allow_application",
+        "activity_score_enabled",
         "club",
     )
 
@@ -64,6 +66,7 @@ class EventAdmin(admin.ModelAdmin):
             {
                 "fields": (
                     "allow_application",
+                    "activity_score_enabled",
                     "max_participants",
                     "application_start_at",
                     "application_end_at",

@@ -74,6 +74,11 @@ class Event(models.Model):
         verbose_name="참여 신청 가능 여부",
     )
 
+    activity_score_enabled = models.BooleanField(
+        default=True,
+        verbose_name="활동 점수 반영 여부",
+    )
+
     max_participants = models.PositiveIntegerField(
         null=True,
         blank=True,

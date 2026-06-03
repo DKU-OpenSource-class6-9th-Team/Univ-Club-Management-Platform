@@ -6,6 +6,7 @@ from .views import (
     ClubJoinRequestRejectView,
     ClubMembershipListView,
     ClubMembershipDetailUpdateView,
+    ClubMemberActivityScoreSyncView,
 )
 
 urlpatterns = [
@@ -31,6 +32,12 @@ urlpatterns = [
         "clubs/<int:club_id>/join-requests/<int:membership_id>/reject/",
         ClubJoinRequestRejectView.as_view(),
         name="club-join-request-reject",
+    ),
+
+    path(
+        "clubs/<int:club_id>/members/activity-scores/sync/",
+        ClubMemberActivityScoreSyncView.as_view(),
+        name="club-member-activity-score-sync",
     ),
 
     path(

@@ -194,3 +194,49 @@ class ClubMembershipDetailUpdateView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+    
+class ClubMemberActivityScoreSyncView(APIView):
+    permission_classes = [AllowAny]
+
+    @transaction.atomic
+    def post(self, request, club_id):
+        from events.views import get_member_activity_summaries, require_event_manager
+
+        permission_error = require_event_manager(request, club_id)
+
+        if permission_error is not None:
+            return permission_error
+
+        activity_data = get_member_activity_summaries(club_id)
+        updated_count = 0
+        results = []
+
+        for item in activity_data["results"]:
+            calculated_score = item.get(
+                "calculated_activity_score",
+                item.get("activity_score", 0),
+            )
+
+            updated_count += ManagedClubMembership.objects.filter(
+                id=item["membership_id"],
+                club_id=club_id,
+            ).update(
+                activity_score=calculated_score,
+            )
+
+            item["stored_activity_score"] = calculated_score
+            results.append(item)
+
+        activity_data["results"] = results
+        activity_data["summary"]["updated_count"] = updated_count
+
+        return Response(
+            {
+                "message": "일정·출석 기반 자동 계산 점수를 공식 활동 점수에 반영했습니다.",
+                "updated_count": updated_count,
+                "score_policy": activity_data.get("score_policy", {}),
+                "summary": activity_data["summary"],
+                "results": activity_data["results"],
+            },
+            status=status.HTTP_200_OK,
+        )

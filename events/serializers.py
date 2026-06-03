@@ -32,6 +32,7 @@ class EventSerializer(serializers.ModelSerializer):
             "start_at",
             "end_at",
             "allow_application",
+            "activity_score_enabled",
             "max_participants",
             "application_start_at",
             "application_end_at",

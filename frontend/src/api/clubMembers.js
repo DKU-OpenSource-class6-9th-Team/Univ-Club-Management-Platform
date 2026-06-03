@@ -207,3 +207,31 @@ export async function fetchClubMemberDetail(clubId, membershipId) {
 
   return data;
 }
+
+export async function syncClubMemberActivityScores(clubId) {
+  if (!clubId) {
+    throw new Error('동아리 ID가 없습니다.');
+  }
+
+  const csrfHeaders = await getCsrfHeaders();
+
+  const response = await fetch(
+    `${API_BASE_URL}/clubs/${clubId}/members/activity-scores/sync/`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...csrfHeaders,
+      },
+      credentials: 'include',
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw data;
+  }
+
+  return data;
+}

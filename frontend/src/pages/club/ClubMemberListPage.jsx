@@ -6,6 +6,7 @@ import {
   fetchClubJoinRequests,
   fetchClubMembers,
   rejectClubJoinRequest,
+  syncClubMemberActivityScores,
   updateClubMember,
 } from '../../api/clubMembers.js';
 
@@ -153,6 +154,10 @@ function ClubMemberListPage() {
   const [joinRequestErrorMessage, setJoinRequestErrorMessage] = useState('');
   const [joinRequestActionMessage, setJoinRequestActionMessage] = useState('');
   const [processingRequestId, setProcessingRequestId] = useState(null);
+
+  const [activityScoreSyncMessage, setActivityScoreSyncMessage] = useState('');
+  const [activityScoreSyncErrorMessage, setActivityScoreSyncErrorMessage] = useState('');
+  const [isSyncingActivityScores, setIsSyncingActivityScores] = useState(false);
 
   const [filterInputs, setFilterInputs] = useState(INITIAL_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(INITIAL_FILTERS);
@@ -353,6 +358,39 @@ function ClubMemberListPage() {
       setIsUpdatingMember(false);
     }
   };
+
+  const handleSyncActivityScores = async () => {
+    const confirmed = window.confirm(
+      '일정·출석 데이터를 기반으로 계산된 점수를 공식 활동 점수에 반영하시겠습니까?'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setIsSyncingActivityScores(true);
+      setActivityScoreSyncMessage('');
+      setActivityScoreSyncErrorMessage('');
+
+      const data = await syncClubMemberActivityScores(clubId);
+
+      setActivityScoreSyncMessage(
+        `${data.updated_count}명의 공식 활동 점수를 자동 계산 점수로 반영했습니다.`
+      );
+
+      await loadMembers();
+    } catch (error) {
+      console.error('활동 점수 자동 반영 실패:', error);
+
+      setActivityScoreSyncErrorMessage(
+        getErrorMessage(error, '활동 점수 자동 반영에 실패했습니다.')
+      );
+    } finally {
+      setIsSyncingActivityScores(false);
+    }
+  };
+
 
   const summary = useMemo(() => {
     const totalCount = members.length;
@@ -646,12 +684,35 @@ function ClubMemberListPage() {
                   <div>
                     <h2>동아리원 목록</h2>
                     <p>
-                      이름, 아이디, 이메일, 학번, 학과, 역할, 상태, 활동 점수 기준으로 동아리원을 찾을 수 있습니다.
+                      이름, 아이디, 이메일, 학번, 학과, 역할, 상태, 공식 활동 점수 기준으로 동아리원을 찾을 수 있습니다.
                     </p>
                   </div>
 
-                  <ShieldCheck size={22} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <button
+                      type="button"
+                      className="member-filter-submit-button"
+                      onClick={handleSyncActivityScores}
+                      disabled={isSyncingActivityScores}
+                    >
+                      {isSyncingActivityScores ? '반영 중...' : '활동 점수 자동 반영'}
+                    </button>
+
+                    <ShieldCheck size={22} />
+                  </div>
                 </div>
+
+                {activityScoreSyncMessage && (
+                  <div className="join-request-action-message success">
+                    {activityScoreSyncMessage}
+                  </div>
+                )}
+
+                {activityScoreSyncErrorMessage && (
+                  <div className="join-request-action-message error">
+                    {activityScoreSyncErrorMessage}
+                  </div>
+                )}
 
                 <form className="club-member-filter-bar" onSubmit={handleFilterSubmit}>
                   <div className="member-search-box">
@@ -749,7 +810,7 @@ function ClubMemberListPage() {
                         <span>역할</span>
                         <span>권한</span>
                         <span>상태</span>
-                        <span>활동 점수</span>
+                        <span>공식 활동 점수</span>
                         <span>활동 등급</span>
                         <span>가입일</span>
                         <span>관리</span>
