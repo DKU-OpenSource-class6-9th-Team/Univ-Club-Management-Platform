@@ -13,6 +13,8 @@ import {
 import '../../styles/club/clubDashboard.css';
 import '../../styles/club/clubMembers.css';
 
+import ClubParticipationNetworkPanel from '../../components/ClubParticipationNetworkPanel.jsx';
+
 import {
   Bell,
   CalendarDays,
@@ -22,6 +24,7 @@ import {
   Edit3,
   FileText,
   Filter,
+  GitBranch,
   HeartPulse,
   LayoutDashboard,
   LogOut,
@@ -145,6 +148,7 @@ function ClubMemberListPage() {
   const [club, setClub] = useState(null);
   const [members, setMembers] = useState([]);
   const [joinRequests, setJoinRequests] = useState([]);
+  const [showNetworkPanel, setShowNetworkPanel] = useState(false);
 
   const [isClubLoading, setIsClubLoading] = useState(true);
   const [isMemberLoading, setIsMemberLoading] = useState(true);
@@ -524,6 +528,15 @@ function ClubMemberListPage() {
               </div>
 
               <div className="dashboard-user-box">
+                <button
+                  type="button"
+                  className="club-member-network-toggle-button"
+                  onClick={() => setShowNetworkPanel((prev) => !prev)}
+                >
+                  <GitBranch size={16} />
+                  {showNetworkPanel ? '참여 연결도 닫기' : '참여 연결도 분석'}
+                </button>
+
                 <button type="button" className="notice-button">
                   <Bell size={19} />
                 </button>
@@ -591,7 +604,7 @@ function ClubMemberListPage() {
               </article>
             </section>
 
-            <section className="club-member-content">
+            <section className={`club-member-content ${showNetworkPanel ? 'network-open' : ''}`}>
               <article className="club-join-request-panel">
                 <div className="club-join-request-header">
                   <div>
@@ -678,6 +691,10 @@ function ClubMemberListPage() {
                   </div>
                 )}
               </article>
+
+              {showNetworkPanel && (
+                <ClubParticipationNetworkPanel clubId={clubId} members={members} />
+              )}
 
               <article className="club-member-panel">
                 <div className="club-member-panel-header">

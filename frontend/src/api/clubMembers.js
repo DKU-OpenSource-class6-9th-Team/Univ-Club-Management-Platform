@@ -235,3 +235,136 @@ export async function syncClubMemberActivityScores(clubId) {
 
   return data;
 }
+
+export async function fetchClubMemberNetwork(clubId) {
+  if (!clubId) {
+    throw new Error('동아리 ID가 없습니다.');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/clubs/${clubId}/members/network/`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw data;
+  }
+
+  return data;
+}
+
+export async function fetchClubMemberNetworkDetail(clubId, membershipId) {
+  if (!clubId || !membershipId) {
+    throw new Error('동아리원 정보가 없습니다.');
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}/clubs/${clubId}/members/network/${membershipId}/`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw data;
+  }
+
+  return data;
+}
+
+export async function createRelationObservation(clubId, payload) {
+  if (!clubId) {
+    throw new Error('동아리 ID가 없습니다.');
+  }
+
+  const csrfHeaders = await getCsrfHeaders();
+
+  const response = await fetch(
+    `${API_BASE_URL}/clubs/${clubId}/members/network/observations/`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...csrfHeaders,
+      },
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw data;
+  }
+
+  return data;
+}
+
+export async function updateRelationObservation(clubId, observationId, payload) {
+  if (!clubId || !observationId) {
+    throw new Error('관계 관찰 기록 정보가 없습니다.');
+  }
+
+  const csrfHeaders = await getCsrfHeaders();
+
+  const response = await fetch(
+    `${API_BASE_URL}/clubs/${clubId}/members/network/observations/${observationId}/`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...csrfHeaders,
+      },
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw data;
+  }
+
+  return data;
+}
+
+export async function deleteRelationObservation(clubId, observationId) {
+  if (!clubId || !observationId) {
+    throw new Error('관계 관찰 기록 정보가 없습니다.');
+  }
+
+  const csrfHeaders = await getCsrfHeaders();
+
+  const response = await fetch(
+    `${API_BASE_URL}/clubs/${clubId}/members/network/observations/${observationId}/`,
+    {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        ...csrfHeaders,
+      },
+      credentials: 'include',
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw data;
+  }
+
+  return data;
+}
