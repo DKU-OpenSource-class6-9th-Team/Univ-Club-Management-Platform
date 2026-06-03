@@ -14,13 +14,11 @@ import {
   CalendarDays,
   ChevronDown,
   CreditCard,
-  Download,
   Edit3,
   FileText,
   HeartPulse,
   Info,
   LayoutDashboard,
-  LineChart,
   LogOut,
   MessageCircleHeart,
   ShieldCheck,
@@ -250,6 +248,17 @@ function ClubHealthPage() {
     description: '동아리별 지표 비교 데이터가 없습니다.',
   }
 
+  const finalComment = healthData.finalComment || {
+    enabled: false,
+    title: '최종 평가 코멘트',
+    summary: '최종 평가 코멘트가 없습니다.',
+    description:
+      '건강도 데이터가 충분히 쌓이면 전체 운영 상태를 종합한 평가 코멘트를 제공합니다.',
+    priority: '회원, 일정, 회비, 만족도 데이터를 먼저 작성 및 누적해 주세요.',
+    strengths: [],
+    improvements: [],
+  }
+
   return (
     <div className="club-dashboard-page">
       <div className="dashboard-fixed-canvas">
@@ -340,6 +349,12 @@ function ClubHealthPage() {
               </div>
 
               <div className="dashboard-user-box">
+                <button type="button" className="health-toolbar-button health-header-month-button">
+                  <CalendarDays size={16} />
+                  2024년 5월
+                  <ChevronDown size={15} />
+                </button>
+
                 <button type="button" className="notice-button">
                   <Bell size={19} />
                 </button>
@@ -356,23 +371,6 @@ function ClubHealthPage() {
                 </div>
               </div>
             </header>
-
-            <section className="health-toolbar-row">
-              <div />
-
-              <div className="health-toolbar-actions">
-                <button type="button" className="health-toolbar-button">
-                  <CalendarDays size={16} />
-                  2024년 5월
-                  <ChevronDown size={15} />
-                </button>
-
-                <button type="button" className="health-toolbar-button">
-                  <Download size={16} />
-                  분석 리포트 다운로드
-                </button>
-              </div>
-            </section>
 
             <section className="health-summary-grid">
               {summaryCards.map((card) => (
@@ -615,18 +613,44 @@ function ClubHealthPage() {
                 </div>
               </article>
 
-              <article className="health-panel monthly-trend-panel">
+              <article className="health-panel final-comment-panel">
                 <div className="health-panel-title">
-                  <h2>월별 건강도 추이</h2>
-                  <LineChart size={16} />
+                  <h2>최종 평가 코멘트</h2>
+                  <MessageCircleHeart size={16} />
                 </div>
 
-                <div className="monthly-trend-empty">
-                  <LineChart size={24} />
-                  <strong>데이터 연동 완료 후 구현 예정입니다.</strong>
-                  <p>
-                    월별 건강도 점수 저장 기능이 추가되면 최근 3개월 추이를 표시
-                  </p>
+                <div className="final-comment-box">
+                  <div className="final-comment-summary">
+                    <ShieldCheck size={22} />
+                    <div>
+                      <strong>{finalComment.summary}</strong>
+                      <p>{finalComment.description}</p>
+                    </div>
+                  </div>
+
+                  {finalComment.priority && (
+                    <div className="final-comment-priority">
+                      <strong>우선 확인 사항</strong>
+                      <p>{finalComment.priority}</p>
+                    </div>
+                  )}
+
+                   {(finalComment.strengths?.length > 0 ||
+                    finalComment.improvements?.length > 0) && (
+                      <div className="final-comment-tags">
+                        {finalComment.strengths?.map((item) => (
+                          <span className="final-comment-tag good" key={`strength-${item}`}>
+                            ++ {item} 
+                          </span>
+                        ))}
+
+                        {finalComment.improvements?.map((item) => (
+                          <span className="final-comment-tag warning" key={`improvement-${item}`}>
+                            -- { item} 
+                          </span>
+                         ))}
+                      </div>
+                  )}
                 </div>
               </article>
             </section>
