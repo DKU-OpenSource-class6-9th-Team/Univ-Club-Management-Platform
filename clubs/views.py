@@ -203,6 +203,10 @@ class ClubViewSet(viewsets.ModelViewSet):
 		if state.fee_updated_at:
 			fee_updated_date = state.fee_updated_at.strftime('%Y-%m-%d')
 
+		schedule_updated_date = ''
+		if state.schedule_updated_at:
+			schedule_updated_date = state.schedule_updated_at.strftime('%Y-%m-%d')
+
 		return Response({
 			'schedule_items': [
 				self.serialize_survey_item(item)
@@ -217,6 +221,7 @@ class ClubViewSet(viewsets.ModelViewSet):
 			'needs_resubmit': needs_resubmit,
 			'survey_version': state.survey_version,
 			'fee_updated_date': fee_updated_date,
+			'schedule_updated_date': schedule_updated_date,
 		})
 
 	@action(detail=True, methods=['post'], url_path='surveys/items')
@@ -302,6 +307,7 @@ class ClubViewSet(viewsets.ModelViewSet):
 			state.survey_version += 1
 
 		state.fee_updated_at = now
+		state.schedule_updated_at = now
 		state.save()
 
 		schedule_queryset = SurveyItem.objects.filter(
@@ -325,6 +331,7 @@ class ClubViewSet(viewsets.ModelViewSet):
 				for item in fee_queryset
 			],
 			'fee_updated_date': state.fee_updated_at.strftime('%Y-%m-%d'),
+			'schedule_updated_date': state.schedule_updated_at.strftime('%Y-%m-%d'),
 			'survey_version': state.survey_version,
 		})
 
