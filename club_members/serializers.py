@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import ClubMembership
+from .models import ClubMembership, MemberRelationObservation
 from clubs.models import ClubMembership as ClubJoinMembership
 
 
@@ -218,3 +218,92 @@ class ClubMembershipUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("활동 점수는 0점 이상 100점 이하로 입력해야 합니다.")
 
         return value
+    
+class MemberRelationObservationSerializer(serializers.ModelSerializer):
+    from_member_name = serializers.SerializerMethodField()
+    to_member_name = serializers.SerializerMethodField()
+    tag_display = serializers.CharField(source="get_tag_display", read_only=True)
+    score_value = serializers.IntegerField(read_only=True)
+    created_by_username = serializers.CharField(
+        source="created_by.username",
+        read_only=True,
+    )
+
+    class Meta:
+        model = MemberRelationObservation
+        fields = [
+            "id",
+            "club",
+            "from_member",
+            "from_member_name",
+            "to_member",
+            "to_member_name",
+            "tag",
+            "tag_display",
+            "score_value",
+            "memo",
+            "created_by",
+            "created_by_username",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "club",
+            "from_member_name",
+            "to_member_name",
+            "tag_display",
+            "score_value",
+            "created_by",
+            "created_by_username",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_member_name(self, membership):
+        user = membership.user
+        profile = getattr(user, "profile", None)
+
+        if user.first_name:
+            return user.first_name
+
+        if profile and getattr(profile, "nickname", None):
+            return profile.nickname
+
+        return user.username
+
+    def get_from_member_name(self, obj):
+        return self.get_member_name(obj.from_member)
+
+    def get_to_member_name(self, obj):
+        return self.get_member_name(obj.to_member)
+
+    def validate(self, attrs):
+        club = self.context.get("club")
+        instance = getattr(self, "instance", None)
+
+        from_member = attrs.get(
+            "from_member",
+            getattr(instance, "from_member", None),
+        )
+        to_member = attrs.get(
+            "to_member",
+            getattr(instance, "to_member", None),
+        )
+
+        if not club:
+            raise serializers.ValidationError("동아리 정보가 필요합니다.")
+
+        if not from_member or not to_member:
+            raise serializers.ValidationError("관계 대상 동아리원을 선택해야 합니다.")
+
+        if from_member.id == to_member.id:
+            raise serializers.ValidationError("같은 회원끼리는 관계 태그를 등록할 수 없습니다.")
+
+        if from_member.club_id != club.id or to_member.club_id != club.id:
+            raise serializers.ValidationError("같은 동아리의 회원끼리만 관계 태그를 등록할 수 있습니다.")
+
+        if from_member.id > to_member.id:
+            attrs["from_member"], attrs["to_member"] = to_member, from_member
+
+        return attrs

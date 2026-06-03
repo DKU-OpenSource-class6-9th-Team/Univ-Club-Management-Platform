@@ -9,12 +9,21 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from clubs.models import ClubMembership as ClubJoinMembership
+from clubs.models import Club
 
-from .models import ClubMembership as ManagedClubMembership
+from .models import (
+    ClubMembership as ManagedClubMembership,
+    MemberRelationObservation,
+)
 from .serializers import (
     ClubJoinRequestListSerializer,
     ClubMembershipListSerializer,
     ClubMembershipUpdateSerializer,
+    MemberRelationObservationSerializer,
+)
+from .services import (
+    build_member_network_detail,
+    build_participation_network,
 )
 
 
@@ -238,5 +247,109 @@ class ClubMemberActivityScoreSyncView(APIView):
                 "summary": activity_data["summary"],
                 "results": activity_data["results"],
             },
+            status=status.HTTP_200_OK,
+        )
+    
+class ClubParticipationNetworkView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, club_id):
+        data = build_participation_network(club_id)
+
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class ClubParticipationNetworkDetailView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, club_id, membership_id):
+        data = build_member_network_detail(club_id, membership_id)
+
+        if not data:
+            return Response(
+                {"message": "참여 연결도 분석 대상 회원을 찾을 수 없습니다."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class MemberRelationObservationCreateView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, club_id):
+        club = get_object_or_404(Club, id=club_id)
+
+        serializer = MemberRelationObservationSerializer(
+            data=request.data,
+            context={"club": club},
+        )
+
+        serializer.is_valid(raise_exception=True)
+
+        created_by = request.user if request.user.is_authenticated else None
+
+        observation = serializer.save(
+            club=club,
+            created_by=created_by,
+        )
+
+        response_serializer = MemberRelationObservationSerializer(observation)
+
+        return Response(
+            {
+                "message": "운영진 관계 관찰 기록이 등록되었습니다.",
+                "observation": response_serializer.data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class MemberRelationObservationDetailView(APIView):
+    permission_classes = [AllowAny]
+
+    def get_object(self, club_id, observation_id):
+        return get_object_or_404(
+            MemberRelationObservation.objects.select_related(
+                "club",
+                "from_member",
+                "from_member__user",
+                "to_member",
+                "to_member__user",
+                "created_by",
+            ),
+            id=observation_id,
+            club_id=club_id,
+        )
+
+    def patch(self, request, club_id, observation_id):
+        observation = self.get_object(club_id, observation_id)
+
+        serializer = MemberRelationObservationSerializer(
+            observation,
+            data=request.data,
+            partial=True,
+            context={"club": observation.club},
+        )
+
+        serializer.is_valid(raise_exception=True)
+        observation = serializer.save()
+
+        response_serializer = MemberRelationObservationSerializer(observation)
+
+        return Response(
+            {
+                "message": "운영진 관계 관찰 기록이 수정되었습니다.",
+                "observation": response_serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def delete(self, request, club_id, observation_id):
+        observation = self.get_object(club_id, observation_id)
+        observation.delete()
+
+        return Response(
+            {"message": "운영진 관계 관찰 기록이 삭제되었습니다."},
             status=status.HTTP_200_OK,
         )

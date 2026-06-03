@@ -7,6 +7,10 @@ from .views import (
     ClubMembershipListView,
     ClubMembershipDetailUpdateView,
     ClubMemberActivityScoreSyncView,
+    ClubParticipationNetworkView,
+    ClubParticipationNetworkDetailView,
+    MemberRelationObservationCreateView,
+    MemberRelationObservationDetailView,
 )
 
 urlpatterns = [
@@ -38,6 +42,30 @@ urlpatterns = [
         "clubs/<int:club_id>/members/activity-scores/sync/",
         ClubMemberActivityScoreSyncView.as_view(),
         name="club-member-activity-score-sync",
+    ),
+
+        path(
+        "clubs/<int:club_id>/members/network/",
+        ClubParticipationNetworkView.as_view(),
+        name="club-member-network",
+    ),
+
+    path(
+        "clubs/<int:club_id>/members/network/observations/",
+        MemberRelationObservationCreateView.as_view(),
+        name="club-member-network-observation-create",
+    ),
+
+    path(
+        "clubs/<int:club_id>/members/network/observations/<int:observation_id>/",
+        MemberRelationObservationDetailView.as_view(),
+        name="club-member-network-observation-detail",
+    ),
+
+    path(
+        "clubs/<int:club_id>/members/network/<int:membership_id>/",
+        ClubParticipationNetworkDetailView.as_view(),
+        name="club-member-network-detail",
     ),
 
     path(
