@@ -2,416 +2,592 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
 
-from .models import Club, ClubMembership, BiweeklySurvey, BiweeklySurveyResponse
+from .models import (
+	Club,
+	ClubMembership,
+	SurveyState,
+	SurveyItem,
+	SurveySubmission,
+)
 from .serializers import ClubSerializer
 from .services.health_analysis import build_health_analysis_payload
 
 from django.db import transaction
-from rest_framework.exceptions import ValidationError
+from django.utils import timezone
 from club_members.models import ClubMembership as ManagedClubMembership
 
-from datetime import date
-from django.utils import timezone
-
-# 동아리 등록/조회/수정/삭제 API를 처리하는 ViewSet
+# 동아리 관련 API를 처리하는 ViewSet
 class ClubViewSet(viewsets.ModelViewSet):
 
-    queryset = Club.objects.all().order_by('-created_at')
-    serializer_class = ClubSerializer
-
-    # 조회는 로그인하지 않아도 가능,
-    # 등록/수정/삭제는 로그인한 사용자만 가능
-    permission_classes = [IsAuthenticatedOrReadOnly]
-
-    # 동아리 등록 시 실행되는 함수
-    # 1. Club 테이블에 동아리 정보를 저장
-    # 2. 등록한 사용자를 해당 동아리의 MANAGER로 ClubMembership에 자동 저장
-    def perform_create(self, serializer):
-        profile = getattr(self.request.user, "profile", None)
-
-        if profile is None:
-            raise ValidationError({
-                "message": "프로필 정보가 없어 동아리를 생성할 수 없습니다."
-            })
-
-        with transaction.atomic():
-            # 1. Club 테이블에 동아리 생성
-            club = serializer.save(created_by=self.request.user)
-
-            # 2. 메인페이지 '내 동아리' 목록용 가입 관계 생성
-            ClubMembership.objects.create(
-                club=club,
-                profile=profile,
-                role=ClubMembership.ROLE_MANAGER,
-                status=ClubMembership.STATUS_ACTIVE,
-            )
-
-            # 3. 동아리원 관리용 테이블에 생성자를 회장으로 자동 등록
-            ManagedClubMembership.objects.get_or_create(
-                club=club,
-                user=self.request.user,
-                defaults={
-                    "role": "president",
-                    "status": "regular",
-                    "activity_score": 0,
-                },
-            )
-
-    def perform_update(self, serializer):
-        club = self.get_object()
-        remove_image = self.request.data.get('remove_image')
-
-        if remove_image == 'true':
-            if club.image:
-                club.image.delete(save=False)
-            serializer.save(image=None)
-        else:
-            serializer.save()
-
-    # 현재 로그인한 사용자가 가입했거나 관리 중인 동아리 목록을 반환
-    @action(detail=False, methods=['get'], url_path='my')
-    def my_clubs(self, request):
-
-        # 로그인하지 않은 사용자는 내 동아리 목록을 조회할 수 없음
-        if not request.user.is_authenticated:
-            return Response(
-                {'message': '로그인이 필요합니다.'},
-                status=401
-            )
-
-        # 현재 로그인한 사용자의 ACTIVE 상태 membership만 조회
-        clubs = Club.objects.filter(
-            memberships__profile=request.user.profile,
-            memberships__status=ClubMembership.STATUS_ACTIVE
-        ).order_by('-created_at')
-
-        serializer = self.get_serializer(clubs, many=True)
-
-        return Response(serializer.data)
-    
-    # 사용자가 동아리에 가입 신청
-    @action(detail=True, methods=['post'], url_path='join')
-    def join_club(self, request, pk=None):
-        if not request.user.is_authenticated:
-            return Response(
-                {'message': '로그인이 필요합니다.'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-
-        club = self.get_object()
-
-        profile = getattr(request.user, 'profile', None)
-
-        if profile is None:
-            return Response(
-                {'message': '프로필 정보가 없어 가입 신청을 할 수 없습니다.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        membership, created = ClubMembership.objects.get_or_create(
-            club=club,
-            profile=profile,
-            defaults={
-                'role': ClubMembership.ROLE_MEMBER,
-                'status': ClubMembership.STATUS_PENDING,
-            }
-        )
-
-        if created:
-            return Response(
-                {'message': '가입 신청이 완료되었습니다.'},
-                status=status.HTTP_201_CREATED
-            )
-
-        if membership.status == ClubMembership.STATUS_ACTIVE:
-            return Response(
-                {'message': '이미 가입된 동아리입니다.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if membership.status == ClubMembership.STATUS_PENDING:
-            return Response(
-                {'message': '이미 가입 신청 대기 중입니다.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if membership.status in [
-            ClubMembership.STATUS_INACTIVE,
-            ClubMembership.STATUS_REJECTED,
-        ]:
-            membership.status = ClubMembership.STATUS_PENDING
-            membership.role = ClubMembership.ROLE_MEMBER
-            membership.save(update_fields=['status', 'role'])
-
-            return Response(
-                {'message': '가입 신청이 다시 접수되었습니다.'},
-                status=status.HTTP_200_OK
-            )
-
-        return Response(
-            {'message': '가입 신청을 처리할 수 없는 상태입니다.'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    
-    @action(detail=True, methods=['get'], url_path='survey')
-    def get_survey(self, request, pk=None):
-        if not request.user.is_authenticated:
-            return Response(
-                {'message': '로그인이 필요합니다.'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-
-        club = self.get_object()
-        period = self.get_current_survey_period()
-
-        survey = BiweeklySurvey.objects.filter(
-            club=club,
-            year=period['year'],
-            month=period['month'],
-            round_number=period['round_number'],
-        ).first()
-
-        response_data = None
-
-        if survey:
-            response_data = BiweeklySurveyResponse.objects.filter(
-                survey=survey,
-                user=request.user,
-            ).first()
-
-        return Response({
-            'year': period['year'],
-            'month': period['month'],
-            'round_number': period['round_number'],
-            'period_start_date': period['start_date'],
-            'period_end_date': period['end_date'],
-
-            'schedule_items': survey.schedule_items if survey else [],
-            'fee_items': survey.fee_items if survey else [],
-
-            'answers': response_data.answers if response_data else {},
-            'status': response_data.status if response_data else None,
-        })
-
-    @action(detail=True, methods=['post'], url_path='survey/items')
-    def save_survey_items(self, request, pk=None):
-        if not request.user.is_authenticated:
-            return Response(
-                {'message': '로그인이 필요합니다.'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-
-        club = self.get_object()
-
-        if not self.is_club_manager(request, club):
-            return Response(
-                {'message': '운영진만 조사 항목을 수정할 수 있습니다.'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        period = self.get_current_survey_period()
-
-        survey, created = BiweeklySurvey.objects.get_or_create(
-            club=club,
-            year=period['year'],
-            month=period['month'],
-            round_number=period['round_number'],
-            defaults={
-                'period_start_date': period['start_date'],
-                'period_end_date': period['end_date'],
-                'created_by': request.user,
-            }
-        )
-
-        survey.schedule_items = request.data.get('schedule_items', [])
-        survey.fee_items = request.data.get('fee_items', [])
-        survey.period_start_date = period['start_date']
-        survey.period_end_date = period['end_date']
-        survey.save()
-
-        return Response({
-            'message': '조사 항목이 저장되었습니다.',
-            'schedule_items': survey.schedule_items,
-            'fee_items': survey.fee_items,
-            'year': survey.year,
-            'month': survey.month,
-            'round_number': survey.round_number,
-        })
-
-    @action(detail=True, methods=['post'], url_path='survey/draft')
-    def save_survey_draft(self, request, pk=None):
-        if not request.user.is_authenticated:
-            return Response(
-                {'message': '로그인이 필요합니다.'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-
-        club = self.get_object()
-        period = self.get_current_survey_period()
-
-        survey = BiweeklySurvey.objects.filter(
-            club=club,
-            year=period['year'],
-            month=period['month'],
-            round_number=period['round_number'],
-        ).first()
-
-        if not survey:
-            return Response(
-                {'message': '등록된 만족도 조사 항목이 없습니다.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        survey_response, created = BiweeklySurveyResponse.objects.get_or_create(
-            survey=survey,
-            user=request.user,
-            defaults={
-                'answers': request.data.get('answers', {}),
-                'status': BiweeklySurveyResponse.STATUS_DRAFT,
-            }
-        )
-
-        if not created:
-            if survey_response.status == BiweeklySurveyResponse.STATUS_SUBMITTED:
-                return Response(
-                    {'message': '이미 제출한 만족도 조사는 수정할 수 없습니다.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            survey_response.answers = request.data.get('answers', {})
-            survey_response.status = BiweeklySurveyResponse.STATUS_DRAFT
-            survey_response.save()
-
-        return Response({
-            'message': '임시 저장되었습니다.',
-            'answers': survey_response.answers,
-            'status': survey_response.status,
-        })
-
-    @action(detail=True, methods=['post'], url_path='survey/submit')
-    def submit_survey(self, request, pk=None):
-        if not request.user.is_authenticated:
-            return Response(
-                {'message': '로그인이 필요합니다.'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-
-        club = self.get_object()
-        period = self.get_current_survey_period()
-
-        survey = BiweeklySurvey.objects.filter(
-            club=club,
-            year=period['year'],
-            month=period['month'],
-            round_number=period['round_number'],
-        ).first()
-
-        if not survey:
-            return Response(
-                {'message': '등록된 만족도 조사 항목이 없습니다.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        answers = request.data.get('answers', {})
-
-        total_count = len(survey.schedule_items) + len(survey.fee_items)
-
-        if total_count == 0:
-            return Response(
-                {'message': '제출할 만족도 조사 항목이 없습니다.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if len(answers.keys()) < total_count:
-            return Response(
-                {'message': '모든 항목을 평가해야 제출할 수 있습니다.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        survey_response, created = BiweeklySurveyResponse.objects.get_or_create(
-            survey=survey,
-            user=request.user,
-            defaults={
-                'answers': answers,
-                'status': BiweeklySurveyResponse.STATUS_SUBMITTED,
-                'submitted_at': timezone.now(),
-            }
-        )
-
-        if not created:
-            if survey_response.status == BiweeklySurveyResponse.STATUS_SUBMITTED:
-                return Response(
-                    {'message': '이미 제출한 만족도 조사입니다.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            survey_response.answers = answers
-            survey_response.status = BiweeklySurveyResponse.STATUS_SUBMITTED
-            survey_response.submitted_at = timezone.now()
-            survey_response.save()
-
-        return Response({
-            'message': '만족도 조사가 제출되었습니다.',
-            'status': survey_response.status,
-        })
-    
-    # 지금 날짜가 만족도 조사 몇 차 기간인지 계산하는 함수
-    def get_current_survey_period(self):
-        today = date.today()
-
-        year = today.year
-        month = today.month
-
-        if today.day <= 14:
-            round_number = 1
-            start_date = date(year, month, 1)
-            end_date = date(year, month, 14)
-        else:
-            round_number = 2
-            start_date = date(year, month, 15)
-
-            if month == 12:
-                end_date = date(year, 12, 31)
-            else:
-                end_date = date(year, month + 1, 1) - timezone.timedelta(days=1)
-
-        return {
-            'year': year,
-            'month': month,
-            'round_number': round_number,
-            'start_date': start_date,
-            'end_date': end_date,
-        }
-
-    # 현재 로그인한 사용자가 이 동아리 운영진인지 확인하는 함수
-    def is_club_manager(self, request, club):
-        profile = getattr(request.user, 'profile', None)
-
-        if profile is None:
-            return False
-
-        return ClubMembership.objects.filter(
-            club=club,
-            profile=profile,
-            role=ClubMembership.ROLE_MANAGER,
-            status=ClubMembership.STATUS_ACTIVE,
-        ).exists()
-    
-
-    #동아리 운영 건강도 분석 API,   요청 주소: GET /api/clubs/{club_id}/health/
-    #역할:
-    #1. 현재 동아리의 회원, 회비, 만족도 데이터를 조회한다.
-    #2. health_analysis.py의 계산 함수를 호출한다.
-    #3. 프론트 건강도 분석 페이지에서 사용할 JSON 데이터를 반환한다.
-    #4. AI 기능은 아직 직접 실행하지 않고, 연동 예정 구조만 반환한다.
-    @action(detail=True, methods=['get'], url_path='health')
-    def get_health_analysis(self, request, pk=None):
-
-        # URL의 club_id에 해당하는 Club 객체를 가져옴
-        club = self.get_object()
-
-        # 실제 건강도 계산은 services/health_analysis.py에 분리
-        payload = build_health_analysis_payload(club)
-
-        return Response(payload)
+	queryset = Club.objects.all().order_by('-created_at')
+	serializer_class = ClubSerializer
+
+	# 조회는 로그인하지 않아도 가능,
+	# 등록/수정/삭제는 로그인한 사용자만 가능
+	permission_classes = [IsAuthenticatedOrReadOnly]
+
+	# 동아리 등록 시 실행되는 함수
+	# 1. Club 테이블에 동아리 정보를 저장
+	# 2. 등록한 사용자를 해당 동아리의 MANAGER로 ClubMembership에 자동 저장
+	def perform_create(self, serializer):
+		profile = getattr(self.request.user, "profile", None)
+
+		if profile is None:
+			raise ValidationError({
+				"message": "프로필 정보가 없어 동아리를 생성할 수 없습니다."
+			})
+
+		with transaction.atomic():
+			# 1. Club 테이블에 동아리 생성
+			club = serializer.save(created_by=self.request.user)
+
+			# 2. 메인페이지 '내 동아리' 목록용 가입 관계 생성
+			ClubMembership.objects.create(
+				club=club,
+				profile=profile,
+				role=ClubMembership.ROLE_MANAGER,
+				status=ClubMembership.STATUS_ACTIVE,
+			)
+
+			# 3. 동아리원 관리용 테이블에 생성자를 회장으로 자동 등록
+			ManagedClubMembership.objects.get_or_create(
+				club=club,
+				user=self.request.user,
+				defaults={
+					"role": "president",
+					"status": "regular",
+					"activity_score": 0,
+				},
+			)
+
+	# 현재 로그인한 사용자가 가입했거나 관리 중인 동아리 목록을 반환
+	@action(detail=False, methods=['get'], url_path='my')
+	def my_clubs(self, request):
+
+		# 로그인하지 않은 사용자는 내 동아리 목록을 조회할 수 없음
+		if not request.user.is_authenticated:
+			return Response(
+				{'message': '로그인이 필요합니다.'},
+				status=401
+			)
+
+		# 현재 로그인한 사용자의 ACTIVE 상태 membership만 조회
+		clubs = Club.objects.filter(
+			memberships__profile=request.user.profile,
+			memberships__status=ClubMembership.STATUS_ACTIVE
+		).order_by('-created_at')
+
+		serializer = self.get_serializer(clubs, many=True)
+
+		return Response(serializer.data)
+	
+		# 사용자가 동아리에 가입 신청
+	@action(detail=True, methods=['post'], url_path='join')
+	def join_club(self, request, pk=None):
+		if not request.user.is_authenticated:
+			return Response(
+				{'message': '로그인이 필요합니다.'},
+				status=status.HTTP_401_UNAUTHORIZED
+			)
+
+		club = self.get_object()
+
+		profile = getattr(request.user, 'profile', None)
+
+		if profile is None:
+			return Response(
+				{'message': '프로필 정보가 없어 가입 신청을 할 수 없습니다.'},
+				status=status.HTTP_400_BAD_REQUEST
+			)
+
+		membership, created = ClubMembership.objects.get_or_create(
+			club=club,
+			profile=profile,
+			defaults={
+				'role': ClubMembership.ROLE_MEMBER,
+				'status': ClubMembership.STATUS_PENDING,
+			}
+		)
+
+		if created:
+			return Response(
+				{'message': '가입 신청이 완료되었습니다.'},
+				status=status.HTTP_201_CREATED
+			)
+
+		if membership.status == ClubMembership.STATUS_ACTIVE:
+			return Response(
+				{'message': '이미 가입된 동아리입니다.'},
+				status=status.HTTP_400_BAD_REQUEST
+			)
+
+		if membership.status == ClubMembership.STATUS_PENDING:
+			return Response(
+				{'message': '이미 가입 신청 대기 중입니다.'},
+				status=status.HTTP_400_BAD_REQUEST
+			)
+
+		if membership.status in [
+			ClubMembership.STATUS_INACTIVE,
+			ClubMembership.STATUS_REJECTED,
+		]:
+			membership.status = ClubMembership.STATUS_PENDING
+			membership.role = ClubMembership.ROLE_MEMBER
+			membership.save(update_fields=['status', 'role'])
+
+			return Response(
+				{'message': '가입 신청이 다시 접수되었습니다.'},
+				status=status.HTTP_200_OK
+			)
+
+		return Response(
+			{'message': '가입 신청을 처리할 수 없는 상태입니다.'},
+			status=status.HTTP_400_BAD_REQUEST
+		)
+	
+	# 만족도 조사 API
+	def serialize_survey_item(self, item):
+		return {
+			'id': f'{item.item_type}-{item.original_id}',
+			'originalId': item.original_id,
+			'title': item.title,
+			'date': item.date,
+			'type': item.fee_type,
+			'category': item.category,
+			'amount': item.amount,
+			'participants': item.participants,
+			'totalMembers': item.total_members,
+			'is_new': item.is_new,
+			'isNew': item.is_new,
+		}
+
+	def get_or_create_survey_state(self, club):
+		state, _ = SurveyState.objects.get_or_create(club=club)
+		return state
+
+	@action(detail=True, methods=['get'], url_path='surveys/monthly')
+	def monthly_survey(self, request, pk=None):
+		if not request.user.is_authenticated:
+			return Response(
+				{'message': '로그인이 필요합니다.'},
+				status=status.HTTP_401_UNAUTHORIZED
+			)
+
+		club = self.get_object()
+		state = self.get_or_create_survey_state(club)
+
+		submission, _ = SurveySubmission.objects.get_or_create(
+			club=club,
+			user=request.user,
+		)
+
+		schedule_items = SurveyItem.objects.filter(
+			club=club,
+			item_type=SurveyItem.TYPE_SCHEDULE
+		).order_by('-is_new', 'display_order', '-created_at')
+
+		fee_items = SurveyItem.objects.filter(
+			club=club,
+			item_type=SurveyItem.TYPE_FEE
+		).order_by('-is_new', 'display_order', '-created_at')
+
+		has_submitted = submission.has_submitted
+		needs_resubmit = (
+			submission.has_submitted
+			and submission.submitted_version < state.survey_version
+		)
+
+		fee_updated_date = ''
+		if state.fee_updated_at:
+			fee_updated_date = state.fee_updated_at.strftime('%Y-%m-%d')
+
+		return Response({
+			'schedule_items': [
+				self.serialize_survey_item(item)
+				for item in schedule_items
+			],
+			'fee_items': [
+				self.serialize_survey_item(item)
+				for item in fee_items
+			],
+			'answers': submission.answers or {},
+			'has_submitted': has_submitted,
+			'needs_resubmit': needs_resubmit,
+			'survey_version': state.survey_version,
+			'fee_updated_date': fee_updated_date,
+		})
+
+	@action(detail=True, methods=['post'], url_path='surveys/items')
+	def save_survey_items(self, request, pk=None):
+		if not request.user.is_authenticated:
+			return Response(
+				{'message': '로그인이 필요합니다.'},
+				status=status.HTTP_401_UNAUTHORIZED
+			)
+
+		club = self.get_object()
+		state = self.get_or_create_survey_state(club)
+
+		schedule_items = request.data.get('schedule_items', [])
+		fee_items = request.data.get('fee_items', [])
+
+		has_new_item = False
+		now = timezone.now()
+
+		def sync_items(item_type, items):
+			nonlocal has_new_item
+
+			selected_original_ids = []
+
+			for index, item in enumerate(items):
+				original_id = str(
+					item.get('originalId')
+					or item.get('original_id')
+					or item.get('id', '').replace(f'{item_type}-', '')
+				)
+
+				selected_original_ids.append(original_id)
+
+				survey_item, created = SurveyItem.objects.get_or_create(
+					club=club,
+					item_type=item_type,
+					original_id=original_id,
+					defaults={
+						'title': item.get('title', ''),
+						'date': item.get('date', ''),
+						'fee_type': item.get('type', ''),
+						'category': item.get('category', ''),
+						'amount': item.get('amount') or 0,
+						'participants': item.get('participants') or 0,
+						'total_members': (
+							item.get('totalMembers')
+							or item.get('total_members')
+							or 0
+						),
+						'display_order': index,
+						'is_new': True,
+					}
+				)
+
+				if created:
+					has_new_item = True
+				else:
+					survey_item.title = item.get('title', survey_item.title)
+					survey_item.date = item.get('date', survey_item.date)
+					survey_item.fee_type = item.get('type', survey_item.fee_type)
+					survey_item.category = item.get('category', survey_item.category)
+					survey_item.amount = item.get('amount') or survey_item.amount
+					survey_item.participants = item.get('participants') or 0
+					survey_item.total_members = (
+						item.get('totalMembers')
+						or item.get('total_members')
+						or 0
+					)
+					survey_item.display_order = index
+					survey_item.save()
+
+			SurveyItem.objects.filter(
+				club=club,
+				item_type=item_type
+			).exclude(
+				original_id__in=selected_original_ids
+			).delete()
+
+		sync_items(SurveyItem.TYPE_SCHEDULE, schedule_items)
+		sync_items(SurveyItem.TYPE_FEE, fee_items)
+
+		if has_new_item:
+			state.survey_version += 1
+
+		state.fee_updated_at = now
+		state.save()
+
+		schedule_queryset = SurveyItem.objects.filter(
+			club=club,
+			item_type=SurveyItem.TYPE_SCHEDULE
+		).order_by('-is_new', 'display_order', '-created_at')
+
+		fee_queryset = SurveyItem.objects.filter(
+			club=club,
+			item_type=SurveyItem.TYPE_FEE
+		).order_by('-is_new', 'display_order', '-created_at')
+
+		return Response({
+			'message': '조사 항목이 저장되었습니다.',
+			'schedule_items': [
+				self.serialize_survey_item(item)
+				for item in schedule_queryset
+			],
+			'fee_items': [
+				self.serialize_survey_item(item)
+				for item in fee_queryset
+			],
+			'fee_updated_date': state.fee_updated_at.strftime('%Y-%m-%d'),
+			'survey_version': state.survey_version,
+		})
+
+	@action(detail=True, methods=['post'], url_path='surveys/draft')
+	def save_survey_draft(self, request, pk=None):
+		if not request.user.is_authenticated:
+			return Response(
+				{'message': '로그인이 필요합니다.'},
+				status=status.HTTP_401_UNAUTHORIZED
+			)
+
+		club = self.get_object()
+
+		submission, _ = SurveySubmission.objects.get_or_create(
+			club=club,
+			user=request.user,
+		)
+
+		submission.answers = request.data.get('answers', {})
+		submission.draft_updated_at = timezone.now()
+		submission.save()
+
+		return Response({
+			'message': '임시 저장되었습니다.',
+			'answers': submission.answers,
+		})
+
+	@action(detail=True, methods=['post'], url_path='surveys/submit')
+	def submit_survey(self, request, pk=None):
+		if not request.user.is_authenticated:
+			return Response(
+				{'message': '로그인이 필요합니다.'},
+				status=status.HTTP_401_UNAUTHORIZED
+			)
+
+		club = self.get_object()
+		state = self.get_or_create_survey_state(club)
+
+		submission, _ = SurveySubmission.objects.get_or_create(
+			club=club,
+			user=request.user,
+		)
+
+		if (
+			submission.has_submitted
+			and submission.submitted_version >= state.survey_version
+		):
+			return Response({
+				'message': '이미 제출한 만족도 조사입니다.',
+				'already_submitted': True,
+				'has_submitted': True,
+				'needs_resubmit': False,
+			})
+
+		answers = request.data.get('answers', {})
+
+		schedule_items = SurveyItem.objects.filter(
+			club=club,
+			item_type=SurveyItem.TYPE_SCHEDULE
+		)
+
+		fee_items = SurveyItem.objects.filter(
+			club=club,
+			item_type=SurveyItem.TYPE_FEE
+		)
+
+		required_item_ids = [
+			f'{item.item_type}-{item.original_id}'
+			for item in list(schedule_items) + list(fee_items)
+		]
+
+		missing_item_ids = [
+			item_id
+			for item_id in required_item_ids
+			if str(item_id) not in answers
+		]
+
+		if missing_item_ids:
+			return Response(
+				{
+					'message': '모든 항목을 평가해야 제출할 수 있습니다.',
+					'missing_item_ids': missing_item_ids,
+				},
+				status=status.HTTP_400_BAD_REQUEST
+			)
+
+		was_resubmit = (
+			submission.has_submitted
+			and submission.submitted_version < state.survey_version
+		)
+
+		if was_resubmit:
+			message = '만족도 조사가 다시 제출되었습니다.'
+		else:
+			message = '만족도 조사가 제출되었습니다.'
+
+		submission.answers = answers
+		submission.has_submitted = True
+		submission.submitted_at = timezone.now()
+		submission.submitted_version = state.survey_version
+		submission.save()
+
+		SurveyItem.objects.filter(
+			club=club,
+			item_type__in=[SurveyItem.TYPE_SCHEDULE, SurveyItem.TYPE_FEE],
+		).update(is_new=False)
+
+		return Response({
+			'message': message,
+			'has_submitted': True,
+			'needs_resubmit': False,
+			'answers': submission.answers,
+		})
+	
+	# 만족도 조사 결과 분석 API
+	# 요청 주소: GET /api/clubs/{club_id}/surveys/results/
+	@action(detail=True, methods=['get'], url_path='surveys/results')
+	def survey_results(self, request, pk=None):
+		if not request.user.is_authenticated:
+			return Response(
+				{'message': '로그인이 필요합니다.'},
+				status=status.HTTP_401_UNAUTHORIZED
+			)
+
+		club = self.get_object()
+
+		schedule_items = SurveyItem.objects.filter(
+			club=club,
+			item_type=SurveyItem.TYPE_SCHEDULE
+		).order_by('display_order', '-created_at')
+
+		fee_items = SurveyItem.objects.filter(
+			club=club,
+			item_type=SurveyItem.TYPE_FEE
+		).order_by('display_order', '-created_at')
+
+		submissions = SurveySubmission.objects.filter(
+			club=club,
+			has_submitted=True
+		)
+
+		total_member_count = 0
+
+		# 동아리원 관리용 membership 기준으로 전체 회원 수 계산
+		try:
+			from club_members.models import ClubMembership as ManagedClubMembership
+
+			total_member_count = ManagedClubMembership.objects.filter(
+				club=club
+			).exclude(
+				status='withdrawn'
+			).count()
+		except Exception:
+			total_member_count = submissions.count()
+
+		submitted_user_count = submissions.count()
+
+		def build_item_result(item):
+			item_id = f'{item.item_type}-{item.original_id}'
+
+			scores = []
+
+			for submission in submissions:
+				answers = submission.answers or {}
+				score = answers.get(item_id) or answers.get(str(item_id))
+
+				if score:
+					try:
+						scores.append(int(score))
+					except (TypeError, ValueError):
+						pass
+
+			response_count = len(scores)
+
+			if response_count > 0:
+				average_score = round(sum(scores) / response_count, 2)
+			else:
+				average_score = 0
+
+			distribution = {
+				1: scores.count(1),
+				2: scores.count(2),
+				3: scores.count(3),
+				4: scores.count(4),
+				5: scores.count(5),
+			}
+
+			return {
+				'id': item_id,
+				'originalId': item.original_id,
+				'title': item.title,
+				'date': item.date,
+				'type': item.fee_type,
+				'category': item.category,
+				'amount': item.amount,
+				'response_count': response_count,
+				'average_score': average_score,
+				'converted_score': round(average_score * 20, 1),
+				'distribution': distribution,
+			}
+
+		schedule_results = [
+			build_item_result(item)
+			for item in schedule_items
+		]
+
+		fee_results = [
+			build_item_result(item)
+			for item in fee_items
+		]
+
+		all_results = schedule_results + fee_results
+
+		responded_results = [
+			item for item in all_results
+			if item['response_count'] > 0
+		]
+
+		if responded_results:
+			overall_average = round(
+				sum(item['average_score'] for item in responded_results)
+				/ len(responded_results),
+				2
+			)
+		else:
+			overall_average = 0
+
+		need_improve_items = [
+			item for item in responded_results
+			if item['average_score'] < 2.5
+		]
+
+		need_improve_items = sorted(
+			need_improve_items,
+			key=lambda item: item['average_score']
+		)[:3]
+
+		return Response({
+			'summary': {
+				'overall_average': overall_average,
+				'overall_converted_score': round(overall_average * 20, 1),
+				'submitted_user_count': submitted_user_count,
+				'total_member_count': total_member_count,
+				'need_improve_count': len([
+					item for item in responded_results
+					if item['average_score'] < 2.5
+				]),
+				'schedule_item_count': len(schedule_results),
+				'fee_item_count': len(fee_results),
+			},
+			'schedule_results': schedule_results,
+			'fee_results': fee_results,
+			'need_improve_items': need_improve_items,
+		}, status=status.HTTP_200_OK)
+
+	#동아리 운영 건강도 분석 API(회비),   요청 주소: GET /api/clubs/{club_id}/health/
+	@action(detail=True, methods=['get'], url_path='health')
+	def get_health_analysis(self, request, pk=None):
+
+		# URL의 club_id에 해당하는 Club 객체를 가져옴
+		club = self.get_object()
+
+		# 실제 건강도 계산은 services/health_analysis.py에 분리
+		payload = build_health_analysis_payload(club)
+
+		return Response(payload)

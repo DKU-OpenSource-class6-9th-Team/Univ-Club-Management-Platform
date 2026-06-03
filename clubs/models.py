@@ -204,3 +204,98 @@ class BiweeklySurveyResponse(models.Model):
 
     def __str__(self):
         return f'{self.survey} - {self.user}'
+    
+
+# 만족도 조사 모델
+class SurveyState(models.Model):
+    club = models.OneToOneField(
+        Club,
+        on_delete=models.CASCADE,
+        related_name='survey_state'
+    )
+
+    survey_version = models.PositiveIntegerField(default=1)
+
+    fee_updated_at = models.DateTimeField(null=True, blank=True)
+    schedule_updated_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'{self.club.name} 만족도 조사 상태'
+
+
+class SurveyItem(models.Model):
+    TYPE_SCHEDULE = 'schedule'
+    TYPE_FEE = 'fee'
+
+    TYPE_CHOICES = [
+        (TYPE_SCHEDULE, '일정 만족도'),
+        (TYPE_FEE, '회비 사용 만족도'),
+    ]
+
+    club = models.ForeignKey(
+        Club,
+        on_delete=models.CASCADE,
+        related_name='survey_items'
+    )
+
+    item_type = models.CharField(
+        max_length=20,
+        choices=TYPE_CHOICES
+    )
+
+    original_id = models.CharField(max_length=50)
+
+    title = models.CharField(max_length=200)
+    date = models.CharField(max_length=50, blank=True)
+
+    fee_type = models.CharField(max_length=20, blank=True)
+    category = models.CharField(max_length=50, blank=True)
+    amount = models.IntegerField(default=0)
+
+    participants = models.PositiveIntegerField(default=0)
+    total_members = models.PositiveIntegerField(default=0)
+
+    is_new = models.BooleanField(default=True)
+    display_order = models.PositiveIntegerField(default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('club', 'item_type', 'original_id')
+        ordering = ['-is_new', 'display_order', '-created_at']
+
+    def __str__(self):
+        return f'{self.club.name} - {self.title}'
+
+
+class SurveySubmission(models.Model):
+    club = models.ForeignKey(
+        Club,
+        on_delete=models.CASCADE,
+        related_name='survey_submissions'
+    )
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='survey_submissions'
+    )
+
+    answers = models.JSONField(default=dict)
+
+    submitted_version = models.PositiveIntegerField(default=0)
+    has_submitted = models.BooleanField(default=False)
+    is_resubmitted = models.BooleanField(default=False)
+
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    draft_updated_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ('club', 'user')
+
+    def __str__(self):
+        return f'{self.user} - {self.club.name} 만족도 조사'
