@@ -11,7 +11,6 @@ from .views import (
     EventLowParticipationListView,
     EventMemberActivityDetailView,
     EventMemberActivitySummaryView,
-    EventMemberActivitySyncView,
     EventNoShowListView,
     EventOperationStatsView,
     EventRecurringCreateView,
@@ -39,11 +38,7 @@ urlpatterns = [
         EventMemberActivitySummaryView.as_view(),
         name="event-member-activity-summary",
     ),
-    path(
-        "clubs/<int:club_id>/events/member-activity/sync/",
-        EventMemberActivitySyncView.as_view(),
-        name="event-member-activity-sync",
-    ),
+    
     path(
         "clubs/<int:club_id>/events/member-activity/<int:user_id>/",
         EventMemberActivityDetailView.as_view(),

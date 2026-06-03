@@ -41,7 +41,6 @@ import {
   fetchMemberActivitySummary,
   fetchMyEventApplication,
   fetchMyEventRole,
-  syncMemberActivityScores,
   updateEvent,
   createRecurringEvents,
   fetchEventTimeline,
@@ -80,6 +79,7 @@ const EMPTY_EVENT_FORM = {
   start_at: '',
   end_at: '',
   allow_application: true,
+  activity_score_enabled: true,
   max_participants: '',
   application_start_at: '',
   application_end_at: '',
@@ -95,6 +95,7 @@ const EMPTY_RECURRING_FORM = {
   start_at: '',
   end_at: '',
   allow_application: true,
+  activity_score_enabled: true,
   max_participants: '',
   application_start_at: '',
   application_end_at: '',
@@ -145,6 +146,7 @@ function buildEventPayload(formData) {
     start_at: formData.start_at,
     end_at: formData.end_at || null,
     allow_application: formData.allow_application,
+    activity_score_enabled: formData.activity_score_enabled,
     max_participants: formData.max_participants
       ? Number(formData.max_participants)
       : null,
@@ -432,32 +434,6 @@ function ClubEventPage() {
     await loadActivityPanel()
   }
 
-  const handleSyncActivityScores = async () => {
-    const confirmed = window.confirm(
-      '계산된 활동 점수를 동아리원 관리 정보에 반영하시겠습니까?',
-    )
-
-    if (!confirmed) return
-
-    try {
-      const data = await syncMemberActivityScores(clubId)
-
-      alert(`${data.updated_count}명의 활동 점수가 반영되었습니다.`)
-
-      setActivityPanel({
-        summary: data.summary,
-        members: data.results || [],
-        lowMembers: (data.results || []).filter((member) =>
-          ['data_insufficient', 'danger', 'warning', 'watch'].includes(
-            member.risk_level,
-          ),
-        ),
-      })
-    } catch (error) {
-      console.error('활동 점수 반영 실패:', error)
-      alert(getApiErrorMessage(error))
-    }
-  }
 
   const loadOperationStatsPanel = async (
     year = operationStatsPanel.year,
@@ -559,6 +535,7 @@ function ClubEventPage() {
         start_at: recurringForm.start_at,
         end_at: recurringForm.end_at || null,
         allow_application: recurringForm.allow_application,
+        activity_score_enabled: recurringForm.activity_score_enabled,
         max_participants: recurringForm.max_participants
           ? Number(recurringForm.max_participants)
           : null,
@@ -627,6 +604,7 @@ function ClubEventPage() {
       start_at: toDatetimeLocalValue(event.start_at),
       end_at: toDatetimeLocalValue(event.end_at),
       allow_application: Boolean(event.allow_application),
+      activity_score_enabled: event.activity_score_enabled !== false,
       max_participants: event.max_participants || '',
       application_start_at: toDatetimeLocalValue(event.application_start_at),
       application_end_at: toDatetimeLocalValue(event.application_end_at),
@@ -1173,6 +1151,16 @@ function ClubEventPage() {
                     />
                     <span>참여 신청 허용</span>
                   </label>
+
+                  <label className="event-checkbox-label">
+                    <input
+                      type="checkbox"
+                      name="activity_score_enabled"
+                      checked={recurringForm.activity_score_enabled}
+                      onChange={handleRecurringFormChange}
+                    />
+                    <span>활동 점수 반영</span>
+                  </label>
                 </div>
 
                 <label className="event-full-field">
@@ -1506,7 +1494,7 @@ function ClubEventPage() {
               <div className="event-section-title-row">
                 <div>
                   <p className="event-section-label">Member Activity</p>
-                  <h2>회원별 활동 기록 및 저참여 감지</h2>
+                  <h2>회원별 활동 기록 및 자동 계산 점수</h2>
                 </div>
 
                 <div className="member-activity-actions">
@@ -1518,13 +1506,7 @@ function ClubEventPage() {
                     새로고침
                   </button>
 
-                  <button
-                    type="button"
-                    className="event-primary-button"
-                    onClick={handleSyncActivityScores}
-                  >
-                    활동 점수 반영
-                  </button>
+                
                 </div>
               </div>
 
@@ -1541,7 +1523,7 @@ function ClubEventPage() {
                     </article>
 
                     <article>
-                      <span>평균 활동 점수</span>
+                      <span>평균 계산 점수</span>
                       <strong>
                         {activityPanel.summary?.average_activity_score || 0}점
                       </strong>
@@ -1595,7 +1577,7 @@ function ClubEventPage() {
 
                             <div className="low-participation-score">
                               <span>{member.risk_level_display}</span>
-                              <strong>{member.activity_score}점</strong>
+                              <strong>{member.calculated_activity_score ?? member.activity_score}점</strong>
                             </div>
                           </article>
                         ))}
@@ -1619,7 +1601,7 @@ function ClubEventPage() {
                           <span>노쇼</span>
                           <span>참석률</span>
                           <span>노쇼율</span>
-                          <span>점수</span>
+                          <span>계산 점수</span>
                           <span>상태</span>
                         </div>
 
@@ -1635,7 +1617,7 @@ function ClubEventPage() {
                             <span>{member.attendance.no_show_count}회</span>
                             <span>{member.rates.attendance_rate}%</span>
                             <span>{member.rates.no_show_rate}%</span>
-                            <span>{member.activity_score}점</span>
+                            <span>{member.calculated_activity_score ?? member.activity_score}점</span>
                             <span>
                               <em className={`member-risk-badge ${member.risk_level}`}>
                                 {member.risk_level_display}
@@ -1783,6 +1765,16 @@ function ClubEventPage() {
                     />
                     <span>참여 신청 허용</span>
                   </label>
+
+                  <label className="event-checkbox-label">
+                    <input
+                      type="checkbox"
+                      name="activity_score_enabled"
+                      checked={formData.activity_score_enabled}
+                      onChange={handleFormChange}
+                    />
+                    <span>활동 점수 반영</span>
+                  </label>
                 </div>
 
                 <label className="event-full-field">
@@ -1866,6 +1858,11 @@ function ClubEventPage() {
                           <span className={`event-status-badge ${event.status}`}>
                             {event.status_display || event.status}
                           </span>
+
+                          <span className="event-application-badge">
+                            {event.activity_score_enabled ? '점수 반영' : '점수 제외'}
+                          </span>
+
                           {hasApplication && (
                             <span className="event-application-badge">
                               참여 신청 완료

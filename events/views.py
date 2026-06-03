@@ -791,6 +791,18 @@ def get_user_real_name(user):
     return user.username
 
 
+EVENT_ACTIVITY_SCORE_RULES = {
+    Attendance.STATUS_PRESENT: 100,
+    Attendance.STATUS_LATE: 70,
+    Attendance.STATUS_PRE_CANCELED: 40,
+    Attendance.STATUS_NO_SHOW: 0,
+}
+
+
+def get_event_activity_score(attendance_status):
+    return EVENT_ACTIVITY_SCORE_RULES.get(attendance_status, 0)
+
+
 def get_latest_activity_at(applications, attendances):
     latest_values = []
 
@@ -814,13 +826,77 @@ def get_latest_activity_at(applications, attendances):
     return max(latest_values)
 
 
-def build_member_activity_summary(membership, total_event_count):
+def get_recent_activity_score(latest_activity_at):
+    if latest_activity_at is None:
+        return 0
+
+    days = (timezone.now() - latest_activity_at).days
+
+    if days <= 30:
+        return 20
+
+    if days <= 60:
+        return 12
+
+    return 6
+
+
+def get_recent_activity_label(latest_activity_at):
+    if latest_activity_at is None:
+        return "활동 기록 없음"
+
+    days = (timezone.now() - latest_activity_at).days
+
+    if days <= 30:
+        return "최근 30일 이내 활동"
+
+    if days <= 60:
+        return "최근 60일 이내 활동"
+
+    return "최근 활동 공백 있음"
+
+
+def build_event_activity_scores(attendances):
+    return [
+        {
+            "event_id": attendance.event.id,
+            "event_title": attendance.event.title,
+            "event_type": attendance.event.event_type,
+            "event_type_display": attendance.event.get_event_type_display(),
+            "event_status": attendance.event.status,
+            "event_status_display": attendance.event.get_status_display(),
+            "start_at": attendance.event.start_at,
+            "attendance_status": attendance.status,
+            "attendance_status_display": attendance.get_status_display(),
+            "event_activity_score": get_event_activity_score(attendance.status),
+        }
+        for attendance in attendances
+    ]
+
+
+def build_member_activity_summary(membership, total_event_count=None):
     user = membership.user
+
+    eligible_events = Event.objects.filter(
+        club_id=membership.club_id,
+        status=Event.STATUS_COMPLETED,
+        activity_score_enabled=True,
+    )
+
+    if membership.joined_at:
+        eligible_events = eligible_events.filter(
+            start_at__date__gte=membership.joined_at,
+        )
+
+    eligible_event_ids = list(
+        eligible_events.values_list("id", flat=True)
+    )
+    eligible_event_count = len(eligible_event_ids)
 
     applications = list(
         EventApplication.objects
         .filter(
-            event__club_id=membership.club_id,
+            event_id__in=eligible_event_ids,
             user=user,
         )
         .select_related("event")
@@ -830,11 +906,11 @@ def build_member_activity_summary(membership, total_event_count):
     attendances = list(
         Attendance.objects
         .filter(
-            event__club_id=membership.club_id,
+            event_id__in=eligible_event_ids,
             user=user,
         )
         .select_related("event", "checked_by")
-        .order_by("-created_at")
+        .order_by("-event__start_at", "-created_at")
     )
 
     applied_count = sum(
@@ -866,57 +942,85 @@ def build_member_activity_summary(membership, total_event_count):
     attended_count = present_count + late_count
     checked_count = len(attendances)
 
+    participation_rate = 0
     attendance_rate = 0
     no_show_rate = 0
+    application_activity_rate = 0
 
-    if applied_count > 0:
-        attendance_rate = round((attended_count / applied_count) * 100, 1)
-        no_show_rate = round((no_show_count / applied_count) * 100, 1)
+    if eligible_event_count > 0:
+        participation_rate = round(
+            (attended_count / eligible_event_count) * 100,
+            1,
+        )
+        application_activity_rate = round(
+            (applied_count / eligible_event_count) * 100,
+            1,
+        )
 
-    opportunity_count = max(total_event_count, applied_count, 1)
-    application_activity_rate = round(
-        min((applied_count / opportunity_count) * 100, 100),
-        1,
+    reliability_denominator = applied_count or checked_count
+
+    if reliability_denominator > 0:
+        attendance_rate = round(
+            (attended_count / reliability_denominator) * 100,
+            1,
+        )
+        no_show_rate = round(
+            (no_show_count / reliability_denominator) * 100,
+            1,
+        )
+
+    latest_activity_at = get_latest_activity_at(applications, attendances)
+
+    participation_score = round(participation_rate * 0.4)
+    attendance_reliability_score = round(attendance_rate * 0.3)
+    recent_activity_score = get_recent_activity_score(latest_activity_at)
+    no_show_management_score = (
+        round(max(100 - no_show_rate, 0) * 0.1)
+        if reliability_denominator > 0
+        else 0
     )
 
-    if applied_count == 0:
-        activity_score = 0
-    else:
-        attendance_score = attendance_rate * 0.7
-        no_show_stability_score = max(100 - no_show_rate, 0) * 0.2
-        application_score = application_activity_rate * 0.1
-
-        activity_score = round(
-            attendance_score + no_show_stability_score + application_score
-        )
+    calculated_activity_score = min(
+        participation_score
+        + attendance_reliability_score
+        + recent_activity_score
+        + no_show_management_score,
+        100,
+    )
 
     risk_reasons = []
 
-    if applied_count == 0:
-        risk_reasons.append("참여 신청 기록이 없습니다.")
+    if eligible_event_count == 0:
+        risk_reasons.append("가입 이후 완료된 일정 데이터가 없습니다.")
+    elif applied_count == 0 and checked_count == 0:
+        risk_reasons.append("완료된 일정에 대한 참여 신청 또는 출석 기록이 없습니다.")
 
-    if attendance_rate < 50 and applied_count > 0:
-        risk_reasons.append("참석률이 50% 미만입니다.")
+    if attendance_rate < 50 and reliability_denominator > 0:
+        risk_reasons.append("신청 대비 참석률이 50% 미만입니다.")
 
     if no_show_rate >= 30:
         risk_reasons.append("노쇼율이 30% 이상입니다.")
 
-    if activity_score < 50:
-        risk_reasons.append("활동 점수가 50점 미만입니다.")
+    if calculated_activity_score < 50 and eligible_event_count > 0:
+        risk_reasons.append("자동 계산 활동 점수가 50점 미만입니다.")
 
-    if total_event_count == 0:
+    if eligible_event_count == 0:
         risk_level = "data_insufficient"
         risk_level_display = "데이터 부족"
-        risk_summary = "완료된 일정 데이터가 없어 활동 상태를 판단하기 어렵습니다."
-    elif activity_score < 30 or no_show_rate >= 50:
+        risk_summary = "가입 이후 완료된 일정 데이터가 없어 활동 상태를 판단하기 어렵습니다."
+    elif applied_count == 0 and checked_count == 0:
+        risk_level = "danger"
+        risk_level_display = "위험"
+        risk_summary = "완료된 일정이 있지만 참여 기록이 없어 운영진 확인이 필요합니다."
+    elif calculated_activity_score < 30 or no_show_rate >= 50:
         risk_level = "danger"
         risk_level_display = "위험"
         risk_summary = "활동 저하 위험이 높아 운영진의 확인이 필요합니다."
-    elif activity_score < 50 or attendance_rate < 50 or no_show_rate >= 30:
+    elif calculated_activity_score < 50 or attendance_rate < 50 or no_show_rate >= 30:
         risk_level = "warning"
         risk_level_display = "주의"
         risk_summary = "참여율이나 노쇼율에서 관리가 필요한 신호가 있습니다."
-    elif activity_score < 70 or attendance_rate < 70 or no_show_rate >= 15:
+    elif calculated_activity_score < 70 or attendance_rate < 70 or no_show_rate >= 15:
         risk_level = "watch"
         risk_level_display = "관찰 필요"
         risk_summary = "현재는 큰 문제는 아니지만 활동 추이를 지켜볼 필요가 있습니다."
@@ -928,7 +1032,7 @@ def build_member_activity_summary(membership, total_event_count):
     if not risk_reasons:
         risk_reasons.append("특별한 저참여 위험 신호가 없습니다.")
 
-    latest_activity_at = get_latest_activity_at(applications, attendances)
+    event_activity_scores = build_event_activity_scores(attendances)
 
     return {
         "membership_id": membership.id,
@@ -939,12 +1043,39 @@ def build_member_activity_summary(membership, total_event_count):
         "role_display": membership.get_role_display(),
         "member_status": membership.status,
         "member_status_display": membership.get_status_display(),
+
+        # 동아리원 관리 테이블에 저장된 공식 점수
         "stored_activity_score": membership.activity_score,
-        "activity_score": activity_score,
+
+        # 일정·출석 데이터를 기반으로 계산한 점수
+        "calculated_activity_score": calculated_activity_score,
+
+        # 기존 프론트 호환용
+        "activity_score": calculated_activity_score,
+
         "risk_level": risk_level,
         "risk_level_display": risk_level_display,
         "risk_summary": risk_summary,
         "risk_reasons": risk_reasons,
+        "period": {
+            "type": "completed_events_after_joined_at",
+            "label": "가입일 이후 완료 일정 기준",
+            "eligible_event_count": eligible_event_count,
+            "club_completed_event_count": (
+                total_event_count
+                if total_event_count is not None
+                else eligible_event_count
+            ),
+        },
+        "score_breakdown": {
+            "participation_score": participation_score,
+            "attendance_reliability_score": attendance_reliability_score,
+            "recent_activity_score": recent_activity_score,
+            "recent_activity_label": get_recent_activity_label(latest_activity_at),
+            "no_show_management_score": no_show_management_score,
+            "max_score": 100,
+        },
+        "event_activity_scores": event_activity_scores,
         "application": {
             "applied_count": applied_count,
             "canceled_count": canceled_count,
@@ -959,6 +1090,7 @@ def build_member_activity_summary(membership, total_event_count):
             "attended_count": attended_count,
         },
         "rates": {
+            "participation_rate": participation_rate,
             "attendance_rate": attendance_rate,
             "no_show_rate": no_show_rate,
         },
@@ -972,6 +1104,7 @@ def get_member_activity_summaries(club_id):
     total_event_count = Event.objects.filter(
         club_id=club_id,
         status=Event.STATUS_COMPLETED,
+        activity_score_enabled=True,
     ).count()
 
     memberships = (
@@ -989,7 +1122,7 @@ def get_member_activity_summaries(club_id):
 
     summaries.sort(
         key=lambda item: (
-            item["activity_score"],
+            item["calculated_activity_score"],
             -item["attendance"]["no_show_count"],
             item["user_real_name"],
         )
@@ -998,19 +1131,31 @@ def get_member_activity_summaries(club_id):
     total_members = len(summaries)
     low_participation_members = [
         item for item in summaries
-        if item["risk_level"] in ["data_insufficient", "danger", "warning", "watch"]
+        if item["risk_level"] in [
+            "data_insufficient",
+            "danger",
+            "warning",
+            "watch",
+        ]
     ]
 
     average_activity_score = 0
 
     if total_members > 0:
         average_activity_score = round(
-            sum(item["activity_score"] for item in summaries) / total_members,
+            sum(item["calculated_activity_score"] for item in summaries) / total_members,
             1,
         )
 
     return {
         "club_id": club_id,
+        "score_policy": {
+            "title": "일정·출석 기반 활동 점수",
+            "period": "가입일 이후 완료 일정 기준",
+            "range": "0~100점",
+            "formula": "참여율 40점 + 신청 대비 참석률 30점 + 최근 활동성 20점 + 노쇼 관리 10점",
+            "description": "일정별 출석 기록을 학기 단위 공식 활동 점수로 환산하기 위한 계산값입니다.",
+        },
         "summary": {
             "total_members": total_members,
             "total_completed_events": total_event_count,
@@ -1047,6 +1192,7 @@ def build_member_activity_detail(club_id, user_id):
     total_event_count = Event.objects.filter(
         club_id=club_id,
         status=Event.STATUS_COMPLETED,
+        activity_score_enabled=True,
     ).count()
 
     summary = build_member_activity_summary(membership, total_event_count)
@@ -1055,6 +1201,7 @@ def build_member_activity_detail(club_id, user_id):
         EventApplication.objects
         .filter(
             event__club_id=club_id,
+            event__activity_score_enabled=True,
             user_id=user_id,
         )
         .select_related("event")
@@ -1065,10 +1212,11 @@ def build_member_activity_detail(club_id, user_id):
         Attendance.objects
         .filter(
             event__club_id=club_id,
+            event__activity_score_enabled=True,
             user_id=user_id,
         )
         .select_related("event", "checked_by")
-        .order_by("-created_at")
+        .order_by("-event__start_at", "-created_at")
     )
 
     return {
@@ -1099,6 +1247,7 @@ def build_member_activity_detail(club_id, user_id):
                 "start_at": attendance.event.start_at,
                 "status": attendance.status,
                 "status_display": attendance.get_status_display(),
+                "event_activity_score": get_event_activity_score(attendance.status),
                 "checked_by": attendance.checked_by_id,
                 "checked_by_username": (
                     attendance.checked_by.username
@@ -1110,7 +1259,6 @@ def build_member_activity_detail(club_id, user_id):
             for attendance in attendances
         ],
     }
-
 
 class EventMemberActivitySummaryView(APIView):
     permission_classes = [AllowAny]
@@ -1530,6 +1678,7 @@ class EventRecurringCreateView(APIView):
         description = request.data.get("description", "").strip()
         location = request.data.get("location", "").strip()
         allow_application = bool(request.data.get("allow_application", True))
+        activity_score_enabled = bool(request.data.get("activity_score_enabled", True))
         max_participants = request.data.get("max_participants")
 
         repeat_unit = request.data.get("repeat_unit", "weekly")
@@ -1632,6 +1781,7 @@ class EventRecurringCreateView(APIView):
                         start_at=occurrence_start_at,
                         end_at=occurrence_end_at,
                         allow_application=allow_application,
+                        activity_score_enabled=activity_score_enabled,
                         max_participants=max_participants,
                         application_start_at=occurrence_application_start_at,
                         application_end_at=occurrence_application_end_at,
