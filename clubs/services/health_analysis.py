@@ -13,7 +13,13 @@
 from django.db.models import Avg, Sum
 
 from club_members.models import ClubMembership as ManagedClubMembership
-from clubs.models import BiweeklySurvey, BiweeklySurveyResponse
+from clubs.models import (
+    BiweeklySurvey,
+    BiweeklySurveyResponse,
+    SurveyState,
+    SurveyItem,
+    SurveySubmission,
+)
 from fees.models import FeeTransaction, MemberFeePayment
 from events.models import Event, EventApplication, Attendance
 from clubs.services.health_notice import build_ai_notice
@@ -247,15 +253,116 @@ def build_finance_metrics(club, satisfaction):
 #만족도 및 피드백 지표 계산
 def build_satisfaction_metrics(club):
     """
-    현재 사용 가능한 데이터:
-    - BiweeklySurvey
-    - BiweeklySurveyResponse
+    KAN-65 기준:
+    - 건강도 분석 페이지의 만족도 값은 만족도 조사 페이지와 동일하게 순수 평균 평점을 사용
+    - 응답률은 점수에 섞지 않고 별도 지표로 유지
 
-    현재 계산 방식:
-    - 일정 만족도 평균
-    - 회비 사용 만족도 평균
-    - 전체 응답률
-    """
+
+    KAN-63 이후 새 만족도 조사 데이터
+       - SurveyItem
+       - SurveySubmission
+       - SurveyState"""
+
+    # 새 만족도 조사 데이터 기준 계산
+    survey_items = SurveyItem.objects.filter(club=club)
+
+    submissions = SurveySubmission.objects.filter(
+        club=club,
+        has_submitted=True,
+    )
+
+    has_new_survey_data = survey_items.exists() or submissions.exists()
+
+    if has_new_survey_data:
+        state = SurveyState.objects.filter(club=club).first()
+
+        # 현재 조사 버전의 제출 결과만 건강도 분석에 반영
+        if state is not None:
+            submissions = submissions.filter(
+                submitted_version=state.survey_version
+            )
+
+        target_count = (
+            ManagedClubMembership.objects
+            .filter(club=club)
+            .exclude(status="withdrawn")
+            .count()
+        )
+
+        submitted_count = submissions.values("user").distinct().count()
+        response_rate = percent(submitted_count, target_count)
+
+        schedule_item_ids = {
+            f"{SurveyItem.TYPE_SCHEDULE}-{original_id}"
+            for original_id in (
+                survey_items
+                .filter(item_type=SurveyItem.TYPE_SCHEDULE)
+                .values_list("original_id", flat=True)
+            )
+        }
+
+        fee_item_ids = {
+            f"{SurveyItem.TYPE_FEE}-{original_id}"
+            for original_id in (
+                survey_items
+                .filter(item_type=SurveyItem.TYPE_FEE)
+                .values_list("original_id", flat=True)
+            )
+        }
+
+        schedule_scores = []
+        fee_scores = []
+
+        for submission in submissions:
+            answers = submission.answers or {}
+
+            for item_id, score in answers.items():
+                try:
+                    numeric_score = int(score)
+                except (TypeError, ValueError):
+                    continue
+
+                if numeric_score < 1 or numeric_score > 5:
+                    continue
+
+                item_key = str(item_id)
+
+                if item_key in schedule_item_ids:
+                    schedule_scores.append(numeric_score)
+
+                if item_key in fee_item_ids:
+                    fee_scores.append(numeric_score)
+
+        schedule_average = average_score(schedule_scores)
+        fee_average = average_score(fee_scores)
+
+        all_scores = schedule_scores + fee_scores
+        overall_average = average_score(all_scores)
+
+        # 만족도 점수 공식
+        # 만족도 조사 페이지와 동일하게 1~5점 평균을 100점 만점으로 단순 환산
+        satisfaction_score = convert_five_point_to_100(overall_average)
+
+        return {
+            "dataReady": bool(all_scores),
+            "score": satisfaction_score,
+            "maxScore": 100,
+            "status": (
+                get_status_label(satisfaction_score)
+                if all_scores
+                else "데이터 없음"
+            ),
+
+            "scheduleAverage": schedule_average,
+            "feeAverage": fee_average,
+            "overallAverage": overall_average,
+
+            "responseRate": response_rate,
+            "submittedCount": submitted_count,
+            "targetCount": target_count,
+        }
+
+    # 2. 새 만족도 데이터가 아예 없으면 기존 BiweeklySurvey 방식 사용
     survey = get_latest_survey(club)
 
     if not survey:
@@ -302,6 +409,9 @@ def build_satisfaction_metrics(club):
             except (TypeError, ValueError):
                 continue
 
+            if numeric_score < 1 or numeric_score > 5:
+                continue
+
             if str(item_id) in schedule_item_ids:
                 schedule_scores.append(numeric_score)
 
@@ -314,18 +424,18 @@ def build_satisfaction_metrics(club):
     all_scores = schedule_scores + fee_scores
     overall_average = average_score(all_scores)
 
-    # 만족도 점수 공식
-    # 만족도 평균 70% + 응답률 30%
-    satisfaction_score = round(
-        convert_five_point_to_100(overall_average) * 0.7
-        + response_rate * 0.3
-    )
+    # 기존 데이터도 만족도 조사 페이지와 동일하게 평균 점수를 100점 만점으로 단순 환산
+    satisfaction_score = convert_five_point_to_100(overall_average)
 
     return {
         "dataReady": bool(all_scores),
         "score": satisfaction_score,
         "maxScore": 100,
-        "status": get_status_label(satisfaction_score),
+        "status": (
+            get_status_label(satisfaction_score)
+            if all_scores
+            else "데이터 없음"
+        ),
 
         "scheduleAverage": schedule_average,
         "feeAverage": fee_average,

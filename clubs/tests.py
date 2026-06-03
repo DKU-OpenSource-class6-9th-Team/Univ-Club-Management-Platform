@@ -6,14 +6,23 @@ from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.utils import timezone
+from rest_framework.test import APIClient
 
 from accounts.models import Profile
 from club_members.models import ClubMembership as ManagedClubMembership
-from clubs.models import BiweeklySurvey, BiweeklySurveyResponse, Club
+from clubs.models import (
+    BiweeklySurvey,
+    BiweeklySurveyResponse,
+    Club,
+    SurveyItem,
+    SurveyState,
+    SurveySubmission,
+)
 from clubs.services.health_analysis import (
     build_health_analysis_payload,
     build_member_metrics,
     build_schedule_operation_metrics,
+    build_satisfaction_metrics,
 )
 from events.models import Attendance, Event, EventApplication
 from fees.models import FeeReceipt, FeeTransaction, MemberFeePayment
@@ -244,3 +253,176 @@ class HealthAnalysisImpactIndicatorTests(TestCase):
         self.assertEqual(schedule_operation["totalAttendedCount"], 4)
         self.assertEqual(payload["financeDetail"]["paymentRate"], 75)
         self.assertEqual(payload["financeDetail"]["receiptRate"], 67)
+
+
+class HealthSatisfactionIntegrationTests(TestCase):
+    def setUp(self):
+        self.User = get_user_model()
+        self.manager = self.create_user("manager-kan65")
+        self.member1 = self.create_user("member-kan65-1")
+        self.member2 = self.create_user("member-kan65-2")
+        self.member3 = self.create_user("member-kan65-3")
+
+        self.club = Club.objects.create(
+            name="Survey Health Club",
+            category="IT",
+            club_type="central",
+            description="Test club",
+            created_by=self.manager,
+        )
+
+        for user in [self.member1, self.member2, self.member3]:
+            ManagedClubMembership.objects.create(
+                user=user,
+                club=self.club,
+                status="regular",
+                activity_score=50,
+            )
+
+        self.state = SurveyState.objects.create(
+            club=self.club,
+            survey_version=2,
+        )
+
+        SurveyItem.objects.create(
+            club=self.club,
+            item_type=SurveyItem.TYPE_SCHEDULE,
+            original_id="1",
+            title="Schedule 1",
+        )
+        SurveyItem.objects.create(
+            club=self.club,
+            item_type=SurveyItem.TYPE_SCHEDULE,
+            original_id="2",
+            title="Schedule 2",
+        )
+        SurveyItem.objects.create(
+            club=self.club,
+            item_type=SurveyItem.TYPE_FEE,
+            original_id="3",
+            title="Fee 3",
+        )
+
+    def create_user(self, username):
+        user = self.User.objects.create_user(
+            username=username,
+            password="password",
+            email=f"{username}@example.com",
+        )
+        Profile.objects.create(
+            user=user,
+            school_name="Test University",
+            department="Computer Science",
+            student_id=f"2026{user.id:04d}",
+            nickname=username,
+        )
+        return user
+
+    def submit(self, user, answers, version=2):
+        return SurveySubmission.objects.create(
+            club=self.club,
+            user=user,
+            answers=answers,
+            submitted_version=version,
+            has_submitted=True,
+            submitted_at=timezone.now(),
+        )
+
+    def test_latest_survey_submission_drives_health_satisfaction(self):
+        self.submit(
+            self.member1,
+            {
+                "schedule-1": 5,
+                "schedule-2": 3,
+                "fee-3": 4,
+            },
+        )
+        self.submit(
+            self.member2,
+            {
+                "schedule-1": 1,
+                "schedule-2": 1,
+                "fee-3": 1,
+            },
+            version=1,
+        )
+
+        satisfaction = build_satisfaction_metrics(self.club)
+
+        self.assertEqual(satisfaction["scheduleAverage"], 4.0)
+        self.assertEqual(satisfaction["feeAverage"], 4.0)
+        self.assertEqual(satisfaction["overallAverage"], 4.0)
+        self.assertEqual(satisfaction["score"], 80)
+        self.assertEqual(satisfaction["submittedCount"], 1)
+        self.assertEqual(satisfaction["targetCount"], 3)
+        self.assertEqual(satisfaction["responseRate"], 33)
+
+        payload = build_health_analysis_payload(self.club)
+        self.assertEqual(payload["satisfactionSummary"]["scheduleAverage"], 4.0)
+        self.assertEqual(payload["satisfactionSummary"]["feeAverage"], 4.0)
+        self.assertEqual(payload["satisfactionSummary"]["responseRate"], 33)
+
+        indicators = {
+            item["key"]: item
+            for item in payload["impactIndicators"]
+        }
+        self.assertEqual(indicators["scheduleSatisfaction"]["value"], 4.0)
+        self.assertEqual(indicators["feeSatisfaction"]["value"], 4.0)
+
+    def test_response_rate_and_invalid_answers_do_not_change_score(self):
+        self.submit(
+            self.member1,
+            {
+                "schedule-1": 5,
+                "schedule-2": 0,
+                "schedule-999": 1,
+                "fee-3": "abc",
+                "fee-999": 1,
+            },
+        )
+
+        satisfaction = build_satisfaction_metrics(self.club)
+
+        self.assertEqual(satisfaction["scheduleAverage"], 5.0)
+        self.assertIsNone(satisfaction["feeAverage"])
+        self.assertEqual(satisfaction["overallAverage"], 5.0)
+        self.assertEqual(satisfaction["score"], 100)
+        self.assertEqual(satisfaction["responseRate"], 33)
+
+    def test_survey_item_save_updates_schedule_date_response(self):
+        client = APIClient()
+        client.force_authenticate(user=self.manager)
+
+        response = client.post(
+            f"/api/clubs/{self.club.id}/surveys/items/",
+            {
+                "schedule_items": [
+                    {
+                        "id": "schedule-10",
+                        "originalId": "10",
+                        "title": "New schedule",
+                    },
+                ],
+                "fee_items": [
+                    {
+                        "id": "fee-20",
+                        "originalId": "20",
+                        "title": "New fee",
+                    },
+                ],
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("schedule_updated_date", response.data)
+        self.assertIn("fee_updated_date", response.data)
+        self.assertTrue(response.data["schedule_updated_date"])
+
+        response = client.get(f"/api/clubs/{self.club.id}/surveys/monthly/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data["schedule_updated_date"],
+            response.data["fee_updated_date"],
+        )
