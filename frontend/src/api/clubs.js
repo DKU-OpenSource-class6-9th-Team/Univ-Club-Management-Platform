@@ -178,3 +178,18 @@ export async function requestJoinClub(clubId) {
 
   return data;
 }
+
+// 동아리 건강도 랭킹 조회
+export async function getClubHealthRanking() {
+  const response = await fetch(`${API_BASE_URL}/health-ranking/`, {
+    credentials: "include",
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw data;
+  }
+
+  return data;
+}

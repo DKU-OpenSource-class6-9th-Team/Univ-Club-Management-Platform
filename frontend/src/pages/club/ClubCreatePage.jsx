@@ -106,8 +106,9 @@ function ClubCreatePage() {
         is_recruiting: getRecruitStatus() === '모집중',
         recruit_start_date: formData.recruitType === 'PERIOD' ? formData.startDate : '',
         recruit_end_date: formData.recruitType === 'PERIOD' ? formData.endDate : '',
-        capacity: formData.capacity,
-        recruit_members: formData.recruitMembers,
+        capacity: formData.capacity === '' ? '' : Number(formData.capacity),
+        recruit_members:
+          formData.recruitMembers === '' ? '' : Number(formData.recruitMembers),
         leader_name: formData.leaderName,
         contact_phone: formData.phone,
         contact_email: formData.email,
@@ -249,15 +250,16 @@ function ClubCreatePage() {
         </label>
 
         <label className="form-label">
-          <span>모집 인원</span>
+          <span>총 정원</span>
           <div className="input-box">
             <Users size={20} />
             <input
               type="number"
-              name="maxMembers"
-              value={formData.maxMembers}
+              name="capacity"
+              value={formData.capacity}
               onChange={handleChange}
-              placeholder="예: 20"
+              onWheel={(event) => event.currentTarget.blur()}
+              placeholder="예: 50"
               min="1"
             />
           </div>

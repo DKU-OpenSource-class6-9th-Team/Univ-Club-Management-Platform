@@ -363,7 +363,10 @@
 .joined-club-list {
   border: 1px solid #e5e7eb;
   border-radius: 10px;
-  overflow: hidden;
+  max-height: 252px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .joined-club-name-link {
@@ -557,6 +560,13 @@
   border: 1px solid #e5e7eb;
   border-radius: 10px;
   overflow: hidden;
+}
+
+.club-table-body {
+  max-height: 230px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .club-table-head,
@@ -774,4 +784,33 @@
 .main-user-dropdown button:last-child:hover {
   background: #fee2e2;
   color: #dc2626;
+}
+
+/* 랭킹 목록 스크롤 영역 */
+.ranking-table-body {
+  max-height: 230px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+}
+
+/* 건강도 점수 */
+.health-score {
+  font-weight: 800;
+  color: #111827;
+}
+
+/* 1위 금메달 */
+.ranking-medal.gold {
+  color: #f59e0b;
+}
+
+/* 2위 은메달 */
+.ranking-medal.silver {
+  color: #94a3b8;
+}
+
+/* 3위 동메달 */
+.ranking-medal.bronze {
+  color: #b45309;
 }

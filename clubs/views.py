@@ -83,6 +83,46 @@ class ClubViewSet(viewsets.ModelViewSet):
 
 		return Response(serializer.data)
 	
+	@action(detail=False, methods=['get'], url_path='health-ranking')
+	def health_ranking(self, request):
+		clubs = Club.objects.all().order_by('name')
+		ranking_items = []
+
+		for club in clubs:
+			try:
+				payload = build_health_analysis_payload(club)
+				total_health = payload.get('totalHealth', {})
+
+				health_score = int(total_health.get('score') or 0)
+				health_status = total_health.get('status') or '데이터 없음'
+
+			except Exception:
+				health_score = 0
+				health_status = '계산 오류'
+
+			ranking_items.append({
+				'id': club.id,
+				'name': club.name,
+				'category': club.category,
+				'club_type': club.club_type,
+				'member_count': club.memberships.filter(
+					status=ClubMembership.STATUS_ACTIVE
+				).count(),
+				'capacity': club.capacity,
+				'healthScore': health_score,
+				'healthStatus': health_status,
+			})
+
+		ranking_items = sorted(
+			ranking_items,
+			key=lambda item: (-item['healthScore'], item['name'])
+		)
+
+		for index, item in enumerate(ranking_items, start=1):
+			item['rank'] = index
+
+		return Response(ranking_items, status=status.HTTP_200_OK)
+	
 		# 사용자가 동아리에 가입 신청
 	@action(detail=True, methods=['post'], url_path='join')
 	def join_club(self, request, pk=None):
