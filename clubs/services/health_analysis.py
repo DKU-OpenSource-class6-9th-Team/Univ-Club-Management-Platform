@@ -19,10 +19,16 @@ from clubs.models import (
     SurveyState,
     SurveyItem,
     SurveySubmission,
+    Club,
 )
 from fees.models import FeeTransaction, MemberFeePayment
 from events.models import Event, EventApplication, Attendance
-from clubs.services.health_notice import build_ai_notice
+from clubs.services.health_notice import (
+    FEATURE_COLUMNS,
+    MIN_USED_FEATURE_COUNT,
+    build_ai_notice,
+    build_current_club_feature_vector,
+)
 
 
 #점수를 0~100 범위 안으로 제한하는 함수
@@ -896,6 +902,56 @@ def calculate_total_score(metrics):
 
     return round(score_sum / weight_sum)
 
+#한 동아리의 건강도 계산에 필요한 영역별 metrics를 생성
+def build_health_metrics(club):
+    """
+    점수 계산과 Notice 비교 기준 생성을 모두 위해 사용
+    """
+    member = build_member_metrics(club)
+    satisfaction = build_satisfaction_metrics(club)
+    schedule = build_schedule_metrics(club, satisfaction)
+    finance = build_finance_metrics(club, satisfaction)
+
+    return {
+        "member": member,
+        "schedule": schedule,
+        "satisfaction": satisfaction,
+        "finance": finance,
+    }
+
+#플랫폼에 등록된 다른 동아리들의 실제 데이터을 Notice 비교 기준 feature row로 변환
+def build_actual_club_feature_rows(current_club):
+    """
+    현재 분석 중인 동아리는 비교 기준에서 제외
+    데이터가 부족한 동아리는 비교 기준에서 제외
+    """
+    actual_feature_rows = []
+
+    comparison_clubs = Club.objects.exclude(id=current_club.id)
+
+    for comparison_club in comparison_clubs:
+        try:
+            metrics = build_health_metrics(comparison_club)
+
+            feature_values, missing_features = build_current_club_feature_vector(
+                metrics
+            )
+
+            used_feature_count = len(FEATURE_COLUMNS) - len(missing_features)
+
+            if used_feature_count < MIN_USED_FEATURE_COUNT:
+                continue
+
+            actual_feature_rows.append(feature_values)
+
+        except Exception as error:
+            print(
+                f"[health notice] 실제 동아리 비교 데이터 생성 실패: "
+                f"club_id={comparison_club.id}, error={error}"
+            )
+
+    return actual_feature_rows
+
 
 #건강도 분석 API의 최종 응답 데이터를 생성하는 함수
 def build_health_analysis_payload(club):
@@ -912,23 +968,24 @@ def build_health_analysis_payload(club):
     - AI 이상 탐지 구조
     - 월별 추이 구조
     """
-    member = build_member_metrics(club)
-    satisfaction = build_satisfaction_metrics(club) #만족도 데이터
-    schedule = build_schedule_metrics(club, satisfaction) #활동/일정 운영성
-    finance = build_finance_metrics(club, satisfaction) #재정 운영 투명성
+    metrics = build_health_metrics(club)
 
-    metrics = {
-        "member": member,
-        "schedule": schedule,
-        "satisfaction": satisfaction,
-        "finance": finance,
-    }
+    member = metrics["member"]
+    schedule = metrics["schedule"]
+    satisfaction = metrics["satisfaction"]
+    finance = metrics["finance"]
 
     total_score = calculate_total_score(metrics)
     total_status = get_status_label(total_score)
 
 
-    ai_notice = build_ai_notice(metrics)
+    actual_feature_rows = build_actual_club_feature_rows(club)
+
+    ai_notice = build_ai_notice(
+        metrics,  actual_feature_rows=actual_feature_rows,
+    )
+
+
     final_comment = build_final_comment(
         metrics,
         total_score,
