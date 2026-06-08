@@ -218,6 +218,22 @@
   grid-row: 1 / 2;
   align-self: start;
   height: calc(100% - 80px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.total-health-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.total-health-panel::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #cbd5e1;
+}
+
+.total-health-panel::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .domain-score-panel {

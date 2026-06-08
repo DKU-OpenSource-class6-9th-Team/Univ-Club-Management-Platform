@@ -281,8 +281,9 @@ function ClubEditPage() {
           formData.recruitType === 'PERIOD' ? formData.endDate : '',
 
         // 총 정원 / 이번 모집 인원
-        capacity: formData.capacity,
-        recruit_members: formData.recruitMembers,
+        capacity: formData.capacity === '' ? '' : Number(formData.capacity),
+        recruit_members:
+          formData.recruitMembers === '' ? '' : Number(formData.recruitMembers),
 
         // 대표자 및 연락 정보
         leader_name: formData.leaderName,
@@ -594,6 +595,7 @@ function ClubEditPage() {
                       name="capacity"
                       value={formData.capacity}
                       onChange={handleChange}
+                      onWheel={(event) => event.currentTarget.blur()}
                       placeholder="예: 50"
                       min="1"
                     />
@@ -610,6 +612,7 @@ function ClubEditPage() {
                       name="recruitMembers"
                       value={formData.recruitMembers}
                       onChange={handleChange}
+                      onWheel={(event) => event.currentTarget.blur()}
                       placeholder="예: 20"
                       min="1"
                     />

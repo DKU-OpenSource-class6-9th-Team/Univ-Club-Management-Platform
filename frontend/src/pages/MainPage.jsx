@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getClubs, getMyClubs, requestJoinClub } from '../api/clubs.js';
+import { getClubs, getMyClubs, requestJoinClub,  getClubHealthRanking } from '../api/clubs.js';
 import { getCurrentUser, logout } from '../api/accounts.js';
 import { Link, useNavigate } from 'react-router-dom';
 import '../styles/mainPage.css';
@@ -61,7 +61,7 @@ function MainPage() {
       }
     };
 
-    // 전체 동아리 목록 + 내가 가입/관리 중인 동아리 목록 가져오기
+    // 전체 동아리 목록 + 내가 가입/관리 중인 동아리 목록 + 동아리 건강도 랭킹 가져오기
     const fetchClubData = async () => {
       try {
         const clubs = await getClubs();
@@ -73,10 +73,31 @@ function MainPage() {
 
         console.log('전체 동아리:', clubList);
         console.log('내 동아리:', myClubList);
-
+        
         setAllClubs(clubList);
         setJoinedClubs(myClubList);
         setClubRanking(clubList);
+
+        /*
+          추가 기능:
+          건강도 랭킹 API가 성공했을 때만 clubRanking을 랭킹 데이터로 교체
+        */
+        try {
+          const rankingData = await getClubHealthRanking();
+
+          const rankingList = Array.isArray(rankingData)
+            ? rankingData
+            : rankingData.results || [];
+
+          console.log('동아리 건강도 랭킹:', rankingList);
+
+          setClubRanking(rankingList);
+        } catch (rankingError) {
+          console.error(
+            '동아리 건강도 랭킹 데이터를 불러오지 못했습니다.',
+            rankingError
+          );
+        }
 
       } catch (error) {
         console.error('동아리 데이터를 불러오지 못했습니다.', error);
@@ -137,6 +158,62 @@ function MainPage() {
 
     return category || '-';
   };
+
+  // 건강도 점수를 화면에 표시할 형태로 변환
+  const formatHealthScore = (score) => {
+    const numberScore = Number(score);
+
+    if (!Number.isFinite(numberScore)) {
+      return '-';
+    }
+
+    return `${numberScore}점`;
+  };
+
+  // 랭킹 1~3위 메달 색상 클래스
+  const getMedalClassName = (rank) => {
+    if (rank === 1) return 'gold';
+    if (rank === 2) return 'silver';
+    if (rank === 3) return 'bronze';
+
+    return '';
+  };
+
+  // 랭킹 순위 표시
+  // 1~3위는 메달, 4위부터는 숫자로 표시
+  const renderRankingNumber = (rank) => {
+    if (rank >= 1 && rank <= 3) {
+      return (
+        <Medal
+          size={18}
+          className={`ranking-medal ${getMedalClassName(rank)}`}
+        />
+      );
+    }
+
+    return rank;
+  };
+
+
+  // 건강도 점수가 있는 동아리만 평균 계산에 사용
+  const validHealthScores = clubRanking
+    .map((club) => Number(club.healthScore))
+    .filter((score) => Number.isFinite(score));
+
+  const averageHealthScore =
+    validHealthScores.length === 0
+      ? null
+      : Math.round(
+          validHealthScores.reduce((sum, score) => sum + score, 0) /
+            validHealthScores.length
+        );
+
+  const healthScoreByClubId = new Map(
+    clubRanking
+      .filter((club) => club.id !== undefined && club.id !== null)
+      .map((club) => [String(club.id), club.healthScore])
+  );
+
 
   const handleJoinClub = async (clubId) => {
   try {
@@ -296,9 +373,9 @@ function MainPage() {
             <div>
               <p>동아리 평균 건강도</p>
 
-              {/* 건강도 데이터 연결 전이므로 - 표시 */}
-              <strong>-</strong>
-              <span>데이터 연동 전</span>
+              {/* 건강도 데이터 연결 */}
+              <strong>{averageHealthScore === null ? '-' : `${averageHealthScore}점`}</strong>
+              <span>전체 평균</span>
             </div>
           </article>
         </section>
@@ -426,54 +503,57 @@ function MainPage() {
                 <span>가입 신청</span>
               </div>
 
-              {/* 전체 동아리 데이터가 없을 때 */}
-              {allClubs.length === 0 ? (
-                <div className="club-table-empty">
-                  <p>등록된 동아리 데이터가 없습니다.</p>
-                </div>
-              ) : (
-                /*
-                  allClubs에 데이터가 생기면
-                  map으로 전체 동아리 목록을 반복 출력
-                */
-                allClubs.map((club) => {
-                    const isMyClub = joinedClubs.some((joinedClub) => joinedClub.id === club.id);
-                    
-                    return (
-                        <div className="club-table-row" key={club.id}>
-                            {/* 동아리명 */}
-                            <span>{club.name}</span>
-
-                            {/* 분야/카테고리 */}
-                            <span>{getClubCategoryLabel(club.category)}</span>
-
-                            {/* 현재 회원 수*/}
-                            <span>
-                                {club.member_count ?? 0}/{club.capacity || '-'}
-                            </span>
-
-                            {/* 건강도 점수는 추후 분석 API 구현 후 연결 */}
-                            <span>-</span>
+              <div className="club-table-body">
+                {/* 전체 동아리 데이터가 없을 때 */}
+                {allClubs.length === 0 ? (
+                  <div className="club-table-empty">
+                    <p>등록된 동아리 데이터가 없습니다.</p>
+                  </div>
+                ) : (
+                  /*
+                    allClubs에 데이터가 생기면
+                    map으로 전체 동아리 목록을 반복 출력
+                  */
+                  allClubs.map((club) => {
+                      const isMyClub = joinedClubs.some((joinedClub) => joinedClub.id === club.id);
                       
-                            <span>
-                                {isMyClub ? (
-                                  <button type="button" className="join-button joined" disabled>
-                                    가입중
-                                  </button>
-                              ) : (
-                                  <button
-                                    type="button"
-                                    className="join-button"
-                                    onClick={() => handleJoinClub(club.id)}
-                                  >
-                                    가입 신청
-                                  </button>
-                              )}
-                            </span>
-                          </div>
-                        );
-                     })
-                )}
+                      return (
+                          <div className="club-table-row" key={club.id}>
+                              {/* 동아리명 */}
+                              <span>{club.name}</span>
+
+                              {/* 분야/카테고리 */}
+                              <span>{getClubCategoryLabel(club.category)}</span>
+
+                              {/* 현재 회원 수*/}
+                              <span>
+                                  {club.member_count ?? 0}/{club.capacity || '-'}
+                              </span>
+
+                              <span className="health-score">
+                                  {formatHealthScore(healthScoreByClubId.get(String(club.id)))}
+                              </span>
+                        
+                              <span>
+                                  {isMyClub ? (
+                                    <button type="button" className="join-button joined" disabled>
+                                      가입중
+                                    </button>
+                                ) : (
+                                    <button
+                                      type="button"
+                                      className="join-button"
+                                      onClick={() => handleJoinClub(club.id)}
+                                    >
+                                      가입 신청
+                                    </button>
+                                )}
+                              </span>
+                            </div>
+                          );
+                       })
+                  )}
+              </div>
             </div>
           </article>
 
@@ -493,29 +573,36 @@ function MainPage() {
                 <span>건강도</span>
               </div>
 
-              {/* 랭킹 데이터가 없을 때 */}
-              {clubRanking.length === 0 ? (
-                <div className="ranking-empty">
-                  <p>랭킹 데이터가 없습니다.</p>
-                </div>
-              ) : (
-                /*
-                  clubRanking에 데이터가 생기면
-                  map으로 랭킹 목록을 반복 출력
-                */
-                clubRanking.map((club, index) => (
-                  <div className="ranking-row" key={club.id}>
-                    <span className="ranking-number">
-                      {/* 1등은 메달 아이콘, 나머지는 숫자 표시 */}
-                      {index === 0 ? <Medal size={17} /> : index + 1}
-                    </span>
-
-                    <span>{club.name}</span>
-                    <span>{getClubCategoryLabel(club.category)}</span>
-                    <span>{club.healthScore || '-'}</span>
+              <div className="ranking-table-body">
+                {/* 랭킹 데이터가 없을 때 */}
+                {clubRanking.length === 0 ? (
+                  <div className="ranking-empty">
+                    <p>랭킹 데이터가 없습니다.</p>
                   </div>
-                ))
-              )}
+                ) : (
+                  /*
+                    clubRanking에 데이터가 생기면
+                    map으로 랭킹 목록을 반복 출력
+                  */
+                  clubRanking.map((club, index) => {
+                    const rank = club.rank || index + 1;
+
+                    return(
+                      <div className="ranking-row" key={club.id}>
+                        <span className="ranking-number">
+                          {renderRankingNumber(rank)}
+                        </span>
+
+                        <span>{club.name}</span> 
+                        <span>{getClubCategoryLabel(club.category)}</span>
+                        <span className="health-score">
+                          {formatHealthScore(club.healthScore)}
+                        </span>
+                      </div>
+                    );
+                  }) 
+                )}
+              </div>
             </div>
           </article>
         </section>
