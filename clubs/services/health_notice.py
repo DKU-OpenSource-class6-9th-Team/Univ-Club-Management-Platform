@@ -117,6 +117,32 @@ def generate_synthetic_training_data():
     return training_data
 
 
+def generate_actual_training_data(actual_feature_rows=None):
+    """
+    현재 플랫폼에 등록된 실제 동아리들의 feature row를
+    Notice 비교 기준 데이터로 변환
+
+    - 실제 동아리 데이터는 일부 feature가 None일 수 있음"""
+
+    if not actual_feature_rows:
+        return pd.DataFrame(columns=FEATURE_COLUMNS)
+
+    actual_data = pd.DataFrame(actual_feature_rows)
+
+    if actual_data.empty:
+        return pd.DataFrame(columns=FEATURE_COLUMNS)
+
+    actual_data = actual_data.reindex(columns=FEATURE_COLUMNS)
+    actual_data = actual_data.apply(pd.to_numeric, errors="coerce")
+    actual_data = actual_data.clip(lower=0, upper=100)
+
+    # 모든 feature가 비어 있는 row만 제외
+    # 일부 feature가 비어 있는 row는 유지
+    actual_data = actual_data.dropna(how="all")
+
+    return actual_data
+
+
 def build_current_club_feature_vector(metrics):
     """
     health_analysis.py에서 계산된 상세 지표를 비교용 feature로 변환한다.
@@ -323,25 +349,37 @@ def subject_particle(text):
     return "이"
 
 
-def build_ai_notice(metrics):
+def build_ai_notice(metrics, actual_feature_rows=None):
     """
     건강도 점수 계산과 분리된 참고 Notice를 생성한다.
     """
-    training_data = generate_synthetic_training_data()
+    synthetic_data = generate_synthetic_training_data()
+    actual_data = generate_actual_training_data(actual_feature_rows)
+
+    training_data = pd.concat(
+        [synthetic_data, actual_data],
+        ignore_index=True,
+    )
+
     feature_values, missing_features = build_current_club_feature_vector(metrics)
     used_feature_count = len(FEATURE_COLUMNS) - len(missing_features)
 
     base_result = {
         "trainingSampleCount": len(training_data),
+        "syntheticSampleCount": len(synthetic_data),
+        "actualClubSampleCount": len(actual_data),
         "usedFeatureCount": used_feature_count,
     }
 
     if used_feature_count < MIN_USED_FEATURE_COUNT or training_data.empty:
         return {
             "enabled": True,
-            "mode": "SYNTHETIC_CROSS_CLUB_FEATURE_DEVIATION",
+            "mode": "HYBRID_SYNTHETIC_AND_ACTUAL_CROSS_CLUB_FEATURE_DEVIATION",
             "model": "ZScoreDeviationAnalysis",
-            "description": "합성 학습 데이터의 다른 동아리 상세 지표와 비교하는 상대 지표 분석입니다.",
+            "description": (
+                "합성 학습 데이터와 현재 플랫폼의 실제 다른 동아리 상세 지표를 함께 비교하는 "
+                "상대 지표 분석입니다."
+            ),
             "modelResult": {
                 **base_result,
                 "deviationScore": 0,
@@ -454,11 +492,10 @@ def build_ai_notice(metrics):
 
     return {
         "enabled": True,
-        "mode": "SYNTHETIC_CROSS_CLUB_FEATURE_DEVIATION",
+        "mode": "HYBRID_SYNTHETIC_AND_ACTUAL_CROSS_CLUB_FEATURE_DEVIATION",
         "model": "ZScoreDeviationAnalysis",
         "description": (
-            "합성 학습 데이터의 다른 동아리 상세 지표와 비교해 현재 동아리의 "
-            "상대적으로 높은/낮은 항목을 안내합니다."
+            "합성 학습 데이터와 현재 플랫폼의 실제 다른 동아리 상세 지표를 함께 비교하는 상대 지표 분석입니다."
         ),
         "modelResult": {
             **base_result,
