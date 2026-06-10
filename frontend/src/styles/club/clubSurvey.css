@@ -150,12 +150,13 @@
   cursor: pointer;
 }
 
-.survey-tab:first-child {
+.survey-tab-row .survey-tab:nth-of-type(1) {
   border-radius: 12px 0 0 0;
 }
 
-.survey-tab:last-child {
+.survey-tab-row .survey-tab:nth-of-type(2) {
   border-radius: 0 12px 0 0;
+  margin-left: -1px;
 }
 
 .survey-tab.active {
@@ -1099,16 +1100,6 @@
   cursor: not-allowed;
 }
 
-/* 회비 사용 만족도 탭 옆 수정 날짜 */
-.survey-tab-updated-date {
-  margin-left: 2px;
-
-  color: #9ca3af;
-  font-size: 11px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
 /* 새로 추가된 조사 항목 표시 */
 .survey-new-mark {
   color: #ef4444;
@@ -1774,4 +1765,28 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 회비 사용 만족도 탭 + 수정 날짜 묶음 */
+.survey-tab-with-date {
+  display: flex;
+  align-items: center;
+}
+
+/* 회비 사용 만족도 버튼도 일정 만족도처럼 둥글게 */
+.survey-fee-tab {
+  border-radius: 12px 12px 0 0 !important;
+}
+
+/* 수정 날짜 */
+.survey-tab-updated-date {
+  margin-left: 24px;
+
+  color: #9ca3af;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+
+  position: relative;
+  top: -6px;
 }
