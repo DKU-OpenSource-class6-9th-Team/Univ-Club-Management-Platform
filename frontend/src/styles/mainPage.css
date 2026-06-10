@@ -452,12 +452,12 @@
 }
 
 .schedule-item {
-  min-height: 62px;
+  min-height: 54px;
   padding: 10px 14px;
   border-bottom: 1px solid #e5e7eb;
 
   display: grid;
-  grid-template-columns: 62px 1fr 52px;
+  grid-template-columns: 76px minmax(0, 1fr) 58px;
   align-items: center;
   gap: 14px;
 }
@@ -467,15 +467,15 @@
 }
 
 .schedule-date-box {
-  width: 54px;
-  height: 48px;
+  width: 70px;
+  height: 34px;
   border-radius: 8px;
   background: #eff6ff;
 
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 7px;
 }
 
 .schedule-date-box strong {
@@ -484,28 +484,42 @@
 }
 
 .schedule-date-box span {
-  margin-top: 4px;
   color: #2563eb;
   font-size: 12px;
   font-weight: 800;
 }
 
+.schedule-item > div:nth-child(2) {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(140px, 1.1fr) minmax(90px, 0.8fr) 56px;
+  align-items: center;
+  gap: 14px;
+}
+
 .schedule-item > div:nth-child(2) strong {
   font-size: 15px;
   color: #111827;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .schedule-item > div:nth-child(2) p {
-  margin: 4px 0 0;
+  margin: 0;
   color: #64748b;
   font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .schedule-item > div:nth-child(2) span {
-  display: block;
-  margin-top: 4px;
+  display: inline-block;
   color: #64748b;
   font-size: 12px;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .schedule-dday {

@@ -461,6 +461,64 @@ class MyEventApplicationView(APIView):
         )
 
 
+class MyUpcomingScheduleView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        login_error = require_login(request)
+
+        if login_error is not None:
+            return login_error
+
+        applications = (
+            EventApplication.objects
+            .filter(
+                user=request.user,
+                status=EventApplication.STATUS_APPLIED,
+                event__status=Event.STATUS_SCHEDULED,
+                event__start_at__gte=timezone.now(),
+            )
+            .select_related("event", "event__club")
+            .order_by("event__start_at")[:5]
+        )
+
+        today = timezone.localtime(timezone.now()).date()
+        day_labels = ["월", "화", "수", "목", "금", "토", "일"]
+        results = []
+
+        for application in applications:
+            event = application.event
+            start_at = timezone.localtime(event.start_at)
+            end_at = timezone.localtime(event.end_at) if event.end_at else None
+            days_until = (start_at.date() - today).days
+
+            results.append({
+                "id": application.id,
+                "applicationId": application.id,
+                "eventId": event.id,
+                "clubId": event.club_id,
+                "title": event.title,
+                "clubName": event.club.name,
+                "date": start_at.strftime("%m.%d"),
+                "day": day_labels[start_at.weekday()],
+                "time": start_at.strftime("%H:%M"),
+                "dday": "D-Day" if days_until == 0 else f"D-{days_until}",
+                "startAt": start_at.isoformat(),
+                "endAt": end_at.isoformat() if end_at else None,
+                "location": event.location,
+                "eventType": event.event_type,
+                "status": event.status,
+            })
+
+        return Response(
+            {
+                "results": results,
+                "count": len(results),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
 class EventApplicationListView(APIView):
     permission_classes = [AllowAny]
 

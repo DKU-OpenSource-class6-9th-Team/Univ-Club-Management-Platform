@@ -1,85 +1,81 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+
 import { getClub } from '../../api/clubs.js';
-import '../../styles/club/clubDashboard.css';
 import { getFeeTransactions, getFeeSummary, getFeePayments } from '../../api/fees.js';
 import { getClubHealthAnalysis } from '../../api/health.js';
+import {
+  fetchEvents,
+  fetchLowParticipationMembers,
+  fetchMemberActivitySummary,
+} from '../../api/events.js';
+import { fetchClubMemberNetwork } from '../../api/clubMembers.js';
+
+import '../../styles/club/clubDashboard.css';
 
 import {
+  Activity,
+  AlertTriangle,
+  ArrowDownRight,
+  ArrowUpRight,
+  BarChart3,
   Bell,
   CalendarDays,
   CreditCard,
   Edit3,
+  FileCheck2,
   FileText,
-  Heart,
+  GitBranch,
   HeartPulse,
-  Home,
   LayoutDashboard,
   LogOut,
   Megaphone,
   MessageCircleHeart,
-  Settings,
-  Users,
-  Wallet,
-  UserX,
-  Send,
   Paperclip,
-  Smile,
-  Database,
   ReceiptText,
-  FileCheck2,
-  ArrowUpRight,
-  ArrowDownRight,
+  Send,
+  ShieldCheck,
+  Smile,
+  TrendingUp,
+  Users,
+  UserX,
+  Wallet,
 } from 'lucide-react';
-
 
 function ClubDashboardPage() {
   const navigate = useNavigate();
   const { clubId } = useParams();
 
-  // 1. 동아리 정보 상태
   const [club, setClub] = useState(null);
-  // 1-1. 동아리 정보를 불러오는 중인지 확인하는 상태
   const [isClubLoading, setIsClubLoading] = useState(true);
 
-  // 2. 공지사항 상태
   const [noticeText, setNoticeText] = useState('');
   const [notices, setNotices] = useState([]);
 
-  // 3. 로그인 사용자 정보
   const loginUser = JSON.parse(localStorage.getItem('loginUser')) || {};
-  // 3-1. 로그인한 사용자가 동아리 운영진인지 확인
-  // CLUB_MANAGER 역할을 가진 사용자에게만 동아리 정보 수정 메뉴를 보여줌
   const isClubManager = loginUser.role === 'CLUB_MANAGER';
 
-
-
-  // 대시보드 회비 요약 카드에 사용할 전체 수입/지출 내역
-  // 기존 회비 관리 페이지의 수입/지출 API 데이터를 대시보드에서도 재사용
   const [feeTransactions, setFeeTransactions] = useState([]);
-
-  // 회비 데이터를 불러오는 중인지 표시하기 위한 상태
   const [isFeeLoading, setIsFeeLoading] = useState(false);
-
-  // "수입/지출 내역 보기" 버튼 클릭 시 전체 내역 모달을 열기 위한 상태
   const [isFeeModalOpen, setIsFeeModalOpen] = useState(false);
-
-  // 특정 거래 내역의 증빙자료 버튼을 클릭했을 때 보여줄 영수증 목록
   const [selectedReceipts, setSelectedReceipts] = useState(null);
-
-  // getFeeSummary API의 balance 값을 저장한다.
   const [feeSummary, setFeeSummary] = useState(null);
-
-  // getFeePayments API의 summary 값을 저장한다.
   const [feePaymentSummary, setFeePaymentSummary] = useState(null);
 
-  // 건강도 분석 API의 전체 건강도 점수를 저장한다.
+  const [healthData, setHealthData] = useState(null);
   const [healthSummary, setHealthSummary] = useState(null);
   const [isHealthLoading, setIsHealthLoading] = useState(false);
 
+  const [events, setEvents] = useState([]);
+  const [isEventLoading, setIsEventLoading] = useState(false);
 
+  const [activityData, setActivityData] = useState(null);
+  const [lowParticipationData, setLowParticipationData] = useState(null);
+  const [isActivityLoading, setIsActivityLoading] = useState(false);
 
-  // 4. 동아리 정보 가져오기
+  const [networkData, setNetworkData] = useState(null);
+  const [isNetworkLoading, setIsNetworkLoading] = useState(false);
+
   useEffect(() => {
     const fetchClub = async () => {
       try {
@@ -95,9 +91,6 @@ function ClubDashboardPage() {
     fetchClub();
   }, [clubId]);
 
-
-  // 대시보드 회비 관리 카드에서 사용할 전체 수입/지출 내역 조회
-  // 상단 요약 카드의 회비 잔액/미납 인원과 하단 회비 카드의 수입·지출 내역을 함께 불러온다.
   useEffect(() => {
     const loadDashboardFeeData = async () => {
       if (!clubId) return;
@@ -105,23 +98,17 @@ function ClubDashboardPage() {
       try {
         setIsFeeLoading(true);
 
-        // 1. 회비 잔액 요약 데이터 조회
-        const summaryData = await getFeeSummary(clubId);
+        const [summaryData, paymentData, transactionData] = await Promise.all([
+          getFeeSummary(clubId),
+          getFeePayments(clubId),
+          getFeeTransactions(clubId, { limit: 'all' }),
+        ]);
 
-        // 2. 회원별 납부 현황 요약 데이터 조회
-        const paymentData = await getFeePayments(clubId);
-
-        // 3. 전체 수입/지출 내역 조회
-        const transactionData = await getFeeTransactions(clubId, { limit: 'all' });
-
-        // 4. 각 API 응답을 대시보드 상태에 저장
         setFeeSummary(summaryData || null);
         setFeePaymentSummary(paymentData?.summary || null);
-        setFeeTransactions(transactionData.results || []);
+        setFeeTransactions(transactionData?.results || []);
       } catch (error) {
         console.error('대시보드 회비 데이터 조회 실패:', error);
-
-        // 에러 발생 시 기본값 처리
         setFeeSummary(null);
         setFeePaymentSummary(null);
         setFeeTransactions([]);
@@ -133,19 +120,19 @@ function ClubDashboardPage() {
     loadDashboardFeeData();
   }, [clubId]);
 
-  // 대시보드 상단 건강도 점수 카드에 사용할 전체 건강도 데이터를 불러온다.
   useEffect(() => {
     const loadDashboardHealthData = async () => {
       if (!clubId) return;
 
       try {
         setIsHealthLoading(true);
+        const data = await getClubHealthAnalysis(clubId);
 
-        const healthData = await getClubHealthAnalysis(clubId);
-
-        setHealthSummary(healthData?.totalHealth || null);
+        setHealthData(data || null);
+        setHealthSummary(data?.totalHealth || null);
       } catch (error) {
         console.error('대시보드 건강도 데이터 조회 실패:', error);
+        setHealthData(null);
         setHealthSummary(null);
       } finally {
         setIsHealthLoading(false);
@@ -155,15 +142,74 @@ function ClubDashboardPage() {
     loadDashboardHealthData();
   }, [clubId]);
 
+  useEffect(() => {
+    const loadDashboardEvents = async () => {
+      if (!clubId) return;
 
+      try {
+        setIsEventLoading(true);
+        const data = await fetchEvents(clubId);
+        setEvents(Array.isArray(data?.results) ? data.results : []);
+      } catch (error) {
+        console.error('대시보드 일정 데이터 조회 실패:', error);
+        setEvents([]);
+      } finally {
+        setIsEventLoading(false);
+      }
+    };
 
-  // 5. 로그아웃 함수
+    loadDashboardEvents();
+  }, [clubId]);
+
+  useEffect(() => {
+    const loadDashboardActivityData = async () => {
+      if (!clubId) return;
+
+      try {
+        setIsActivityLoading(true);
+        const [summaryData, lowData] = await Promise.all([
+          fetchMemberActivitySummary(clubId),
+          fetchLowParticipationMembers(clubId),
+        ]);
+
+        setActivityData(summaryData || null);
+        setLowParticipationData(lowData || null);
+      } catch (error) {
+        console.error('대시보드 활동 점수 데이터 조회 실패:', error);
+        setActivityData(null);
+        setLowParticipationData(null);
+      } finally {
+        setIsActivityLoading(false);
+      }
+    };
+
+    loadDashboardActivityData();
+  }, [clubId]);
+
+  useEffect(() => {
+    const loadDashboardNetworkData = async () => {
+      if (!clubId) return;
+
+      try {
+        setIsNetworkLoading(true);
+        const data = await fetchClubMemberNetwork(clubId);
+        setNetworkData(data || null);
+      } catch (error) {
+        console.error('대시보드 참여 연결도 데이터 조회 실패:', error);
+        setNetworkData(null);
+      } finally {
+        setIsNetworkLoading(false);
+      }
+    };
+
+    loadDashboardNetworkData();
+  }, [clubId]);
+
   const handleLogout = () => {
     localStorage.removeItem('loginUser');
     navigate('/login');
   };
 
-  // 6. 공지사항 등록 함수
   const handleAddNotice = () => {
     if (noticeText.trim() === '') return;
 
@@ -182,71 +228,105 @@ function ClubDashboardPage() {
     setNoticeText('');
   };
 
-
-  // 대시보드 회비 카드와 모달에서 금액을 보기 좋게 표시하기 위한 함수
   const formatDashboardWon = (amount) => {
     const numericAmount = Number(amount || 0);
     return `${numericAmount.toLocaleString('ko-KR')}원`;
   };
 
-  // 대시보드 회비 관리 카드에서 사용할 월별 요약 지표 계산
-  const monthlyFeeStats = useMemo(() => {
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth() + 1;
+  const formatDashboardDateTime = (value) => {
+    if (!value) return '-';
 
-  // 1. 전체 수입/지출 내역 중 "이번 달"에 해당하는 내역만 필터링
-  const monthlyTransactions = feeTransactions.filter((transaction) => {
-    if (!transaction.date) return false;
+    const date = new Date(value);
 
-    const [year, month] = String(transaction.date)
-      .split('-')
-      .map(Number);
+    if (Number.isNaN(date.getTime())) {
+      return String(value).slice(0, 16).replace('T', ' ');
+    }
 
-    return year === currentYear && month === currentMonth;
-  });
-
-  // 2. 이번 달 수입 건수 계산
-  const incomeCount = monthlyTransactions.filter(
-    (transaction) => transaction.type === '수입',
-  ).length;
-
-  // 3. 이번 달 지출 건수 계산
-  const expenseCount = monthlyTransactions.filter(
-    (transaction) => transaction.type === '지출',
-  ).length;
-
-  // 4. 증빙자료 첨부율은 수입/지출 전체 내역을 기준으로 계산
-  const receiptTargetCount = monthlyTransactions.length;
-
-  // 5. 이번 달 수입/지출 내역 중 증빙자료가 1개 이상 첨부된 건수 계산
-  const receiptAttachedCount = monthlyTransactions.filter(
-    (transaction) => transaction.receipts?.length > 0,
-  ).length;
-
-  // 6. 수입/지출 전체 기준 증빙자료 첨부율 계산, 이번 달 수입/지출 내역이 0건이면 0으로 처리
-  const receiptRate = receiptTargetCount
-    ? Math.round((receiptAttachedCount / receiptTargetCount) * 100)
-    : 0;
-
-  return {
-    monthlyTransactions,
-    incomeCount,
-    expenseCount,
-    receiptTargetCount,
-    receiptAttachedCount,
-    receiptRate,
+    return date.toLocaleString('ko-KR', {
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
-}, [feeTransactions]);
 
+  const monthlyFeeStats = useMemo(() => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
 
-  
+    const monthlyTransactions = feeTransactions.filter((transaction) => {
+      if (!transaction.date) return false;
+
+      const [year, month] = String(transaction.date).split('-').map(Number);
+      return year === currentYear && month === currentMonth;
+    });
+
+    const incomeCount = monthlyTransactions.filter(
+      (transaction) => transaction.type === '수입',
+    ).length;
+
+    const expenseCount = monthlyTransactions.filter(
+      (transaction) => transaction.type === '지출',
+    ).length;
+
+    const receiptTargetCount = monthlyTransactions.length;
+    const receiptAttachedCount = monthlyTransactions.filter(
+      (transaction) => transaction.receipts?.length > 0,
+    ).length;
+
+    const receiptRate = receiptTargetCount
+      ? Math.round((receiptAttachedCount / receiptTargetCount) * 100)
+      : 0;
+
+    return {
+      monthlyTransactions,
+      incomeCount,
+      expenseCount,
+      receiptTargetCount,
+      receiptAttachedCount,
+      receiptRate,
+    };
+  }, [feeTransactions]);
+
+  const upcomingEvents = useMemo(() => {
+    const now = new Date();
+
+    return events
+      .filter((event) => event.status === 'scheduled')
+      .sort((a, b) => new Date(a.start_at) - new Date(b.start_at))
+      .filter((event) => new Date(event.start_at) >= now)
+      .slice(0, 4);
+  }, [events]);
+
+  const recentCompletedEvents = useMemo(() => {
+    return events
+      .filter((event) => event.status === 'completed')
+      .sort((a, b) => new Date(b.start_at) - new Date(a.start_at))
+      .slice(0, 2);
+  }, [events]);
+
+  const activitySummary = activityData?.summary || {};
+  const lowMembers = lowParticipationData?.results || [];
+  const activityRiskPreview = lowMembers.slice(0, 3);
+
+  const networkSummary = networkData?.summary || {};
+  const networkMembers = networkData?.members || [];
+  const networkRiskMembers = networkMembers
+    .filter((member) => ['risk', 'watch'].includes(member.connection_state))
+    .sort((a, b) => Number(a.connection_score || 0) - Number(b.connection_score || 0))
+    .slice(0, 3);
+
+  const domainScores = (healthData?.domainScores || []).filter(
+    (item) => item.key !== 'satisfaction',
+  );
+
+  const finalComment = healthData?.finalComment || null;
+
   return (
     <div className="club-dashboard-page">
       <div className="dashboard-fixed-canvas">
-        {/* 왼쪽 사이드바 영역 */}
         <aside className="dashboard-sidebar">
-          {/* 사이드바 상단 로고 영역 */}
           <div className="sidebar-logo">
             <Link to="/main" className="sidebar-clubflow-logo">
               <span className="sidebar-logo-cf">CM</span>
@@ -254,92 +334,81 @@ function ClubDashboardPage() {
             </Link>
           </div>
 
-        {/* 사이드바 메뉴 영역 */}
-        <nav className="sidebar-menu">
-          {/* 현재 페이지이므로 active 클래스 적용 */}
-          <Link to={`/club/${clubId}/dashboard`} className="sidebar-link active">
-            <LayoutDashboard size={19} />
-            대시보드
-          </Link>
+          <nav className="sidebar-menu">
+            <Link to={`/club/${clubId}/dashboard`} className="sidebar-link active">
+              <LayoutDashboard size={19} />
+              대시보드
+            </Link>
 
-        <div className="sidebar-menu-group">
-          {/* 상위 메뉴: 동아리 정보 확인 페이지로 이동 */}
-          <Link to={`/club/${clubId}/info`} className="sidebar-link sidebar-parent-link">
-            <FileText size={19} />
-            동아리 정보
-          </Link>
-
-          {/* 하위 메뉴: 운영진용 동아리 정보 수정 페이지 */}
-          {isClubManager && (
-            <div className="sidebar-submenu">
-              <Link to={`/club/${clubId}/edit`} className="sidebar-sub-link">
-                <Edit3 size={16} />
-                동아리 정보 수정
+            <div className="sidebar-menu-group">
+              <Link to={`/club/${clubId}/info`} className="sidebar-link sidebar-parent-link">
+                <FileText size={19} />
+                동아리 정보
               </Link>
+
+              {isClubManager && (
+                <div className="sidebar-submenu">
+                  <Link to={`/club/${clubId}/edit`} className="sidebar-sub-link">
+                    <Edit3 size={16} />
+                    동아리 정보 수정
+                  </Link>
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-          <Link to={`/club/${clubId}/members`} className="sidebar-link">
-            <Users size={19} />
-            동아리원 관리
-          </Link>
+            <Link to={`/club/${clubId}/members`} className="sidebar-link">
+              <Users size={19} />
+              동아리원 관리
+            </Link>
 
-          <Link to={`/club/${clubId}/fee`} className="sidebar-link">
-            <CreditCard size={19} />
-            회비 관리
-          </Link>
+            <Link to={`/club/${clubId}/fee`} className="sidebar-link">
+              <CreditCard size={19} />
+              회비 관리
+            </Link>
 
-          <Link to={`/club/${clubId}/events`} className="sidebar-link">
-            <CalendarDays size={19} />
-            일정·출석 관리
-          </Link>
-          
-          <Link to={`/club/${clubId}/survey`} className="sidebar-link">
-            <MessageCircleHeart size={19} />
-            만족도 조사
-          </Link>
+            <Link to={`/club/${clubId}/events`} className="sidebar-link">
+              <CalendarDays size={19} />
+              일정·출석 관리
+            </Link>
 
-          <Link to={`/club/${clubId}/health`} className="sidebar-link">
-            <HeartPulse size={19} />
-            건강도 분석
-          </Link>
-        </nav>
+            <Link to={`/club/${clubId}/survey`} className="sidebar-link">
+              <MessageCircleHeart size={19} />
+              만족도 조사
+            </Link>
 
-        {/* 로그아웃 버튼 */}
-        <button type="button" className="logout-button" onClick={handleLogout}>
-          <LogOut size={18} />
-          로그아웃
-        </button>
-      </aside>
+            <Link to={`/club/${clubId}/health`} className="sidebar-link">
+              <HeartPulse size={19} />
+              건강도 분석
+            </Link>
+          </nav>
 
+          <button type="button" className="logout-button" onClick={handleLogout}>
+            <LogOut size={18} />
+            로그아웃
+          </button>
+        </aside>
 
-        {/* 오른쪽 대시보드 전체 영역 */}
         <main className="dashboard-main">
-          <div className="dashboard-frame">
-          
-            {/* 브레드크럼 */}
-              <nav className="dashboard-breadcrumb">
-                <Link to="/main">플랫폼 메인</Link>
-                <span>›</span>
-                <Link to="/main">내 동아리</Link>
-                <span>›</span>
-                <span>{isClubLoading ? '불러오는 중...' : club?.name || '동아리'}</span>
-                <span>›</span>
-                <span className="breadcrumb-current">대시보드</span>
-              </nav>
+          <div className="dashboard-frame dashboard-integrated-frame">
+            <nav className="dashboard-breadcrumb">
+              <Link to="/main">플랫폼 메인</Link>
+              <span>›</span>
+              <Link to="/main">내 동아리</Link>
+              <span>›</span>
+              <span>{isClubLoading ? '불러오는 중...' : club?.name || '동아리'}</span>
+              <span>›</span>
+              <span className="breadcrumb-current">대시보드</span>
+            </nav>
 
-            {/* 대시보드 상단 헤더 */}
             <header className="dashboard-header">
               <div>
                 <p className="dashboard-label">Dashboard</p>
                 <h1>동아리 운영 대시보드</h1>
                 <p className="dashboard-desc">
-                  동아리 운영 현황을 한 화면에서 확인할 수 있습니다.
+                  일정, 회비, 활동 점수, 참여 연결도, 건강도 데이터를 한 화면에서 확인합니다.
                 </p>
               </div>
 
-              {/* 오른쪽 사용자 정보 영역 */}
               <div className="dashboard-user-box">
                 <button type="button" className="notice-button">
                   <Bell size={19} />
@@ -358,7 +427,6 @@ function ClubDashboardPage() {
               </div>
             </header>
 
-            {/* 상단 주요 현황 요약 카드 영역 */}
             <section className="summary-grid">
               <article className="summary-card">
                 <div className="summary-icon members">
@@ -425,23 +493,19 @@ function ClubDashboardPage() {
               </article>
             </section>
 
-            {/* 대시보드 본문 영역 */}
-            <section className="dashboard-content-grid">
-              {/* 공지사항 패널 */}
+            <section className="dashboard-content-grid dashboard-integrated-grid">
               <article className="dashboard-panel notice-panel">
                 <div className="panel-title-row">
                   <div>
                     <h2>공지사항</h2>
-                    <p>공지 데이터가 등록되면 이 영역에 표시됩니다.</p>
+                    <p>운영진이 임시 공지를 등록하고 확인하는 영역입니다.</p>
                   </div>
 
                   <Megaphone size={21} />
                 </div>
 
                 <div className="notice-body">
-                  {/* 공지사항 목록이 표시되는 영역 */}
                   <div className="notice-list">
-                    {/* 등록된 공지사항이 없을 때 보여줄 빈 상태 화면 */}
                     {notices.length === 0 ? (
                       <div className="notice-empty-box">
                         <div className="empty-icon">
@@ -452,7 +516,6 @@ function ClubDashboardPage() {
                         <p>아래 입력창에 공지사항을 입력하면 이 영역에 바로 표시됩니다.</p>
                       </div>
                     ) : (
-                      // 등록된 공지사항이 있을 때 공지 목록을 반복해서 출력
                       notices.map((notice) => (
                         <div className="notice-item" key={notice.id}>
                           <div className="notice-item-icon">
@@ -460,10 +523,7 @@ function ClubDashboardPage() {
                           </div>
 
                           <div>
-                            {/* 공지 내용 */}
                             <p>{notice.content}</p>
-
-                            {/* 공지 등록 시간 */}
                             <span>{notice.createdAt}</span>
                           </div>
                         </div>
@@ -471,34 +531,29 @@ function ClubDashboardPage() {
                     )}
                   </div>
 
-                  {/* 공지사항 입력창과 등록 버튼 영역 */}
                   <div className="notice-input-row">
                     <div className="notice-input-box">
                       <input
                         type="text"
                         placeholder="공지사항을 입력하세요..."
                         value={noticeText}
-                        onChange={(e) => setNoticeText(e.target.value)}
-                        onKeyDown={(e) => {
-                          // Enter 키를 누르면 공지 등록 함수 실행
-                          if (e.key === 'Enter') {
+                        onChange={(event) => setNoticeText(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
                             handleAddNotice();
                           }
                         }}
                       />
 
-                      {/* 첨부파일 아이콘 버튼: 현재는 디자인용, 기능은 추후 구현 */}
                       <button type="button" className="notice-icon-button">
                         <Paperclip size={20} />
                       </button>
 
-                      {/* 이모지 아이콘 버튼: 현재는 디자인용, 기능은 추후 구현 */}
                       <button type="button" className="notice-icon-button">
-                      <Smile size={20} />
+                        <Smile size={20} />
                       </button>
                     </div>
 
-                      {/* 공지 등록 버튼 */}
                     <button
                       type="button"
                       className="notice-submit-button"
@@ -511,23 +566,271 @@ function ClubDashboardPage() {
                 </div>
               </article>
 
-              {/* 활동 일정 패널 */}
-              <article className="dashboard-panel activity-panel">
+              <article className="dashboard-panel activity-panel dashboard-event-panel">
                 <div className="panel-title-row">
                   <div>
                     <h2>활동 일정</h2>
-                    <p>활동 일정 데이터가 등록되면 표시됩니다.</p>
+                    <p>일정·출석 관리에 등록된 예정/완료 일정을 요약합니다.</p>
                   </div>
 
                   <CalendarDays size={21} />
                 </div>
 
-                <div className="empty-panel">
-                  <p>등록된 활동 일정이 없습니다.</p>
-                </div>
+                {isEventLoading ? (
+                  <div className="empty-panel">
+                    <p>활동 일정을 불러오는 중입니다.</p>
+                  </div>
+                ) : events.length === 0 ? (
+                  <div className="empty-panel">
+                    <p>등록된 활동 일정이 없습니다.</p>
+                  </div>
+                ) : (
+                  <div className="dashboard-event-content">
+                    <div className="dashboard-kpi-grid event-kpi-grid">
+                      <div className="dashboard-kpi-card">
+                        <span>전체 일정</span>
+                        <strong>{events.length}개</strong>
+                      </div>
+                      <div className="dashboard-kpi-card scheduled">
+                        <span>예정</span>
+                        <strong>{events.filter((event) => event.status === 'scheduled').length}개</strong>
+                      </div>
+                      <div className="dashboard-kpi-card completed">
+                        <span>완료</span>
+                        <strong>{events.filter((event) => event.status === 'completed').length}개</strong>
+                      </div>
+                      <div className="dashboard-kpi-card canceled">
+                        <span>취소</span>
+                        <strong>{events.filter((event) => event.status === 'canceled').length}개</strong>
+                      </div>
+                    </div>
+
+                    <div className="dashboard-event-columns">
+                      <div>
+                        <h3>다가오는 일정</h3>
+                        {upcomingEvents.length === 0 ? (
+                          <p className="dashboard-muted-text">예정된 일정이 없습니다.</p>
+                        ) : (
+                          <div className="dashboard-event-list">
+                            {upcomingEvents.map((event) => (
+                              <div className="dashboard-event-item" key={event.id}>
+                                <div>
+                                  <strong>{event.title}</strong>
+                                  <p>{event.event_type_display || event.event_type} · {event.location || '장소 미정'}</p>
+                                </div>
+                                <span>{formatDashboardDateTime(event.start_at)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <h3>최근 완료 일정</h3>
+                        {recentCompletedEvents.length === 0 ? (
+                          <p className="dashboard-muted-text">완료된 일정이 없습니다.</p>
+                        ) : (
+                          <div className="dashboard-event-list compact">
+                            {recentCompletedEvents.map((event) => (
+                              <div className="dashboard-event-item" key={event.id}>
+                                <div>
+                                  <strong>{event.title}</strong>
+                                  <p>{event.status_display || '완료'}</p>
+                                </div>
+                                <span>{formatDashboardDateTime(event.start_at)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </article>
 
-              {/* 회비 관리 패널 */}
+              <article className="dashboard-panel activity-score-panel">
+                <div className="panel-title-row">
+                  <div>
+                    <h2>활동 점수 요약</h2>
+                    <p>KAN-66 활동 점수 자동 계산 결과입니다.</p>
+                  </div>
+
+                  <Activity size={21} />
+                </div>
+
+                {isActivityLoading ? (
+                  <div className="empty-panel">
+                    <p>활동 점수 데이터를 불러오는 중입니다.</p>
+                  </div>
+                ) : !activityData ? (
+                  <div className="empty-panel">
+                    <p>활동 점수 데이터가 없습니다.</p>
+                  </div>
+                ) : (
+                  <div className="dashboard-analysis-box">
+                    <div className="dashboard-analysis-main-score">
+                      <span>평균 활동 점수</span>
+                      <strong>{activitySummary.average_activity_score ?? 0}점</strong>
+                      <p>{activityData?.score_policy?.formula}</p>
+                    </div>
+
+                    <div className="dashboard-mini-stat-grid">
+                      <div>
+                        <span>저활동 관리 대상</span>
+                        <strong>{activitySummary.low_participation_count ?? 0}명</strong>
+                      </div>
+                      <div>
+                        <span>위험</span>
+                        <strong>{activitySummary.danger_count ?? 0}명</strong>
+                      </div>
+                      <div>
+                        <span>관찰 필요</span>
+                        <strong>{activitySummary.watch_count ?? 0}명</strong>
+                      </div>
+                      <div>
+                        <span>데이터 부족</span>
+                        <strong>{activitySummary.data_insufficient_count ?? 0}명</strong>
+                      </div>
+                    </div>
+
+                    <div className="dashboard-risk-list">
+                      {activityRiskPreview.length === 0 ? (
+                        <p className="dashboard-muted-text">저활동 위험 신호가 없습니다.</p>
+                      ) : (
+                        activityRiskPreview.map((member) => (
+                          <div className="dashboard-risk-item" key={member.membership_id}>
+                            <div>
+                              <strong>{member.user_real_name}</strong>
+                              <p>{member.risk_summary}</p>
+                            </div>
+                            <em className={`dashboard-risk-badge ${member.risk_level}`}>
+                              {member.risk_level_display}
+                            </em>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </article>
+
+              <article className="dashboard-panel network-summary-panel">
+                <div className="panel-title-row">
+                  <div>
+                    <h2>참여 연결도 요약</h2>
+                    <p>KAN-72 공동 참여 관계 분석 결과입니다.</p>
+                  </div>
+
+                  <GitBranch size={21} />
+                </div>
+
+                {isNetworkLoading ? (
+                  <div className="empty-panel">
+                    <p>참여 연결도 데이터를 불러오는 중입니다.</p>
+                  </div>
+                ) : !networkData ? (
+                  <div className="empty-panel">
+                    <p>참여 연결도 데이터가 없습니다.</p>
+                  </div>
+                ) : (
+                  <div className="dashboard-analysis-box">
+                    <div className="dashboard-analysis-main-score network">
+                      <span>평균 연결 점수</span>
+                      <strong>{networkSummary.average_score ?? 0}점</strong>
+                      <p>분석 일정 {networkSummary.analyzed_event_count ?? 0}개 기준</p>
+                    </div>
+
+                    <div className="dashboard-mini-stat-grid">
+                      <div>
+                        <span>저연결 위험</span>
+                        <strong>{networkSummary.risk_count ?? 0}명</strong>
+                      </div>
+                      <div>
+                        <span>관찰 필요</span>
+                        <strong>{networkSummary.watch_count ?? 0}명</strong>
+                      </div>
+                      <div>
+                        <span>분석 회원</span>
+                        <strong>{networkSummary.total_member_count ?? networkMembers.length}명</strong>
+                      </div>
+                      <div>
+                        <span>관계 수</span>
+                        <strong>{networkData?.relations?.length ?? 0}개</strong>
+                      </div>
+                    </div>
+
+                    <div className="dashboard-risk-list">
+                      {networkRiskMembers.length === 0 ? (
+                        <p className="dashboard-muted-text">저연결 위험 회원이 없습니다.</p>
+                      ) : (
+                        networkRiskMembers.map((member) => (
+                          <div className="dashboard-risk-item" key={member.membership_id}>
+                            <div>
+                              <strong>{member.name}</strong>
+                              <p>{member.reasons?.[0] || '추가 확인이 필요합니다.'}</p>
+                            </div>
+                            <em className={`dashboard-risk-badge ${member.connection_state}`}>
+                              {member.connection_state_display}
+                            </em>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </article>
+
+              <article className="dashboard-panel health-mini-panel">
+                <div className="panel-title-row">
+                  <div>
+                    <h2>건강도 요약</h2>
+                    <p>건강도 분석 페이지의 영역별 점수를 요약합니다.</p>
+                  </div>
+
+                  <BarChart3 size={21} />
+                </div>
+
+                {isHealthLoading ? (
+                  <div className="empty-panel">
+                    <p>건강도 데이터를 불러오는 중입니다.</p>
+                  </div>
+                ) : !healthData ? (
+                  <div className="empty-panel">
+                    <p>건강도 데이터가 없습니다.</p>
+                  </div>
+                ) : (
+                  <div className="dashboard-health-summary-box">
+                    <div className="dashboard-health-total-row">
+                      <div>
+                        <span>전체 건강도</span>
+                        <strong>{healthSummary?.score ?? 0}점</strong>
+                      </div>
+                      <em>{healthSummary?.status || '데이터 없음'}</em>
+                    </div>
+
+                    <div className="dashboard-health-domain-list">
+                      {domainScores.map((domain) => (
+                        <div className="dashboard-health-domain-item" key={domain.key}>
+                          <div>
+                            <strong>{domain.title}</strong>
+                            <p>{domain.description}</p>
+                          </div>
+                          <span>{domain.dataReady ? `${domain.score}점` : '-'}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="dashboard-health-comment">
+                      <ShieldCheck size={16} />
+                      <p>
+                        {finalComment?.summary ||
+                          '회원, 일정, 회비 데이터를 누적하면 최종 평가 코멘트가 표시됩니다.'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </article>
+
               <article className="dashboard-panel fee-panel">
                 <div className="panel-title-row dashboard-fee-title-row">
                   <div>
@@ -535,7 +838,6 @@ function ClubDashboardPage() {
                     <p>이번 달 수입·지출 건수와 증빙 현황입니다.</p>
                   </div>
 
-                  {/* 전체 수입/지출 내역 모달을 여는 버튼 */}
                   <button
                     type="button"
                     className="dashboard-fee-detail-button"
@@ -546,7 +848,6 @@ function ClubDashboardPage() {
                   </button>
                 </div>
 
-                {/* 회비 데이터를 불러오는 중일 때 표시 */}
                 {isFeeLoading ? (
                   <div className="empty-panel">
                     <p>회비 데이터를 불러오는 중입니다.</p>
@@ -557,7 +858,6 @@ function ClubDashboardPage() {
                   </div>
                 ) : (
                   <div className="dashboard-fee-preview">
-                    {/* 이번 달 수입/지출 건수 카드 */}
                     <div className="dashboard-fee-count-grid">
                       <div className="dashboard-fee-count-card income">
                         <div className="dashboard-fee-count-icon">
@@ -584,7 +884,6 @@ function ClubDashboardPage() {
                       </div>
                     </div>
 
-                    {/* 증빙자료 첨부율 원형 도표 */}
                     <div className="dashboard-receipt-rate-box">
                       <div
                         className="dashboard-receipt-chart"
@@ -619,34 +918,8 @@ function ClubDashboardPage() {
                   </div>
                 )}
               </article>
-
-
-              {/* 달력 패널: 제목 없이 달력만 표시 */}
-              <article className="dashboard-panel calendar-panel">
-                <div className="calendar-box">
-                  <div className="calendar-week">
-                    <span>일</span>
-                    <span>월</span>
-                    <span>화</span>
-                    <span>수</span>
-                    <span>목</span>
-                    <span>금</span>
-                    <span>토</span>
-                  </div>
-
-                  <div className="calendar-grid">
-                    {Array.from({ length: 35 }).map((_, index) => (
-                      <div className="calendar-cell" key={index}>
-                        <span>{index + 1 <= 31 ? index + 1 : ''}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </article>
             </section>
 
-
-            {/* 수입/지출 내역 보기 버튼 클릭 시 표시되는 전체 내역 */}
             {isFeeModalOpen && (
               <div
                 className="dashboard-modal-backdrop"
@@ -659,10 +932,7 @@ function ClubDashboardPage() {
                   <div className="dashboard-modal-header">
                     <h3>전체 수입 / 지출 내역</h3>
 
-                    <button
-                      type="button"
-                      onClick={() => setIsFeeModalOpen(false)}
-                    >
+                    <button type="button" onClick={() => setIsFeeModalOpen(false)}>
                       닫기
                     </button>
                   </div>
@@ -691,9 +961,7 @@ function ClubDashboardPage() {
                               <td>
                                 <span
                                   className={`dashboard-transaction-badge ${
-                                    transaction.type === '수입'
-                                      ? 'income'
-                                      : 'expense'
+                                    transaction.type === '수입' ? 'income' : 'expense'
                                   }`}
                                 >
                                   {transaction.type}
@@ -722,25 +990,19 @@ function ClubDashboardPage() {
                                   <button
                                     type="button"
                                     className="dashboard-receipt-open-button"
-                                    onClick={() =>
-                                      setSelectedReceipts(transaction.receipts)
-                                    }
+                                    onClick={() => setSelectedReceipts(transaction.receipts)}
                                   >
                                     첨부 {transaction.receipts.length}개
                                   </button>
                                 ) : (
-                                  <span className="dashboard-receipt-empty">
-                                    미첨부
-                                  </span>
+                                  <span className="dashboard-receipt-empty">미첨부</span>
                                 )}
                               </td>
                             </tr>
                           ))
                         ) : (
                           <tr>
-                            <td colSpan="8">
-                              등록된 수입 / 지출 내역이 없습니다.
-                            </td>
+                            <td colSpan="8">등록된 수입 / 지출 내역이 없습니다.</td>
                           </tr>
                         )}
                       </tbody>
@@ -750,8 +1012,6 @@ function ClubDashboardPage() {
               </div>
             )}
 
-
-             {/* 거래 내역의 "첨부 N개" 버튼 클릭 시 표시되는 증빙자료 모달 */}
             {selectedReceipts && (
               <div
                 className="dashboard-modal-backdrop"
@@ -764,10 +1024,7 @@ function ClubDashboardPage() {
                   <div className="dashboard-modal-header">
                     <h3>영수증 증빙 자료</h3>
 
-                    <button
-                      type="button"
-                      onClick={() => setSelectedReceipts(null)}
-                    >
+                    <button type="button" onClick={() => setSelectedReceipts(null)}>
                       닫기
                     </button>
                   </div>
@@ -776,15 +1033,10 @@ function ClubDashboardPage() {
                     {selectedReceipts.map((receipt) => {
                       const receiptName = receipt.name || '';
                       const receiptUrl = receipt.url || '';
-
-                      // 파일명이 .pdf로 끝나면 iframe으로 PDF를 보여주고 그 외에는 이미지 파일로 판단해 img 태그로 보여준다.
                       const isPdf = receiptName.toLowerCase().endsWith('.pdf');
 
                       return (
-                        <div
-                          key={receipt.id}
-                          className="dashboard-receipt-preview-item"
-                        >
+                        <div key={receipt.id} className="dashboard-receipt-preview-item">
                           <p>{receiptName}</p>
 
                           {isPdf ? (
@@ -807,12 +1059,11 @@ function ClubDashboardPage() {
                 </div>
               </div>
             )}
-
-
           </div>
         </main>
       </div>
     </div>
   );
 }
+
 export default ClubDashboardPage;

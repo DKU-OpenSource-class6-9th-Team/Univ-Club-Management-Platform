@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getClubs, getMyClubs, requestJoinClub,  getClubHealthRanking } from '../api/clubs.js';
 import { getCurrentUser, logout } from '../api/accounts.js';
+import { fetchMySchedules } from '../api/events.js';
 import { Link, useNavigate } from 'react-router-dom';
 import '../styles/mainPage.css';
 
@@ -104,8 +105,24 @@ function MainPage() {
       }
     };
 
+    const fetchScheduleData = async () => {
+      try {
+        const data = await fetchMySchedules();
+
+        const scheduleList = Array.isArray(data)
+          ? data
+          : data.results || [];
+
+        setSchedules(scheduleList);
+      } catch (error) {
+        console.error('Failed to load my schedules.', error);
+        setSchedules([]);
+      }
+    };
+
     fetchCurrentUser();
     fetchClubData();
+    fetchScheduleData();
   }, []);
 
   // 관리자 여부
@@ -447,7 +464,7 @@ function MainPage() {
               */
               <div className="schedule-list">
                 {schedules.map((schedule) => (
-                  <div className="schedule-item" key={schedule.id}>
+                  <div className="schedule-item" key={schedule.applicationId || schedule.id}>
                     <div className="schedule-date-box">
                       <strong>{schedule.date}</strong>
                       <span>{schedule.day}</span>
