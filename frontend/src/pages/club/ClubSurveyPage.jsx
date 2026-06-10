@@ -1217,13 +1217,13 @@ function ClubSurveyPage() {
 									>
 										<CreditCard size={18} />
 										<span>회비 사용 만족도</span>
+										</button>
 
 										{feeUpdatedDate && (
 											<small className="survey-tab-updated-date">
 												{feeUpdatedDate} 수정
 											</small>
 										)}
-									</button>
 								</div>
 
 								{/* 조사 항목 패널 */}

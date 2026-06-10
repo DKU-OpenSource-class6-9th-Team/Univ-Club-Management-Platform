@@ -307,11 +307,10 @@ function MainPage() {
                 <p>내 동아리와 전체 동아리 정보를 한눈에 확인하세요.</p>
             </div>
 
-            {isClubManager && (
                 <Link to="/club/create" className="main-create-club-button">
                 동아리 등록
                 </Link>
-            )}
+                
         </section>
 
         {/* ==============================
