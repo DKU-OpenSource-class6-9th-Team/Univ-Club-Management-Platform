@@ -19,10 +19,16 @@ from .views import (
     EventTimelineView,
     MyEventApplicationView,
     MyEventRoleView,
+    MyUpcomingScheduleView,
 )
 
 
 urlpatterns = [
+    path(
+        "events/my-schedules/",
+        MyUpcomingScheduleView.as_view(),
+        name="event-my-schedules",
+    ),
     path(
         "clubs/<int:club_id>/events/",
         EventListCreateView.as_view(),

@@ -166,6 +166,10 @@ export async function fetchMyEventApplication(clubId, eventId) {
   return request(`/clubs/${clubId}/events/${eventId}/my-application/`)
 }
 
+export async function fetchMySchedules() {
+  return request('/events/my-schedules/')
+}
+
 export async function fetchEventApplications(clubId, eventId) {
   if (!clubId || !eventId) throw new Error('일정 정보가 없습니다.')
 
