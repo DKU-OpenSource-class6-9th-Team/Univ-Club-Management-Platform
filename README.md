@@ -93,10 +93,6 @@ Univ-Club-Management-Platform/
 │   ├── api-overview.md           # 주요 API 개요
 │   ├── health-analysis.md        # 동아리 건강도 분석 기준
 │   ├── collaboration-rule.md     # GitHub/Jira 협업 규칙
-│   └── screenshots/              # 프로젝트 화면 이미지
-│       ├── main-page.png
-│       ├── club-dashboard.png
-│       └── health-page.png
 ├── accounts/                     # 사용자 계정 및 프로필 관리
 ├── clubs/                        # 동아리, 만족도 조사, 건강도 분석 기능
 ├── club_members/                 # 동아리 회원 관리
