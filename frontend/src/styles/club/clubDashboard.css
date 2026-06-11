@@ -1574,3 +1574,24 @@
   font-size: 11px;
   line-height: 1.45;
 }
+
+.notice-member-guide {
+  min-height: 48px;
+  border: 1px dashed #d1d5db;
+  border-radius: 14px;
+  background: #f9fafb;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.notice-member-guide p {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 13px;
+  font-weight: 800;
+}

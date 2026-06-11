@@ -8,6 +8,7 @@ import {
   fetchEvents,
   fetchLowParticipationMembers,
   fetchMemberActivitySummary,
+  fetchMyEventRole,
 } from '../../api/events.js';
 import { fetchClubMemberNetwork } from '../../api/clubMembers.js';
 
@@ -53,7 +54,9 @@ function ClubDashboardPage() {
   const [notices, setNotices] = useState([]);
 
   const loginUser = JSON.parse(localStorage.getItem('loginUser')) || {};
-  const isClubManager = loginUser.role === 'CLUB_MANAGER';
+
+  const [eventRole, setEventRole] = useState(null);
+  const [canManageDashboard, setCanManageDashboard] = useState(false);
 
   const [feeTransactions, setFeeTransactions] = useState([]);
   const [isFeeLoading, setIsFeeLoading] = useState(false);
@@ -202,7 +205,26 @@ function ClubDashboardPage() {
       }
     };
 
-    loadDashboardNetworkData();
+  loadDashboardNetworkData();
+  }, [clubId]);
+
+    useEffect(() => {
+    const loadDashboardRole = async () => {
+      if (!clubId) return;
+
+      try {
+        const data = await fetchMyEventRole(clubId);
+
+        setEventRole(data || null);
+        setCanManageDashboard(Boolean(data?.can_manage_events));
+      } catch (error) {
+        console.error('대시보드 권한 확인 실패:', error);
+        setEventRole(null);
+        setCanManageDashboard(false);
+      }
+    };
+
+    loadDashboardRole();
   }, [clubId]);
 
   const handleLogout = () => {
@@ -211,6 +233,11 @@ function ClubDashboardPage() {
   };
 
   const handleAddNotice = () => {
+    if (!canManageDashboard) {
+      alert('공지사항 등록은 운영진만 가능합니다.');
+      return;
+    }
+
     if (noticeText.trim() === '') return;
 
     const newNotice = {
@@ -346,7 +373,7 @@ function ClubDashboardPage() {
                 동아리 정보
               </Link>
 
-              {isClubManager && (
+              {canManageDashboard && (
                 <div className="sidebar-submenu">
                   <Link to={`/club/${clubId}/edit`} className="sidebar-sub-link">
                     <Edit3 size={16} />
@@ -531,38 +558,44 @@ function ClubDashboardPage() {
                     )}
                   </div>
 
-                  <div className="notice-input-row">
-                    <div className="notice-input-box">
-                      <input
-                        type="text"
-                        placeholder="공지사항을 입력하세요..."
-                        value={noticeText}
-                        onChange={(event) => setNoticeText(event.target.value)}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter') {
-                            handleAddNotice();
-                          }
-                        }}
-                      />
+                  {canManageDashboard ? (
+                    <div className="notice-input-row">
+                      <div className="notice-input-box">
+                        <input
+                          type="text"
+                          placeholder="공지사항을 입력하세요..."
+                          value={noticeText}
+                          onChange={(event) => setNoticeText(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter') {
+                              handleAddNotice();
+                            }
+                          }}
+                        />
 
-                      <button type="button" className="notice-icon-button">
-                        <Paperclip size={20} />
-                      </button>
+                        <button type="button" className="notice-icon-button">
+                          <Paperclip size={20} />
+                        </button>
 
-                      <button type="button" className="notice-icon-button">
-                        <Smile size={20} />
+                        <button type="button" className="notice-icon-button">
+                          <Smile size={20} />
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="notice-submit-button"
+                        onClick={handleAddNotice}
+                      >
+                        <Send size={18} />
+                        공지 등록
                       </button>
                     </div>
-
-                    <button
-                      type="button"
-                      className="notice-submit-button"
-                      onClick={handleAddNotice}
-                    >
-                      <Send size={18} />
-                      공지 등록
-                    </button>
-                  </div>
+                  ) : (
+                    <div className="notice-member-guide">
+                      <p>공지사항 등록은 운영진만 가능합니다.</p>
+                    </div>
+                  )}
                 </div>
               </article>
 
