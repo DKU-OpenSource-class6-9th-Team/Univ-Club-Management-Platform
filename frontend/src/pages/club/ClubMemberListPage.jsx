@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { getClub } from '../../api/clubs.js';
+import { fetchMyEventRole } from '../../api/events.js';
 import {
   approveClubJoinRequest,
   fetchClubJoinRequests,
@@ -167,7 +168,12 @@ function ClubMemberListPage() {
   const [appliedFilters, setAppliedFilters] = useState(INITIAL_FILTERS);
 
   const loginUser = JSON.parse(localStorage.getItem('loginUser')) || {};
-  const isClubManager = loginUser.role === 'CLUB_MANAGER';
+
+  const [clubMemberRole, setClubMemberRole] = useState(null);
+  const [isRoleLoading, setIsRoleLoading] = useState(true);
+
+  const canAccessMemberManagement =
+    clubMemberRole !== null && clubMemberRole !== 'member';
 
   const currentPageName = '동아리원 관리';
 
@@ -192,7 +198,36 @@ function ClubMemberListPage() {
     loadClub();
   }, [clubId]);
 
+  useEffect(() => {
+    const loadClubMemberRole = async () => {
+      if (!clubId) {
+        setClubMemberRole(null);
+        setIsRoleLoading(false);
+        return;
+      }
+
+      try {
+        setIsRoleLoading(true);
+        const roleData = await fetchMyEventRole(clubId);
+        setClubMemberRole(roleData.role || null);
+      } catch (error) {
+        console.error('동아리 역할을 확인하지 못했습니다.', error);
+        setClubMemberRole(null);
+      } finally {
+        setIsRoleLoading(false);
+      }
+    };
+
+    loadClubMemberRole();
+  }, [clubId]);
+
   const loadMembers = useCallback(async () => {
+    if (!clubId || isRoleLoading || !canAccessMemberManagement) {
+      setMembers([]);
+      setIsMemberLoading(false);
+      return;
+    }
+
     try {
       setIsMemberLoading(true);
       setErrorMessage('');
@@ -209,9 +244,15 @@ function ClubMemberListPage() {
     } finally {
       setIsMemberLoading(false);
     }
-  }, [clubId, appliedFilters]);
+  }, [clubId, appliedFilters, isRoleLoading, canAccessMemberManagement]);
 
   const loadJoinRequests = useCallback(async () => {
+    if (!clubId || isRoleLoading || !canAccessMemberManagement) {
+      setJoinRequests([]);
+      setIsJoinRequestLoading(false);
+      return;
+    }
+
     try {
       setIsJoinRequestLoading(true);
       setJoinRequestErrorMessage('');
@@ -226,7 +267,7 @@ function ClubMemberListPage() {
     } finally {
       setIsJoinRequestLoading(false);
     }
-  }, [clubId]);
+  }, [clubId, isRoleLoading, canAccessMemberManagement]);
 
   useEffect(() => {
     loadMembers();
@@ -261,6 +302,10 @@ function ClubMemberListPage() {
   };
 
   const handleApproveJoinRequest = async (membershipId) => {
+    if (!canAccessMemberManagement) {
+      return;
+    }
+
     try {
       setProcessingRequestId(membershipId);
       setJoinRequestActionMessage('');
@@ -285,6 +330,10 @@ function ClubMemberListPage() {
   };
 
   const handleRejectJoinRequest = async (membershipId) => {
+    if (!canAccessMemberManagement) {
+      return;
+    }
+
     try {
       setProcessingRequestId(membershipId);
       setJoinRequestActionMessage('');
@@ -306,6 +355,10 @@ function ClubMemberListPage() {
   };
 
   const handleOpenUpdateModal = (member) => {
+    if (!canAccessMemberManagement) {
+      return;
+    }
+
     setSelectedMember(member);
     setUpdateForm({
       role: member.role,
@@ -338,6 +391,10 @@ function ClubMemberListPage() {
   const handleSubmitUpdateMember = async (event) => {
     event.preventDefault();
 
+    if (!canAccessMemberManagement) {
+      return;
+    }
+
     if (!selectedMember) {
       return;
     }
@@ -364,6 +421,10 @@ function ClubMemberListPage() {
   };
 
   const handleSyncActivityScores = async () => {
+    if (!canAccessMemberManagement) {
+      return;
+    }
+
     const confirmed = window.confirm(
       '일정·출석 데이터를 기반으로 계산된 점수를 공식 활동 점수에 반영하시겠습니까?'
     );
@@ -464,7 +525,7 @@ function ClubMemberListPage() {
                 동아리 정보
               </Link>
 
-              {isClubManager && (
+              {canAccessMemberManagement && (
                 <div className="sidebar-submenu">
                   <Link to={`/club/${clubId}/edit`} className="sidebar-sub-link">
                     <Edit3 size={16} />
@@ -528,14 +589,16 @@ function ClubMemberListPage() {
               </div>
 
               <div className="dashboard-user-box">
-                <button
-                  type="button"
-                  className="club-member-network-toggle-button"
-                  onClick={() => setShowNetworkPanel((prev) => !prev)}
-                >
-                  <GitBranch size={16} />
-                  {showNetworkPanel ? '참여 연결도 닫기' : '참여 연결도 분석'}
-                </button>
+                {canAccessMemberManagement && (
+                  <button
+                    type="button"
+                    className="club-member-network-toggle-button"
+                    onClick={() => setShowNetworkPanel((prev) => !prev)}
+                  >
+                    <GitBranch size={16} />
+                    {showNetworkPanel ? '참여 연결도 닫기' : '참여 연결도 분석'}
+                  </button>
+                )}
 
                 <button type="button" className="notice-button">
                   <Bell size={19} />
@@ -554,6 +617,25 @@ function ClubMemberListPage() {
               </div>
             </header>
 
+            {isRoleLoading ? (
+              <section
+                className="club-member-empty-box"
+                style={{ gridRow: '3 / 5' }}
+              >
+                <p>동아리원 관리 권한을 확인하는 중입니다.</p>
+              </section>
+            ) : !canAccessMemberManagement ? (
+              <section
+                className="club-member-empty-box error"
+                style={{ gridRow: '3 / 5' }}
+              >
+                <p>
+                  동아리원 목록과 가입 신청 관리는
+                  회장, 부회장, 운영진, 총무 역할이 필요합니다.
+                </p>
+              </section>
+            ) : (
+              <>
             <section className="summary-grid">
               <article className="summary-card">
                 <div className="summary-icon members">
@@ -889,11 +971,13 @@ function ClubMemberListPage() {
                 )}
               </article>
             </section>
+              </>
+            )}
           </div>
         </main>
       </div>
 
-      {isUpdateModalOpen && selectedMember && (
+      {canAccessMemberManagement && isUpdateModalOpen && selectedMember && (
         <div className="member-update-modal-backdrop">
           <div className="member-update-modal">
             <div className="member-update-modal-header">
